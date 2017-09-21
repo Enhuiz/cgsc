@@ -3,65 +3,35 @@
 #include <vector>
 #include <functional>
 
-#include "csv.hpp"
+// #include "csv.hpp"
 #include "gtest/gtest.h"
-#include "cgsc/geometry/region.hpp"
+#include "cgsc/geometry/polygon.hpp"
+#include "cgsc/geometry/grid.hpp"
+#include "cgsc/geometry/aoi.hpp"
+#include "cgsc/geometry/scene.hpp"
+#include "utils.hpp"
 
 using namespace cgsc::model;
-// using namespace cgsc::solver;
+using namespace cgsc::test;
 
-template <class T>
-std::vector<T> roll(const std::vector<T> &v, int n)
+
+TEST(Polygon, tostring)
 {
-	std::vector<T> ret;
-	n = n < 0 ? v.size() + n : n;
-
-	for (int i = v.size() - n; i < v.size(); ++i)
-	{
-		ret.push_back(v[i]);
-	}
-
-	for (int i = 0; i < v.size() - n; ++i)
-	{
-		ret.push_back(v[i]);
-	}
-
-	return ret;
+	EXPECT_EQ(Polygon("[[0, 0], [1, 0], [1, 1], [0, 1]]").to_string(), "[[0, 0], [1, 0], [1, 1], [0, 1]]");
 }
 
-std::string to_string(const std::vector<Point> &v)
-{
-	std::string ret;
-	std::ostringstream oss(ret);
-
-	oss << "[";
-	for (int i = 0; i < v.size(); ++i)
-	{
-		const auto &p = v[i];
-		if (i)
-		{
-			oss << ", ";
-		}
-		oss << "[" << p.x() << ", " << p.y() << "]";
-	}
-	oss << "]";
-
-	return oss.str();
-}
-
-TEST(Region, area1)
+TEST(AOI, getArea)
 {
 	auto vertices = parsePoints("[[0, 0], [1, 0], [1, 1], [0, 1]]");
 	for (int i = 0; i < vertices.size(); i += 1)
 	{
 		vertices = roll(vertices, i);
-		std::cout << to_string(vertices) << std::endl;
-		Region region(vertices);
-		EXPECT_EQ(region.getArea(), 1);
+		AOI aoi(vertices);
+		EXPECT_EQ(aoi.getArea(), 1);
 	}
 }
 
-TEST(Region, area2)
+TEST(Scene, getArea)
 {
 	std::string s = "[[1, 0], \
 					[0.5, 0.8660254037844386],  \
@@ -75,15 +45,13 @@ TEST(Region, area2)
 	for (int i = 0; i < vertices.size(); i += 1)
 	{
 		vertices = roll(vertices, i);
-		std::cout << to_string(vertices) << std::endl;
-		Region region(vertices);
-		EXPECT_DOUBLE_EQ(region.getArea(), 2.59807621135332);
+		Scene scene(vertices);
+		EXPECT_NEAR(scene.getArea(), 2.59807621135332, 1e-10);
 	}
 }
 
-TEST(Region, ostream)
+
+TEST(Grid, equal)
 {
-	std::string s = "[[0, 0], [1, 0], [1, 1], [0, 1]]";
-	Region region(s);
-	EXPECT_EQ(region.to_string(), s);
+	EXPECT_EQ(Grid(0, 0, 10), Grid(0, 0, 10));
 }
