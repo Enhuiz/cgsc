@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -76,15 +77,21 @@ class Polygon
     }
 
   public:
-    friend std::vector<Polygon> union(const std::vector<Polygon> polygons);
-    
+    friend std::vector<Polygon> unionPolygons(const std::vector<Polygon> polygons);
+    friend std::vector<Polygon> unionPolygons(const std::list<Polygon> polygons);
+
   protected:
     BoostPolygon<Point, false, false> boostPolygon;
 };
 
-friend std::vector<Polygon> union(const std::vector<Polygon> polygons)
+friend std::vector<Polygon> unionPolygons(const std::vector<Polygon> polygons)
 {
-    const auto union2Polygon = [](const Polygon &a, const Polygon &b) {
+    return unionPolygons(std::list(polygons.begin(), polygons.end()));
+}
+
+friend std::vector<Polygon> unionPolygons(const std::list<Polygon> polygons)
+{
+    const auto union2Polygons = [](const Polygon &a, const Polygon &b) {
         std::vector<BoostPolygon> boostPolygons;
         boost::geometry::union_(a, b, boostPolygons);
         std::vector<Polygon> ret;
@@ -95,11 +102,25 @@ friend std::vector<Polygon> union(const std::vector<Polygon> polygons)
         return ret;
     };
 
-    const auto extractUnion = [](std::list<Polygon> leftPolygons) {
-        auto polygon = leftPolygons.head();
+    const auto unionIteration = [&]() {
+        for (auto i = polygons.begin(); i != polygons.end(); ++i)
+        {
+            for (auto j = i + 1; j != polygons.end(); ++j)
+            {
+                auto unionedPolygons = union2Polygons(*i, *j);
+                for (const auto &poly : unionedPolygons)
+                {
+                    polygons.push_back(poly);
+                }
+                return polygons.size();
+            }
+        }
+        return polygons.size();
+    }
 
-    };
+    while (polygons.size() != unionIteration());
 
+    return std::vector<Polygon>(polygons.begin(), polygons.end());
 }
 }
 }

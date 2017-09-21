@@ -29,10 +29,24 @@ class Solver
         std::cout << scenes.size() << " records loaded" << std::endl;
     }
 
-    std::vector<model::Scene> getScenes(model::AOI aoi)
+    std::vector<model::Scene> query(model::AOI aoi)
     {
-        std::vector<model::Scene> overlappedScenes;
-        for ()
+        std::vector<model::Scene> possibleScenes;
+
+        for (const auto& scene: scenes) 
+        {
+            if (aoi.overlaps(scene)) 
+            {   
+                possibleScenes.append(scene);
+            }   
+        }
+
+        
+
+        for (const auto &grid : aoi.getGrids())
+        {
+            
+        }
     }
 
   private:

@@ -23,8 +23,6 @@ class Result
             price += scene.getPrice();
         }
     }
-
-
     
     double getCoverageArea()
     {

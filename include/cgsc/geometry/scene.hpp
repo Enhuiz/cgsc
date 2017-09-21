@@ -37,20 +37,44 @@ class Scene : public Polygon
         return price;
     }
 
-    bool covers(const Grid& grid) const 
+    int getGridCount() const
     {
-        for (const Point& point : gird.boostPolygon.outer()) 
+        return grids.size();
+    }
+
+    void setGrids(const std::vector<Grid> &grids)
+    {
+        for (const auto &grid : grids)
         {
-            if(!contains(point)) {
+            if (covers(grid))
+            {
+                this->grids.push_back(grid);
+            }
+        }
+    }
+
+  private:
+    bool covers(const Grid &grid) const
+    {
+        for (const Point &point : gird.boostPolygon.outer())
+        {
+            if (!contains(point))
+            {
                 return false;
             }
         }
         return true;
     }
 
+    // TODO
+    // Given an AOI, try to find grids a scene covered
+    // To use polymorphic, the smart point maybe needed
+
   private:
     double price;
     double area;
+
+    std::vector<Grid> grids;
 };
 }
 }
