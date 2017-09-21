@@ -20,7 +20,7 @@ class AOI : public Polygon
     AOI(const std::vector<Point> &vertices)
         : Polygon(vertices)
     {
-        area = boost::geometry::area(polygon);
+        area = boost::geometry::area(boostPolygon);
     }
 
     AOI(const std::string &s, double price)
@@ -48,7 +48,7 @@ class AOI : public Polygon
   private:
     void updateGrids()
     {
-        const auto &vertices = polygon.outer();
+        const auto &vertices = boostPolygon.outer();
 
         double minx, miny, maxx, maxy;
 
@@ -70,6 +70,11 @@ class AOI : public Polygon
         {
             for (int j = minyi; j < maxyi; ++j)
             {
+                Grid grid(i, j, delta);
+                if (overlaps(grid))
+                {
+                    grids.push_back(grid);
+                }
             }
         }
     }

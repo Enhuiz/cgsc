@@ -15,31 +15,39 @@ namespace cgsc
 namespace model
 {
 
+using BoostPolygon = boost::geometry::model::polygon<Point, false, false>;
+
 class Polygon
 {
   public:
-    Polygon(const std::vector<Point> &vertices)
+    Polygon(const BoostPolygon &boostPolygon)
+        : boostPolygon(boostPolygon)
     {
-        boost::geometry::append(polygon, vertices);
     }
 
-    Polygon(const std::string &s) : Polygon(parsePoints(s))
+    Polygon(const std::vector<Point> &vertices)
+    {
+        boost::geometry::append(boostPolygon, vertices);
+    }
+
+    Polygon(const std::string &s)
+        : Polygon(parsePoints(s))
     {
     }
 
     bool contains(const Point &point) const
     {
-        return boost::geometry::within(point, polygon);
+        return boost::geometry::within(point, boostPolygon);
     }
 
     bool overlaps(const Polygon &other) const
     {
-        return boost::geometry::overlaps(polygon, other.polygon);
+        return boost::geometry::overlaps(boostPolygon, other.boostPolygon);
     }
 
     bool intersects(const Polygon &other) const
     {
-        return boost::geometry::intersects(polygon, other.polygon);
+        return boost::geometry::intersects(boostPolygon, other.boostPolygon);
     }
 
     std::string to_string() const
@@ -48,7 +56,7 @@ class Polygon
         std::ostringstream oss(ret);
 
         oss << "[";
-        const auto &vertices = polygon.outer();
+        const auto &vertices = boostPolygon.outer();
         for (int i = 0; i < vertices.size(); ++i)
         {
             if (i)
@@ -67,9 +75,32 @@ class Polygon
         os << to_string();
     }
 
+  public:
+    friend std::vector<Polygon> union(const std::vector<Polygon> polygons);
+    
   protected:
-    boost::geometry::model::polygon<Point, false, false> polygon;
+    BoostPolygon<Point, false, false> boostPolygon;
 };
+
+friend std::vector<Polygon> union(const std::vector<Polygon> polygons)
+{
+    const auto union2Polygon = [](const Polygon &a, const Polygon &b) {
+        std::vector<BoostPolygon> boostPolygons;
+        boost::geometry::union_(a, b, boostPolygons);
+        std::vector<Polygon> ret;
+        for (const auto &boostPolygon : boostPolygons)
+        {
+            ret.push_back(Polygon(boostPolygon));
+        }
+        return ret;
+    };
+
+    const auto extractUnion = [](std::list<Polygon> leftPolygons) {
+        auto polygon = leftPolygons.head();
+
+    };
+
+}
 }
 }
 

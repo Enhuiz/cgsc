@@ -3,7 +3,6 @@
 #include <vector>
 #include <functional>
 
-// #include "csv.hpp"
 #include "gtest/gtest.h"
 #include "cgsc/geometry/polygon.hpp"
 #include "cgsc/geometry/grid.hpp"

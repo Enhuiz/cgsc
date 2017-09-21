@@ -19,7 +19,7 @@ class Scene : public Polygon
     Scene(const std::vector<Point> &vertices, double price = 0)
         : Polygon(vertices), price(price)
     {
-        area = boost::geometry::area(polygon);
+        area = boost::geometry::area(boostPolygon);
     }
 
     Scene(const std::string &s, double price)
@@ -35,6 +35,17 @@ class Scene : public Polygon
     double getPrice() const
     {
         return price;
+    }
+
+    bool covers(const Grid& grid) const 
+    {
+        for (const Point& point : gird.boostPolygon.outer()) 
+        {
+            if(!contains(point)) {
+                return false;
+            }
+        }
+        return true;
     }
 
   private:
