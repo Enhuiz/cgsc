@@ -6,6 +6,7 @@
 
 #include "../geometry/scene.hpp"
 #include "../geometry/aoi.hpp"
+#include "../geometry/polygon.hpp"
 
 namespace cgsc
 {
@@ -14,7 +15,7 @@ namespace solver
 class Result
 {
   public:
-    Result(const model::AOI &aoi, const std::vector<model::Scene> &scenes)
+    Result(std::shared_ptr<AOI> aoi, const std::vector<std::shared_ptr<model::Scene>> &scenes)
         : aoi(aoi), scenes(scenes)
     {
         price = 0;
@@ -22,8 +23,21 @@ class Result
         {
             price += scene.getPrice();
         }
+
+        aoiArea = aoi.getArea();
+
+        auto unionedPolygon = union_(scenes);
+
+        for (const auto &polygon : unionedPolygon)
+        {
+            auto intersectionPolygons = intersection2(aoi, polygon);
+            for (const auto &intersectionPolygon : intersectionPolygons)
+            {
+                coverageArea += intersectionPolygon.getArea();
+            }
+        }
     }
-    
+
     double getCoverageArea()
     {
         return coverageArea;
@@ -40,7 +54,7 @@ class Result
     }
 
   private:
-    std::vector<model::Scene> scenes;
+    std::vector<std::shared_ptr<model::Scene>> scenes;
     model::AOI aoi;
 
     double price;

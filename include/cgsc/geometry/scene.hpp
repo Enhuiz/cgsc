@@ -42,21 +42,26 @@ class Scene : public Polygon
         return grids.size();
     }
 
-    void setGrids(const std::vector<Grid> &grids)
+    void setGrids(const std::vector<std::shared_ptr<const Grid>> &grids)
     {
         for (const auto &grid : grids)
         {
-            if (covers(grid))
+            if (covers(*grid))
             {
                 this->grids.push_back(grid);
             }
         }
     }
 
+    std::vector<std::shared_ptr<const Grid>> getGrids() const
+    {
+        return grids;
+    }
+
   private:
     bool covers(const Grid &grid) const
     {
-        for (const Point &point : gird.boostPolygon.outer())
+        for (const Point &point : grid.outer())
         {
             if (!contains(point))
             {
@@ -74,7 +79,7 @@ class Scene : public Polygon
     double price;
     double area;
 
-    std::vector<Grid> grids;
+    std::vector<std::shared_ptr<const Grid>> grids;
 };
 }
 }

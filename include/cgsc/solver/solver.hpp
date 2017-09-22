@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "csv.hpp"
 #include "../geometry/scene.hpp"
@@ -29,28 +30,10 @@ class Solver
         std::cout << scenes.size() << " records loaded" << std::endl;
     }
 
-    std::vector<model::Scene> query(model::AOI aoi)
-    {
-        std::vector<model::Scene> possibleScenes;
-
-        for (const auto& scene: scenes) 
-        {
-            if (aoi.overlaps(scene)) 
-            {   
-                possibleScenes.append(scene);
-            }   
-        }
-
-        
-
-        for (const auto &grid : aoi.getGrids())
-        {
-            
-        }
-    }
+    virtual std::vector<std::shared_ptr<const model::Scene>> query(std::shared_ptr<AOI> aoi) const = 0;
 
   private:
-    std::vector<model::Scene> scenes;
+    std::vector<std::shared_ptr<model::Scene>> scenes;
 };
 }
 }

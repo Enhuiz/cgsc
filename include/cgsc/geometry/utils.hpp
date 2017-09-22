@@ -23,12 +23,12 @@ std::vector<Point> parsePoints(std::string s)
 
     std::vector<double> nums;
 
-    const auto isdigitdot = [](char ch) {
+    const auto isValidChar = [](char ch) {
         return std::isdigit(ch) || ch == '.' || ch == '-';
     };
 
     const auto nextl = [&](int l) {
-        while (l < s.size() && !isdigitdot(s[l]))
+        while (l < s.size() && !isValidChar(s[l]))
             ++l;
         return l;
     };
@@ -38,7 +38,7 @@ std::vector<Point> parsePoints(std::string s)
 
     while (r < s.size())
     {
-        if (!isdigitdot(s[r]))
+        if (!isValidChar(s[r]))
         {
             nums.push_back(std::stod(s.substr(l, r - l)));
             r = l = nextl(r);
