@@ -2,7 +2,6 @@
 #define CGSC_MODEL_GRID_HPP
 
 #include <string>
-#include <vector>
 
 #include <boost/geometry.hpp>
 

@@ -2,9 +2,10 @@
 #define CGSC_MODEL_UTILS_HPP
 
 #include <string>
-#include <vector>
+#include <list>
 #include <sstream>
 #include <cctype>
+#include <cassert>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -16,47 +17,85 @@ namespace model
 
 using Point = boost::geometry::model::d2::point_xy<double>;
 
-std::vector<Point> parsePoints(std::string s)
+template <class T>
+std::list<T> parseListOf(const std::string &s)
 {
+    return std::list<T>();
+}
+
+template <>
+std::list<double> parseListOf(const std::string &s)
+{
+    std::list<double> ret;
     // required string format:
     // [[0.105, 0.105], [0.2, 0.2], ..., [0.2, 0.2]]
 
-    std::vector<double> nums;
-
-    const auto isValidChar = [](char ch) {
-        return std::isdigit(ch) || ch == '.' || ch == '-';
+    const auto nexti = [&](const std::string &s, int &i) {
+        while (i < s.size() && !std::isdigit(s[i]) && s[i] != '.' && s[i] != '-')
+            ++i;
     };
 
-    const auto nextl = [&](int l) {
-        while (l < s.size() && !isValidChar(s[l]))
-            ++l;
-        return l;
-    };
+    const auto nextdouble = [](const std::string &s, int &i) {
+        unsigned long long digits = 0;
+        double decimal = 1;
 
-    int l = nextl(0);
-    int r = l + 1;
+        bool dot = false;
+        int sign = 1;
 
-    while (r < s.size())
-    {
-        if (!isValidChar(s[r]))
+        if (s[i] == '-')
         {
-            nums.push_back(std::stod(s.substr(l, r - l)));
-            r = l = nextl(r);
+            sign = -1;
+            ++i;
         }
-        ++r;
+
+        while (i < s.size())
+        {
+            if (s[i] == '.')
+            {
+                dot = true;
+            }
+            else if (std::isdigit(s[i]))
+            {
+                digits *= 10;
+                digits += s[i] - '0';
+                if (dot)
+                {
+                    decimal *= 10;
+                }
+            }
+            else
+            {
+                ++i; // to avoid an extra check
+                break;
+            }
+            ++i;
+        }
+        return digits / decimal * sign;
+    };
+
+    int i = 0;
+    nexti(s, i);
+
+    while (i < s.size())
+    {
+        ret.push_back(nextdouble(s, i));
+        nexti(s, i);
     }
 
-    if (l < s.size())
-    {
-        nums.push_back(std::stod(s.substr(l, r - l)));
-    }
+    return ret;
+}
 
-    std::vector<Point> points;
-    for (int i = 0; i < nums.size(); i += 2)
+template <>
+std::list<Point> parseListOf(const std::string &s)
+{
+    auto nums = parseListOf<double>(s);
+
+    std::list<Point> points;
+    for (auto i = nums.begin(); i != nums.end(); ++i)
     {
-        double x = nums[i];
-        double y = nums[i + 1];
-        points.push_back(Point(x, y));
+        double x = *i;
+        double y = *(++i);
+        points.emplace_back(x, y);
     }
 
     return points;

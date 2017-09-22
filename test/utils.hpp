@@ -1,37 +1,38 @@
+#ifndef CGSC_TEST_UTILS_HPP
+#define CGSC_TEST_UTILS_HPP
+
+#include <list>
+
 namespace cgsc
 {
 namespace test
 {
 
 template <class T>
-std::vector<T> roll(const std::vector<T> &v, int n)
+std::list<T> roll(const std::list<T> &l, int n)
 {
-    std::vector<T> ret;
-    n = n < 0 ? v.size() + n : n;
+    std::list<T> ret = l;
+    n = n < 0 ? ret.size() + n : n;
 
-    for (int i = v.size() - n; i < v.size(); ++i)
+    while (n--)
     {
-        ret.push_back(v[i]);
-    }
-
-    for (int i = 0; i < v.size() - n; ++i)
-    {
-        ret.push_back(v[i]);
+        ret.push_front(ret.back());
+        ret.pop_back();
     }
 
     return ret;
 }
 
-std::string to_string(const std::vector<model::Point> &v)
+std::string to_string(const std::list<model::Point> &l)
 {
     std::string ret;
     std::ostringstream oss(ret);
 
     oss << "[";
-    for (int i = 0; i < v.size(); ++i)
+    for (auto i = l.begin(); i != l.end(); ++i)
     {
-        const auto &p = v[i];
-        if (i)
+        const auto &p = *i;
+        if (i != l.begin())
         {
             oss << ", ";
         }
@@ -43,3 +44,4 @@ std::string to_string(const std::vector<model::Point> &v)
 }
 }
 }
+#endif

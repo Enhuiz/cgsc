@@ -2,7 +2,7 @@
 #define CGSC_MODEL_AOI_HPP
 
 #include <string>
-#include <vector>
+#include <list>
 #include <memory>
 
 #include <boost/geometry.hpp>
@@ -17,14 +17,13 @@ namespace model
 class AOI : public Polygon
 {
   public:
-    AOI(const std::vector<Point> &vertices)
+    AOI(const std::list<Point> &vertices)
         : Polygon(vertices)
     {
-        area = boost::geometry::area(boostPolygon);
     }
 
     AOI(const std::string &s)
-        : AOI(parsePoints(s))
+        : AOI(parseListOf<Point>(s))
     {
     }
 
@@ -35,14 +34,9 @@ class AOI : public Polygon
         updateGrids();
     }
 
-    std::vector<std::shared_ptr<Grid>> getGrids() const
+    std::list<std::shared_ptr<Grid>> getGrids() const
     {
         return grids;
-    }
-
-    double getArea() const
-    {
-        return area;
     }
 
   private:
@@ -70,7 +64,7 @@ class AOI : public Polygon
         {
             for (int j = minyi; j < maxyi; ++j)
             {
-                auto grid = make_shared<Grid>(i, j, delta);
+                auto grid = std::make_shared<Grid>(i, j, delta);
                 if (overlaps(*grid))
                 {
                     grids.push_back(grid);
@@ -80,9 +74,8 @@ class AOI : public Polygon
     }
 
   private:
-    double area;
     double delta;
-    std::vector<std::shared_ptr<Grid>> grids;
+    std::list<std::shared_ptr<Grid>> grids;
 };
 }
 }

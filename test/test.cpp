@@ -4,15 +4,17 @@
 #include <functional>
 
 #include "gtest/gtest.h"
-#include "cgsc/geometry/polygon.hpp"
-#include "cgsc/geometry/grid.hpp"
-#include "cgsc/geometry/aoi.hpp"
-#include "cgsc/geometry/scene.hpp"
+#include "cgsc/model/polygon.hpp"
+#include "cgsc/model/grid.hpp"
+#include "cgsc/model/aoi.hpp"
+#include "cgsc/model/scene.hpp"
 #include "utils.hpp"
+#include "cgsc/solver/data.hpp"
 
 using namespace cgsc::model;
 using namespace cgsc::test;
 
+using namespace cgsc::solver;
 
 TEST(Polygon, tostring)
 {
@@ -21,7 +23,7 @@ TEST(Polygon, tostring)
 
 TEST(AOI, getArea)
 {
-	auto vertices = parsePoints("[[0, 0], [1, 0], [1, 1], [0, 1]]");
+	auto vertices = parseListOf<Point>("[[0, 0], [1, 0], [1, 1], [0, 1]]");
 	for (int i = 0; i < vertices.size(); i += 1)
 	{
 		vertices = roll(vertices, i);
@@ -39,7 +41,7 @@ TEST(Scene, getArea)
 					[-0.5, -0.8660254037844386], \
 					[0.5, -0.8660254037844386]]";
 
-	auto vertices = parsePoints(s);
+	auto vertices = parseListOf<Point>(s);
 
 	for (int i = 0; i < vertices.size(); i += 1)
 	{
@@ -53,4 +55,9 @@ TEST(Scene, getArea)
 TEST(Grid, equal)
 {
 	EXPECT_EQ(Grid(0, 0, 10), Grid(0, 0, 10));
+}
+
+TEST(Data, load)
+{
+	auto data = Data("../../data/scenes.csv", "../../data/aois.csv");
 }

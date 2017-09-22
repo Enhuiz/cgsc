@@ -1,7 +1,7 @@
 #ifndef CGSC_SOLVER_RESULT_HPP
 #define CGSC_SOLVER_RESULT_HPP
 
-#include <vector>
+#include <list>
 #include <string>
 
 #include "../model/scene.hpp"
@@ -15,7 +15,7 @@ namespace solver
 class Result
 {
   public:
-    Result(std::shared_ptr<AOI> aoi, const std::vector<std::shared_ptr<model::Scene>> &scenes)
+    Result(std::shared_ptr<AOI> aoi, const std::list<std::shared_ptr<model::Scene>> &scenes)
         : aoi(aoi), scenes(scenes)
     {
         price = 0;
@@ -54,7 +54,7 @@ class Result
     }
 
   private:
-    std::vector<std::shared_ptr<model::Scene>> scenes;
+    std::list<std::shared_ptr<model::Scene>> scenes;
     model::AOI aoi;
 
     double price;

@@ -2,7 +2,7 @@
 #define CGSC_MODEL_REGION_HPP
 
 #include <string>
-#include <vector>
+#include <list>
 
 #include <boost/geometry.hpp>
 
@@ -16,20 +16,14 @@ namespace model
 class Scene : public Polygon
 {
   public:
-    Scene(const std::vector<Point> &vertices, double price = 0)
+    Scene(const std::list<Point> &vertices, double price = 0)
         : Polygon(vertices), price(price)
     {
-        area = boost::geometry::area(boostPolygon);
     }
 
     Scene(const std::string &s, double price)
-        : Polygon(s), price(price)
+        : Scene(parseListOf<Point>(s), price)
     {
-    }
-
-    double getArea() const
-    {
-        return area;
     }
 
     double getPrice() const
@@ -42,7 +36,7 @@ class Scene : public Polygon
         return grids.size();
     }
 
-    void setGrids(const std::vector<std::shared_ptr<const Grid>> &grids)
+    void setGrids(const std::list<std::shared_ptr<const Grid>> &grids)
     {
         for (const auto &grid : grids)
         {
@@ -53,7 +47,7 @@ class Scene : public Polygon
         }
     }
 
-    std::vector<std::shared_ptr<const Grid>> getGrids() const
+    std::list<std::shared_ptr<const Grid>> getGrids() const
     {
         return grids;
     }
@@ -71,15 +65,9 @@ class Scene : public Polygon
         return true;
     }
 
-    // TODO
-    // Given an AOI, try to find grids a scene covered
-    // To use polymorphic, the smart point maybe needed
-
   private:
     double price;
-    double area;
-
-    std::vector<std::shared_ptr<const Grid>> grids;
+    std::list<std::shared_ptr<const Grid>> grids;
 };
 }
 }

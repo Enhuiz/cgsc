@@ -1,7 +1,7 @@
 #ifndef CGSC_SOLVER_SOLVER_HPP
 #define CGSC_SOLVER_SOLVER_HPP
 
-#include <vector>
+#include <list>
 #include <string>
 #include <memory>
 
@@ -20,7 +20,7 @@ class Solver
     {
     }
 
-    virtual std::vector<std::shared_ptr<const model::Scene>> query(std::shared_ptr<AOI> aoi) const = 0;
+    virtual std::list<std::shared_ptr<const model::Scene>> query(std::shared_ptr<AOI> aoi) const = 0;
 
   private:
     Data data;
