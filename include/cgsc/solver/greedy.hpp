@@ -1,6 +1,9 @@
 #ifndef CGSC_SOLVER_GREEDY_HPP
 #define CGSC_SOLVER_GREEDY_HPP
 
+#include "solver.hpp"
+#include "../geometry/"
+
 namespace cgsc
 {
 namespace solver
@@ -8,7 +11,7 @@ namespace solver
 class Greedy : public Solver
 {
   public:
-    std::list<std::shared_ptr<const model::Scene>> query(std::shared_ptr<AOI> aoi) const
+    std::list<std::shared_ptr<const model::Scene>> query(std::shared_ptr<model::AOI> aoi) const
     {
         std::list<std::shared_ptr<model::Scene>> possibleScenes;
 
@@ -38,6 +41,8 @@ class Greedy : public Solver
                 }
             }
         }
+
+        std::set<model::Grid> 
 
         
     }

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <boost/geometry.hpp>
 
@@ -13,7 +14,6 @@ namespace cgsc
 {
 namespace model
 {
-
 class AOI : public Polygon
 {
   public:
@@ -23,8 +23,8 @@ class AOI : public Polygon
         area = boost::geometry::area(boostPolygon);
     }
 
-    AOI(const std::string &s, double price)
-        : Polygon(s)
+    AOI(const std::string &s)
+        : AOI(parsePoints(s))
     {
     }
 
@@ -35,7 +35,7 @@ class AOI : public Polygon
         updateGrids();
     }
 
-    std::vector<Grid> getGrids() const
+    std::vector<std::shared_ptr<Grid>> getGrids() const
     {
         return grids;
     }
@@ -70,8 +70,8 @@ class AOI : public Polygon
         {
             for (int j = minyi; j < maxyi; ++j)
             {
-                Grid grid(i, j, delta);
-                if (overlaps(grid))
+                auto grid = make_shared<Grid>(i, j, delta);
+                if (overlaps(*grid))
                 {
                     grids.push_back(grid);
                 }
@@ -82,7 +82,7 @@ class AOI : public Polygon
   private:
     double area;
     double delta;
-    std::vector<Grid> grids;
+    std::vector<std::shared_ptr<Grid>> grids;
 };
 }
 }

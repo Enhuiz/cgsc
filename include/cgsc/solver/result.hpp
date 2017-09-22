@@ -4,9 +4,9 @@
 #include <vector>
 #include <string>
 
-#include "../geometry/scene.hpp"
-#include "../geometry/aoi.hpp"
-#include "../geometry/polygon.hpp"
+#include "../model/scene.hpp"
+#include "../model/aoi.hpp"
+#include "../model/polygon.hpp"
 
 namespace cgsc
 {
