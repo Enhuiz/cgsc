@@ -7,6 +7,10 @@
 
 #include "csv.hpp"
 #include "data.hpp"
+#include "result.hpp"
+
+#include "../model/aoi.hpp"
+#include "data.hpp"
 
 namespace cgsc
 {
@@ -15,15 +19,25 @@ namespace solver
 class Solver
 {
   public:
-    Solver(shared_ptr<Data> data)
+    Solver(const std::shared_ptr<Data> &data)
         : data(data)
     {
     }
 
-    virtual std::list<std::shared_ptr<const model::Scene>> query(std::shared_ptr<AOI> aoi) const = 0;
+    virtual Result query(const std::shared_ptr<model::AOI>& aoi) const = 0;
 
-  private:
-    Data data;
+    std::list<Result> getAllResults()
+    {
+        std::list<Result> ret;
+        for (const auto &aoi : data->getAOIs())
+        {
+            ret.push_back(query(aoi));
+        }
+        return ret;
+    }
+
+protected:
+    std::shared_ptr<Data> data;
 };
 }
 }

@@ -15,25 +15,25 @@ namespace solver
 class Result
 {
   public:
-    Result(std::shared_ptr<AOI> aoi, const std::list<std::shared_ptr<model::Scene>> &scenes)
+    Result(std::shared_ptr<model::AOI> aoi, const std::list<std::shared_ptr<model::Scene>> &scenes)
         : aoi(aoi), scenes(scenes)
     {
         price = 0;
         for (const auto &scene : scenes)
         {
-            price += scene.getPrice();
+            price += scene->getPrice();
         }
 
-        aoiArea = aoi.getArea();
+        aoiArea = aoi->getArea();
 
-        auto unionedPolygon = union_(scenes);
+        auto unionedPolygon = union_(std::list<std::shared_ptr<model::Polygon>>(scenes.begin(), scenes.end()));
 
         for (const auto &polygon : unionedPolygon)
         {
             auto intersectionPolygons = intersection2(aoi, polygon);
             for (const auto &intersectionPolygon : intersectionPolygons)
             {
-                coverageArea += intersectionPolygon.getArea();
+                coverageArea += intersectionPolygon->getArea();
             }
         }
     }
@@ -55,7 +55,7 @@ class Result
 
   private:
     std::list<std::shared_ptr<model::Scene>> scenes;
-    model::AOI aoi;
+    std::shared_ptr<model::AOI> aoi;
 
     double price;
     double aoiArea;

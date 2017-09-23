@@ -34,7 +34,7 @@ class AOI : public Polygon
         updateGrids();
     }
 
-    std::list<std::shared_ptr<Grid>> getGrids() const
+    std::set<std::shared_ptr<Grid>> getGrids() const
     {
         return grids;
     }
@@ -65,9 +65,9 @@ class AOI : public Polygon
             for (int j = minyi; j < maxyi; ++j)
             {
                 auto grid = std::make_shared<Grid>(i, j, delta);
-                if (overlaps(*grid))
+                if (overlaps(grid))
                 {
-                    grids.push_back(grid);
+                    grids.insert(grid);
                 }
             }
         }
@@ -75,7 +75,7 @@ class AOI : public Polygon
 
   private:
     double delta;
-    std::list<std::shared_ptr<Grid>> grids;
+    std::set<std::shared_ptr<Grid>> grids;
 };
 }
 }

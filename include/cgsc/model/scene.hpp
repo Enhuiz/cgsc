@@ -3,6 +3,7 @@
 
 #include <string>
 #include <list>
+#include <set>
 
 #include <boost/geometry.hpp>
 
@@ -36,18 +37,18 @@ class Scene : public Polygon
         return grids.size();
     }
 
-    void setGrids(const std::list<std::shared_ptr<const Grid>> &grids)
+    void setGrids(const std::set<std::shared_ptr<Grid>> &grids)
     {
         for (const auto &grid : grids)
         {
             if (covers(*grid))
             {
-                this->grids.push_back(grid);
+                this->grids.insert(grid);
             }
         }
     }
 
-    std::list<std::shared_ptr<const Grid>> getGrids() const
+    std::set<std::shared_ptr<Grid>> getGrids() const
     {
         return grids;
     }
@@ -67,7 +68,7 @@ class Scene : public Polygon
 
   private:
     double price;
-    std::list<std::shared_ptr<const Grid>> grids;
+    std::set<std::shared_ptr<Grid>> grids;
 };
 }
 }

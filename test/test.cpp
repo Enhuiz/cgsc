@@ -10,6 +10,7 @@
 #include "cgsc/model/scene.hpp"
 #include "utils.hpp"
 #include "cgsc/solver/data.hpp"
+#include "cgsc/solver/greedy.hpp"
 
 using namespace cgsc::model;
 using namespace cgsc::test;
@@ -59,5 +60,8 @@ TEST(Grid, equal)
 
 TEST(Data, load)
 {
-	auto data = Data("../../data/scenes.csv", "../../data/aois.csv");
+	auto data = std::make_shared<Data>("../../data/scenes.csv", "../../data/aois.csv");
+	Greedy greedy(data);
+	greedy.getAllResults();
 }
+
