@@ -17,6 +17,8 @@ using namespace cgsc::test;
 
 using namespace cgsc::solver;
 
+using namespace std;
+
 TEST(Polygon, tostring)
 {
 	EXPECT_EQ(Polygon("[[0, 0], [1, 0], [1, 1], [0, 1]]").to_string(), "[[0, 0], [1, 0], [1, 1], [0, 1]]");
@@ -52,16 +54,26 @@ TEST(Scene, getArea)
 	}
 }
 
-
 TEST(Grid, equal)
 {
 	EXPECT_EQ(Grid(0, 0, 10), Grid(0, 0, 10));
 }
 
+shared_ptr<Data> data;
+
 TEST(Data, load)
 {
-	auto data = std::make_shared<Data>("../../data/scenes.csv", "../../data/aois.csv");
+	data = make_shared<Data>("../../data/scenes_small.csv", "../../data/aois.csv");
 	Greedy greedy(data);
-	greedy.getAllResults();
 }
 
+shared_ptr<Greedy> greedy;
+TEST(Data, greedy)
+{
+	greedy = make_shared<Greedy>(data);
+}
+
+TEST(Data, calculate_result)
+{
+	auto results = greedy->calculateResults();
+}

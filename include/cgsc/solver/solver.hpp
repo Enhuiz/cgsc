@@ -26,7 +26,7 @@ class Solver
 
     virtual Result query(const std::shared_ptr<model::AOI>& aoi) const = 0;
 
-    std::list<Result> getAllResults()
+    std::list<Result> calculateResults()
     {
         std::list<Result> ret;
         for (const auto &aoi : data->getAOIs())
