@@ -1,5 +1,6 @@
-#ifndef CGSC_TEST_UTILS_HPP
-#define CGSC_TEST_UTILS_HPP
+#pragma once  
+#ifndef CGSC_TEST_UTILS_H
+#define CGSC_TEST_UTILS_H
 
 #include <list>
 

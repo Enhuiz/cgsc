@@ -1,21 +1,17 @@
-#ifndef CGSC_MODEL_UTILS_HPP
-#define CGSC_MODEL_UTILS_HPP
-
 #include <string>
 #include <list>
 #include <sstream>
 #include <cctype>
 #include <cassert>
 
-#include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
+
+#include "cgsc/model/utils.h"
 
 namespace cgsc
 {
 namespace model
 {
-
-using Point = boost::geometry::model::d2::point_xy<double>;
 
 template <class T>
 std::list<T> parseListOf(const std::string &s)
@@ -102,5 +98,3 @@ std::list<Point> parseListOf(const std::string &s)
 }
 }
 }
-
-#endif

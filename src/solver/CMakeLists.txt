@@ -1,0 +1,1 @@
+add_library(solver data.cpp greedy.cpp result.cpp solver.cpp)

@@ -1,6 +1,11 @@
-#include "cgsc/model/aoi.hpp"
+#include "cgsc/model/aoi.h"
 
 using namespace std;
+
+namespace cgsc
+{
+namespace model
+{
 
 AOI::AOI(const list<Point> &vertices)
     : Polygon(vertices)
@@ -55,4 +60,6 @@ void AOI::updateGrids()
             }
         }
     }
+}
+}
 }

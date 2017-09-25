@@ -4,13 +4,14 @@
 #include <functional>
 
 #include "gtest/gtest.h"
-#include "cgsc/model/polygon.hpp"
-#include "cgsc/model/grid.hpp"
-#include "cgsc/model/aoi.hpp"
-#include "cgsc/model/scene.hpp"
+#include "cgsc/model/polygon.h"
+#include "cgsc/model/grid.h"
+#include "cgsc/model/aoi.h"
+#include "cgsc/model/scene.h"
+#include "cgsc/solver/data.h"
+#include "cgsc/solver/greedy.h"
+
 #include "utils.hpp"
-#include "cgsc/solver/data.hpp"
-#include "cgsc/solver/greedy.hpp"
 
 using namespace cgsc::model;
 using namespace cgsc::test;
