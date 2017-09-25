@@ -23,8 +23,6 @@ class Scene : public Polygon
 
     double getPrice() const;
 
-    int getGridCount() const;
-
     void setGrids(const std::set<std::shared_ptr<Grid>> &grids);
 
     std::set<std::shared_ptr<Grid>> getGrids() const;

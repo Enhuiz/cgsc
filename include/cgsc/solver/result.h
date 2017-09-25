@@ -1,9 +1,10 @@
-#pragma once  
+#pragma once
 #ifndef CGSC_SOLVER_RESULT_H
 #define CGSC_SOLVER_RESULT_H
 
 #include <list>
 #include <string>
+#include <iostream>
 
 #include "cgsc/model/scene.h"
 #include "cgsc/model/aoi.h"
@@ -15,22 +16,30 @@ namespace solver
 {
 class Result
 {
-  public:
-    Result(std::shared_ptr<model::AOI> aoi, const std::list<std::shared_ptr<model::Scene>> &scenes);
+public:
+  Result(std::shared_ptr<model::AOI> aoi, const std::list<std::shared_ptr<model::Scene>> &scenes);
 
-    double getCoverageArea();
+  double getCoverageArea() const;
 
-    double getAOIArea();
+  double getAOIgetArea() const;
 
-    double getCoverageRatio();
+  double getCoverageRatio() const;
 
-  private:
-    std::list<std::shared_ptr<model::Scene>> scenes;
-    std::shared_ptr<model::AOI> aoi;
+  double getPrice() const;
 
-    double price;
-    double aoiArea;
-    double coverageArea;
+  std::shared_ptr<const model::AOI> getAOI() const;
+
+  void save(const std::string& path) const;
+
+public:
+  friend std::ostream &operator<<(std::ostream &os, const Result &result);
+
+private:
+  std::list<std::shared_ptr<model::Scene>> scenes;
+  std::shared_ptr<model::AOI> aoi;
+
+  double price;
+  double coverageArea;
 };
 }
 }

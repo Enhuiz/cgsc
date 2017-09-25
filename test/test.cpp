@@ -10,6 +10,7 @@
 #include "cgsc/model/scene.h"
 #include "cgsc/solver/data.h"
 #include "cgsc/solver/greedy.h"
+#include "cgsc/solver/result.h"
 
 #include "utils.hpp"
 
@@ -22,10 +23,10 @@ using namespace std;
 
 TEST(Polygon, tostring)
 {
-	EXPECT_EQ(Polygon("[[0, 0], [1, 0], [1, 1], [0, 1]]").to_string(), "[[0, 0], [1, 0], [1, 1], [0, 1]]");
+	EXPECT_EQ(Polygon("[[0, 0], [1, 0], [1, 1], [0, 1]]").toString(), "[[0, 0], [1, 0], [1, 1], [0, 1]]");
 }
 
-TEST(AOI, getArea)
+TEST(AOI, area)
 {
 	auto vertices = parseListOf<Point>("[[0, 0], [1, 0], [1, 1], [0, 1]]");
 	for (int i = 0; i < vertices.size(); i += 1)
@@ -36,7 +37,7 @@ TEST(AOI, getArea)
 	}
 }
 
-TEST(Scene, getArea)
+TEST(Scene, area)
 {
 	std::string s = "[[1, 0], \
 					[0.5, 0.8660254037844386],  \
@@ -64,7 +65,7 @@ shared_ptr<Data> data;
 
 TEST(Data, load)
 {
-	data = make_shared<Data>("../../data/scenes_small.csv", "../../data/aois.csv");
+	data = make_shared<Data>("../../data/input/scenes_small.csv", "../../data/input/aois.csv");
 	Greedy greedy(data);
 }
 
@@ -74,7 +75,19 @@ TEST(Data, greedy)
 	greedy = make_shared<Greedy>(data);
 }
 
+
+TEST(Data, grid_equal)
+{
+	auto grid1 = make_shared<Grid>(0, 1, 2);
+	auto grid2 = make_shared<Grid>(0, 1, 3);
+	EXPECT_TRUE(grid1 < grid2);
+}
+
 TEST(Data, calculate_result)
 {
 	auto results = greedy->calculateResults();
+	for (const auto &result : results)
+	{
+		cout << result << endl;
+	}
 }

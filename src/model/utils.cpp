@@ -8,30 +8,32 @@
 
 #include "cgsc/model/utils.h"
 
+using namespace std;
+
 namespace cgsc
 {
 namespace model
 {
 
 template <class T>
-std::list<T> parseListOf(const std::string &s)
+list<T> parseListOf(const string &s)
 {
-    return std::list<T>();
+    return list<T>();
 }
 
 template <>
-std::list<double> parseListOf(const std::string &s)
+list<double> parseListOf(const string &s)
 {
-    std::list<double> ret;
+    list<double> ret;
     // required string format:
     // [[0.105, 0.105], [0.2, 0.2], ..., [0.2, 0.2]]
 
-    const auto nexti = [&](const std::string &s, int &i) {
-        while (i < s.size() && !std::isdigit(s[i]) && s[i] != '.' && s[i] != '-')
+    const auto nexti = [&](const string &s, int &i) {
+        while (i < s.size() && !isdigit(s[i]) && s[i] != '.' && s[i] != '-')
             ++i;
     };
 
-    const auto nextdouble = [](const std::string &s, int &i) {
+    const auto nextdouble = [](const string &s, int &i) {
         unsigned long long digits = 0;
         double decimal = 1;
 
@@ -50,7 +52,7 @@ std::list<double> parseListOf(const std::string &s)
             {
                 dot = true;
             }
-            else if (std::isdigit(s[i]))
+            else if (isdigit(s[i]))
             {
                 digits *= 10;
                 digits += s[i] - '0';
@@ -82,11 +84,11 @@ std::list<double> parseListOf(const std::string &s)
 }
 
 template <>
-std::list<Point> parseListOf(const std::string &s)
+list<Point> parseListOf(const string &s)
 {
     auto nums = parseListOf<double>(s);
 
-    std::list<Point> points;
+    list<Point> points;
     for (auto i = nums.begin(); i != nums.end(); ++i)
     {
         double x = *i;

@@ -1,5 +1,9 @@
 #include "cgsc/model/grid.h"
 
+#include <iostream>
+
+using namespace std;
+
 namespace cgsc
 {
 namespace model
@@ -22,5 +26,26 @@ bool Grid::operator!=(const Grid &other) const
 {
     return x != other.x || y != other.y || delta != other.delta;
 }
+
+bool Grid::operator<(const Grid &other) const
+{
+    return *this != other;
+}
+
+bool operator==(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
+{
+    return *a == *b;
+}
+
+bool operator!=(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
+{
+    return *a != *b;
+}
+
+bool operator<(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
+{
+    return *a < *b;
+}
+
 }
 }

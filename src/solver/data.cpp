@@ -46,12 +46,13 @@ void Data::loadScenes(const string &path, int maxRecords)
 
 void Data::loadAOIs(const string &path, int maxRecords)
 {
-    io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
-    in.read_header(io::ignore_extra_column, "Polygon");
+    io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
+    in.read_header(io::ignore_extra_column, "Polygon", "Delta");
     string polygon;
-    while (in.read_row(polygon) && maxRecords != 0)
+    double delta;
+    while (in.read_row(polygon, delta) && maxRecords != 0)
     {
-        aois.push_back(make_shared<AOI>(polygon));
+        aois.push_back(make_shared<AOI>(polygon, delta));
         --maxRecords;
     }
     cout << aois.size() << " AOIs loaded" << endl;

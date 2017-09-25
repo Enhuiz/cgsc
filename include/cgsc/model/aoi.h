@@ -16,9 +16,9 @@ namespace model
 class AOI : public Polygon
 {
 public:
-  AOI(const std::list<Point> &vertices);
+  AOI(const std::list<Point> &vertices, double delta = 1);
 
-  AOI(const std::string &s);
+  AOI(const std::string &s, double delta = 1);
 
   void setDelta(double delta);
 

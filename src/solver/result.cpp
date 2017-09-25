@@ -23,8 +23,6 @@ Result::Result(shared_ptr<AOI> aoi, const list<shared_ptr<Scene>> &scenes)
         price += scene->getPrice();
     }
 
-    aoiArea = aoi->getArea();
-
     auto unionedPolygon = union_(list<shared_ptr<Polygon>>(scenes.begin(), scenes.end()));
 
     for (const auto &polygon : unionedPolygon)
@@ -37,19 +35,47 @@ Result::Result(shared_ptr<AOI> aoi, const list<shared_ptr<Scene>> &scenes)
     }
 }
 
-double Result::getCoverageArea()
+double Result::getCoverageArea() const
 {
     return coverageArea;
 }
 
-double Result::getAOIArea()
+double Result::getAOIgetArea() const
 {
-    return aoiArea;
+    return aoi->getArea();
 }
 
-double Result::getCoverageRatio()
+double Result::getCoverageRatio() const
 {
-    return coverageArea / aoiArea;
+    return coverageArea / aoi->getArea();
 }
+
+shared_ptr<const AOI> Result::getAOI() const
+{
+    return aoi;
+}
+
+double Result::getPrice() const 
+{
+    return price;
+}
+
+void Result::save(const string& path) 
+{
+    
+}
+
+ostream &operator<<(ostream &os, const Result &result)
+{
+    os << "AOI: " << result.aoi->toString() << endl
+       << "Number of feasible scenes: " << result.scenes.size() << endl
+       << "AOI area: " << result.aoi->getArea() << endl
+       << "Coverage area: " << result.getCoverageArea() << endl
+       << "Coverage ratio: " << result.getCoverageRatio() << endl       
+       << "Price: " << result.getPrice() << endl;       
+    return os;
+}
+
+
 }
 }

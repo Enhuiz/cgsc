@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 #include <list>
 #include <list>
@@ -18,11 +19,13 @@ namespace model
 Polygon::Polygon(const BoostPolygon &boostPolygon)
     : boostPolygon(boostPolygon)
 {
+    area = -1;
 }
 
 Polygon::Polygon(const list<Point> &vertices)
 {
     boost::geometry::append(boostPolygon, vertices);
+    area = -1;
 }
 
 Polygon::Polygon(const string &s)
@@ -51,12 +54,16 @@ bool Polygon::intersects(const shared_ptr<Polygon> &other) const
     return boost::geometry::intersects(boostPolygon, other->boostPolygon);
 }
 
-double Polygon::getArea() const
+double Polygon::getArea()
 {
-    return boost::geometry::area(boostPolygon);
+    if (area < 0)
+    {
+        area = boost::geometry::area(boostPolygon);
+    }
+    return area;
 }
 
-string Polygon::to_string() const
+string Polygon::toString() const
 {
     string ret;
     ostringstream oss(ret);
@@ -111,6 +118,8 @@ list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
                         {
                             polygons.push_back(unionedPolygon);
                         }
+                        polygons.erase(i);
+                        polygons.erase(j);
                         return true;
                     }
                 }

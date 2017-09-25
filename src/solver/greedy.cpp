@@ -1,8 +1,9 @@
 #include <algorithm>
 #include <memory>
+#include <vector>
+#include <limits>
 
 #include "cgsc/solver/greedy.h"
-
 #include "cgsc/model/grid.h"
 #include "cgsc/solver/result.h"
 
@@ -31,6 +32,8 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
         }
     }
 
+    cerr << "number of possible scenes " << possibleScenes.size() << endl;
+
     { // get scenes only contains some grids in the AOI
         auto i = possibleScenes.begin();
 
@@ -39,8 +42,7 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
             const auto &scene = *i;
 
             scene->setGrids(aoi->getGrids());
-
-            if (scene->getGridCount() == 0)
+            if (scene->getGrids().size() == 0)
             {
                 possibleScenes.erase(i++);
             }
@@ -52,11 +54,11 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
     }
 
     list<shared_ptr<Scene>> resultScenes;
-
     set<shared_ptr<Grid>> U;
+
     while (U.size() != aoi->getGrids().size() && possibleScenes.size() > 0)
-    { //
-        auto scene = pickScene(U, possibleScenes);
+    {
+        auto scene = pickGreedily(U, possibleScenes);
         resultScenes.push_back(scene);
         for (const auto &grid : scene->getGrids())
         {
@@ -67,8 +69,8 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
     return Result(aoi, resultScenes);
 }
 
-shared_ptr<Scene> Greedy::pickScene(const set<shared_ptr<Grid>> &U,
-                                    list<shared_ptr<Scene>> &possibleScenes) const
+shared_ptr<Scene> Greedy::pickGreedily(const set<shared_ptr<Grid>> &U,
+                                       list<shared_ptr<Scene>> &possibleScenes) const
 {
     double maxGamma = -1;
 
@@ -76,7 +78,8 @@ shared_ptr<Scene> Greedy::pickScene(const set<shared_ptr<Grid>> &U,
 
     for (auto it = possibleScenes.begin(); it != possibleScenes.end(); ++it)
     {
-        double currentGamma = gamma(U, **it);
+        auto scene = *it;
+        double currentGamma = gamma(scene->getPrice(), U, scene->getGrids());
         if (maxGamma < currentGamma)
         {
             targetIt = it;
@@ -89,15 +92,22 @@ shared_ptr<Scene> Greedy::pickScene(const set<shared_ptr<Grid>> &U,
     return ret;
 }
 
-double Greedy::gamma(const set<shared_ptr<Grid>> &U, const Scene &scene) const
+double Greedy::gamma(double price, const set<shared_ptr<Grid>> &U, const set<shared_ptr<Grid>> &S) const
 {
-    set<shared_ptr<Grid>> common;
+    set<shared_ptr<Grid>> diff;
 
-    set_intersection(U.begin(), U.end(),
-                     scene.getGrids().begin(), scene.getGrids().end(),
-                     inserter(common, common.begin()));
+    set_intersection(S.begin(),
+                     S.end(),
+                     U.begin(),
+                     U.end(),
+                     inserter(diff, diff.begin()));
 
-    return scene.getPrice() / common.size();
+    if (diff.size() == 0)
+    {
+        return numeric_limits<double>::max();
+    }
+
+    return price / diff.size();
 }
 }
 }

@@ -25,12 +25,7 @@ double Scene::getPrice() const
 {
     return price;
 }
-
-int Scene::getGridCount() const
-{
-    return grids.size();
-}
-
+ 
 void Scene::setGrids(const set<shared_ptr<Grid>> &grids)
 {
     for (const auto &grid : grids)

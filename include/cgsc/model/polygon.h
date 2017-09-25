@@ -1,4 +1,4 @@
-#pragma once  
+#pragma once
 #ifndef CGSC_MODEL_POLYGON_H
 #define CGSC_MODEL_POLYGON_H
 
@@ -37,9 +37,9 @@ public:
 
   bool intersects(const std::shared_ptr<Polygon> &other) const;
 
-  double getArea() const;
+  double getArea();
 
-  std::string to_string() const;
+  std::string toString() const;
 
 public:
   friend std::list<std::shared_ptr<Polygon>> union_(const std::list<std::shared_ptr<Polygon>> &polygons);
@@ -47,7 +47,9 @@ public:
 
   friend std::list<std::shared_ptr<Polygon>> intersection2(const std::shared_ptr<Polygon> &a, const std::shared_ptr<Polygon> &b);
 
-protected:
+  
+private:
+  double area;
   BoostPolygon boostPolygon;
 };
 }

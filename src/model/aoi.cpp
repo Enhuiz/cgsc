@@ -7,13 +7,14 @@ namespace cgsc
 namespace model
 {
 
-AOI::AOI(const list<Point> &vertices)
+AOI::AOI(const list<Point> &vertices, double delta)
     : Polygon(vertices)
 {
+    setDelta(delta);
 }
 
-AOI::AOI(const string &s)
-    : AOI(parseListOf<Point>(s))
+AOI::AOI(const string &s, double delta)
+    : AOI(parseListOf<Point>(s), delta)
 {
 }
 
@@ -31,7 +32,7 @@ set<shared_ptr<Grid>> AOI::getGrids() const
 
 void AOI::updateGrids()
 {
-    const auto &vertices = boostPolygon.outer();
+    const auto &vertices = outer();
 
     double minx, miny, maxx, maxy;
 

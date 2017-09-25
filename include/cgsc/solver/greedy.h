@@ -1,4 +1,4 @@
-#pragma once  
+#pragma once
 #ifndef CGSC_SOLVER_GREEDY_H
 #define CGSC_SOLVER_GREEDY_H
 
@@ -16,16 +16,16 @@ namespace solver
 {
 class Greedy : public Solver
 {
-  public:
-    Greedy(const std::shared_ptr<Data> &data);
+public:
+  Greedy(const std::shared_ptr<Data> &data);
 
-    Result query(const std::shared_ptr<model::AOI> &aoi) const;
+  Result query(const std::shared_ptr<model::AOI> &aoi) const;
 
-  private:
-    std::shared_ptr<model::Scene> pickScene(const std::set<std::shared_ptr<model::Grid>> &U,
-                                            std::list<std::shared_ptr<model::Scene>> &possibleScenes) const;
+private:
+  std::shared_ptr<model::Scene> pickGreedily(const std::set<std::shared_ptr<model::Grid>> &U,
+                                             std::list<std::shared_ptr<model::Scene>> &possibleScenes) const;
 
-    double gamma(const std::set<std::shared_ptr<model::Grid>> &U, const model::Scene &scene) const;
+  double gamma(double price, const std::set<std::shared_ptr<model::Grid>> &U, const std::set<std::shared_ptr<model::Grid>> &S) const;
 };
 }
 }
