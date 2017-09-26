@@ -11,7 +11,6 @@ add_subdirectory(lib/fast-cpp-csv-parser)
 add_subdirectory(lib/googletest)
 add_subdirectory(lib/json)
 
-
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(benchmark)

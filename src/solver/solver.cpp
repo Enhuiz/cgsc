@@ -1,10 +1,13 @@
 #include "cgsc/solver/solver.h"
 
-#include <list>
+#include "cgsc/utils/timestamp.h"
+
+#include <vector>
 #include <string>
 #include <memory>
 
 using namespace std;
+using namespace cgsc::utils;
 
 namespace cgsc
 {
@@ -15,12 +18,14 @@ Solver::Solver(shared_ptr<Data> data)
 {
 }
 
-list<Result> Solver::calculateResults()
+vector<Result> Solver::calculateResults()
 {
-    list<Result> results;
+    vector<Result> results;
     for (const auto &aoi : data->getAOIs())
     {
+        Timestamp::Add("begin query");
         results.push_back(query(*aoi));
+        Timestamp::Add("end query");
     }
     return results;
 }

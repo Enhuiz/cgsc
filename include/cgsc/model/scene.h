@@ -23,9 +23,10 @@ public:
 
   double getPrice() const;
 
-  void setGrids(const std::set<std::shared_ptr<Grid>> &grids);
+  void setGrids(const std::set<std::shared_ptr<const Grid>> &grids);
 
-  std::set<std::shared_ptr<Grid>> getGrids() const;
+
+  const std::set<std::shared_ptr<const Grid>>& getGrids() const;
 
   nlohmann::json toJSON() const;
 
@@ -33,8 +34,9 @@ private:
   bool covers(const Grid &grid) const;
 
 private:
+  std::set<std::shared_ptr<const Grid>> grids;
+  
   double price;
-  std::set<std::shared_ptr<Grid>> grids;
 };
 }
 }

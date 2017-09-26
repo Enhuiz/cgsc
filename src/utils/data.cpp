@@ -12,7 +12,7 @@ using namespace std;
 
 namespace cgsc
 {
-namespace solver
+namespace utils
 {
 Data::Data(const string &scenesPath, const string &aoiPath)
 {

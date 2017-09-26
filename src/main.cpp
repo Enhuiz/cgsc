@@ -23,13 +23,16 @@ int main()
 
     shared_ptr<Greedy> greedy = make_shared<Greedy>(data);
 
+    string path = "../../data/output/";
+
     auto results = greedy->calculateResults();
-    for (const auto &result : results)
+    for (int i = 0; i < results.size(); ++i)
     {
-        cout << result << endl;
+        results[i].save(path + "result" + to_string(i) + ".json");
     }
-    
+
     cout << Timestamp::GetJSON() << endl;
+    Timestamp::Save(path + "timestamp.json");
 
     return 0;
 }

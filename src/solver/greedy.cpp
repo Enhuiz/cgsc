@@ -9,6 +9,7 @@
 
 using namespace std;
 using namespace cgsc::model;
+using namespace cgsc::utils;
 
 namespace cgsc
 {
@@ -32,8 +33,6 @@ Result Greedy::query(const AOI &aoi) const
         }
     }
 
-    cerr << "number of possible scenes " << possibleScenes.size() << endl;
-
     { // get scenes only contains some grids in the AOI
         auto i = possibleScenes.begin();
 
@@ -54,7 +53,7 @@ Result Greedy::query(const AOI &aoi) const
     }
 
     list<shared_ptr<Scene>> resultScenes;
-    set<shared_ptr<Grid>> U;
+    set<shared_ptr<const Grid>> U;
 
     while (U.size() != aoi.getGrids().size() && possibleScenes.size() > 0)
     {
@@ -69,7 +68,7 @@ Result Greedy::query(const AOI &aoi) const
     return Result(aoi, resultScenes);
 }
 
-shared_ptr<Scene> Greedy::pickGreedily(const set<shared_ptr<Grid>> &U,
+shared_ptr<Scene> Greedy::pickGreedily(const set<shared_ptr<const Grid>> &U,
                                        list<shared_ptr<Scene>> &possibleScenes) const
 {
     double maxGamma = -1;
@@ -92,9 +91,9 @@ shared_ptr<Scene> Greedy::pickGreedily(const set<shared_ptr<Grid>> &U,
     return ret;
 }
 
-double Greedy::gamma(double price, const set<shared_ptr<Grid>> &U, const set<shared_ptr<Grid>> &S) const
+double Greedy::gamma(double price, const set<shared_ptr<const Grid>> &U, const set<shared_ptr<const Grid>> &S) const
 {
-    set<shared_ptr<Grid>> diff;
+    set<shared_ptr<const Grid>> diff;
 
     set_intersection(S.begin(),
                      S.end(),

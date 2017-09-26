@@ -2,10 +2,15 @@
 
 #include <ctime>
 #include <string>
+#include <fstream>
 #include <iostream>
 
 using namespace std;
 
+namespace cgsc
+{
+namespace utils
+{
 nlohmann::json Timestamp::jobj;
 clock_t Timestamp::startTime = clock();
 
@@ -22,4 +27,13 @@ double Timestamp::Now()
 nlohmann::json Timestamp::GetJSON()
 {
     return jobj;
+}
+
+void Timestamp::Save(const std::string &path)
+{
+    ofstream ofs(path);
+    ofs << jobj << endl;
+}
+
+}
 }

@@ -17,7 +17,7 @@
 
 using namespace cgsc::model;
 using namespace cgsc::test;
-
+using namespace cgsc::utils;
 using namespace cgsc::solver;
 
 using namespace std;
@@ -58,7 +58,6 @@ TEST(Grid, equal)
 }
 
 shared_ptr<Data> data;
-
 TEST(Data, load)
 {
 	data = make_shared<Data>("../../data/input/scenes_small.csv", "../../data/input/aois.csv");
@@ -69,14 +68,6 @@ shared_ptr<Greedy> greedy;
 TEST(Data, greedy)
 {
 	greedy = make_shared<Greedy>(data);
-}
-
-
-TEST(Data, grid_equal)
-{
-	auto grid1 = make_shared<Grid>(0, 1, 2);
-	auto grid2 = make_shared<Grid>(0, 1, 3);
-	EXPECT_TRUE(grid1 < grid2);
 }
 
 TEST(Data, calculate_result)

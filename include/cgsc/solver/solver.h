@@ -2,7 +2,7 @@
 #ifndef CGSC_SOLVER_SOLVER_H
 #define CGSC_SOLVER_SOLVER_H
 
-#include <list>
+#include <vector>
 #include <string>
 #include <memory>
 
@@ -18,14 +18,14 @@ namespace solver
 class Solver
 {
 public:
-  Solver(std::shared_ptr<Data> data);
+  Solver(std::shared_ptr<utils::Data> data);
 
-  virtual Result query(const model::AOI &aoi) const = 0;
+  virtual utils::Result query(const model::AOI &aoi) const = 0;
 
-  std::list<Result> calculateResults();
+  std::vector<utils::Result> calculateResults();
 
 protected:
-  std::shared_ptr<Data> data;
+  std::shared_ptr<utils::Data> data;
 };
 }
 }

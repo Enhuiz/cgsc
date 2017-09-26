@@ -25,7 +25,7 @@ void AOI::setDelta(double delta)
     this->updateGrids();
 }
 
-set<shared_ptr<Grid>> AOI::getGrids() const
+const std::set<std::shared_ptr<const Grid>> &AOI::getGrids() const
 {
     return grids;
 }
@@ -50,6 +50,7 @@ void AOI::updateGrids()
     int maxxi = ceil(maxx / delta);
     int maxyi = ceil(maxy / delta);
 
+    grids.clear();
     for (int i = minxi; i < maxxi; ++i)
     {
         for (int j = minyi; j < maxyi; ++j)
@@ -63,8 +64,19 @@ void AOI::updateGrids()
     }
 }
 
-  
-  
+nlohmann::json AOI::toJSON() const
+{
+    auto jobj = Polygon::toJSON();
 
+    jobj["delta"] = delta;
+    jobj["grids"] = {};
+    for (const auto &grid : grids)
+    {
+        jobj["grids"].push_back(grid->toJSON());
+    }
+    jobj["area"] = getArea();
+    
+    return jobj;
+}
 }
 }

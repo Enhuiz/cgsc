@@ -11,7 +11,7 @@
 
 namespace cgsc
 {
-namespace solver
+namespace utils
 {
 class Data
 {

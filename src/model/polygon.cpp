@@ -84,14 +84,12 @@ nlohmann::json Polygon::toJSON() const
     }
     oss << "]";
 
-    jobj["polygon"] = oss.str();
-    jobj["area"] = getArea();
+    jobj["vertices"] = oss.str();
 
     return jobj;
 }
 
 // friends
-
 list<shared_ptr<Polygon>> union2(const Polygon &a, const Polygon &b)
 {
     list<BoostPolygon> boostPolygons;

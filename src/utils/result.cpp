@@ -8,12 +8,14 @@
 #include "cgsc/model/aoi.h"
 #include "cgsc/model/polygon.h"
 
+#include "cgsc/utils/timestamp.h"
+
 using namespace std;
 using namespace cgsc::model;
 
 namespace cgsc
 {
-namespace solver
+namespace utils
 {
 Result::Result(const AOI &aoi, const list<shared_ptr<Scene>> &scenes)
 {
@@ -56,7 +58,7 @@ void Result::save(const string &path) const
 
 ostream &operator<<(ostream &os, const Result &result)
 {
-    os << result.jobj << endl;
+    os << result.jobj;
 }
 }
 }
