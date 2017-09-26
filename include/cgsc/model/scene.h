@@ -1,4 +1,4 @@
-#pragma once  
+#pragma once
 #ifndef CGSC_MODEL_SCENE_H
 #define CGSC_MODEL_SCENE_H
 
@@ -16,23 +16,25 @@ namespace model
 
 class Scene : public Polygon
 {
-  public:
-    Scene(const std::list<Point> &vertices, double price = 0);
+public:
+  Scene(const std::list<Point> &vertices, double price = 0);
 
-    Scene(const std::string &s, double price);
+  Scene(const std::string &s, double price);
 
-    double getPrice() const;
+  double getPrice() const;
 
-    void setGrids(const std::set<std::shared_ptr<Grid>> &grids);
+  void setGrids(const std::set<std::shared_ptr<Grid>> &grids);
 
-    std::set<std::shared_ptr<Grid>> getGrids() const;
+  std::set<std::shared_ptr<Grid>> getGrids() const;
 
-  private:
-    bool covers(const Grid &grid) const;
+  nlohmann::json toJSON() const;
 
-  private:
-    double price;
-    std::set<std::shared_ptr<Grid>> grids;
+private:
+  bool covers(const Grid &grid) const;
+
+private:
+  double price;
+  std::set<std::shared_ptr<Grid>> grids;
 };
 }
 }

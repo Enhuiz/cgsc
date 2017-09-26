@@ -11,7 +11,8 @@
 #include <boost/geometry/geometries/point_xy.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 
-#include "cgsc/model/utils.h"
+#include "json.hpp"
+#include "cgsc/model/misc.h"
 
 namespace cgsc
 {
@@ -33,21 +34,22 @@ public:
 
   bool contains(const Point &point) const;
 
-  bool overlaps(const std::shared_ptr<Polygon> &other) const;
+  bool overlaps(const Polygon &other) const;
 
-  bool intersects(const std::shared_ptr<Polygon> &other) const;
+  bool intersects(const Polygon &other) const;
 
-  double getArea();
+  double getArea() const;
 
   std::string toString() const;
 
+  virtual nlohmann::json toJSON() const;
+
 public:
   friend std::list<std::shared_ptr<Polygon>> union_(const std::list<std::shared_ptr<Polygon>> &polygons);
-  friend std::list<std::shared_ptr<Polygon>> union2(const std::shared_ptr<Polygon> &a, const std::shared_ptr<Polygon> &b);
+  friend std::list<std::shared_ptr<Polygon>> union2(const Polygon &a, const Polygon &b);
 
-  friend std::list<std::shared_ptr<Polygon>> intersection2(const std::shared_ptr<Polygon> &a, const std::shared_ptr<Polygon> &b);
+  friend std::list<std::shared_ptr<Polygon>> intersection2(const Polygon &a, const Polygon &b);
 
-  
 private:
   double area;
   BoostPolygon boostPolygon;

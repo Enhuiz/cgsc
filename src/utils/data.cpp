@@ -4,7 +4,7 @@
 
 #include "csv.hpp"
 
-#include "cgsc/solver/data.h"
+#include "cgsc/utils/data.h"
 #include "cgsc/model/aoi.h"
 
 using namespace cgsc::model;
@@ -20,12 +20,12 @@ Data::Data(const string &scenesPath, const string &aoiPath)
     loadAOIs(aoiPath);
 }
 
-vector<shared_ptr<Scene>> Data::getScenes() const
+const vector<shared_ptr<const Scene>> &Data::getScenes() const
 {
     return scenes;
 }
 
-vector<shared_ptr<AOI>> Data::getAOIs() const
+const vector<shared_ptr<const AOI>> &Data::getAOIs() const
 {
     return aois;
 }

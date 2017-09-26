@@ -5,7 +5,7 @@
 
 #include "cgsc/solver/greedy.h"
 #include "cgsc/model/grid.h"
-#include "cgsc/solver/result.h"
+#include "cgsc/utils/result.h"
 
 using namespace std;
 using namespace cgsc::model;
@@ -14,20 +14,20 @@ namespace cgsc
 {
 namespace solver
 {
-Greedy::Greedy(const shared_ptr<Data> &data)
+Greedy::Greedy(shared_ptr<Data> data)
     : Solver(data)
 {
 }
 
-Result Greedy::query(const shared_ptr<AOI> &aoi) const
+Result Greedy::query(const AOI &aoi) const
 {
     list<shared_ptr<Scene>> possibleScenes;
 
     for (const auto &scene : data->getScenes())
     {
-        if (aoi->overlaps(scene))
+        if (aoi.overlaps(*scene))
         {
-            // here, copy the scene so that we are free modify them (e.g. add grids to it)
+            // here, copy the scene so that we are free to modify them (e.g. add grids to it)
             possibleScenes.push_back(make_shared<Scene>(*scene));
         }
     }
@@ -41,7 +41,7 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
         {
             const auto &scene = *i;
 
-            scene->setGrids(aoi->getGrids());
+            scene->setGrids(aoi.getGrids());
             if (scene->getGrids().size() == 0)
             {
                 possibleScenes.erase(i++);
@@ -56,7 +56,7 @@ Result Greedy::query(const shared_ptr<AOI> &aoi) const
     list<shared_ptr<Scene>> resultScenes;
     set<shared_ptr<Grid>> U;
 
-    while (U.size() != aoi->getGrids().size() && possibleScenes.size() > 0)
+    while (U.size() != aoi.getGrids().size() && possibleScenes.size() > 0)
     {
         auto scene = pickGreedily(U, possibleScenes);
         resultScenes.push_back(scene);

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CGSC_MODEL_UTILS_HPP
-#define CGSC_MODEL_UTILS_HPP
+#ifndef CGSC_MODEL_MISC_HPP
+#define CGSC_MODEL_MISC_HPP
 
 #include <string>
 #include <list>

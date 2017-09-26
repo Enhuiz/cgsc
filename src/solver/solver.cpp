@@ -10,7 +10,7 @@ namespace cgsc
 {
 namespace solver
 {
-Solver::Solver(const shared_ptr<Data> &data)
+Solver::Solver(shared_ptr<Data> data)
     : data(data)
 {
 }
@@ -20,9 +20,10 @@ list<Result> Solver::calculateResults()
     list<Result> results;
     for (const auto &aoi : data->getAOIs())
     {
-        results.push_back(query(aoi));
+        results.push_back(query(*aoi));
     }
     return results;
 }
+
 }
 }

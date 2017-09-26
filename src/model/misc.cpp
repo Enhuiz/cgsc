@@ -6,7 +6,7 @@
 
 #include <boost/geometry/geometries/point_xy.hpp>
 
-#include "cgsc/model/utils.h"
+#include "cgsc/model/misc.h"
 
 using namespace std;
 

@@ -25,7 +25,7 @@ double Scene::getPrice() const
 {
     return price;
 }
- 
+
 void Scene::setGrids(const set<shared_ptr<Grid>> &grids)
 {
     for (const auto &grid : grids)
@@ -52,6 +52,13 @@ bool Scene::covers(const Grid &grid) const
         }
     }
     return true;
+}
+
+nlohmann::json Scene::toJSON() const
+{
+    auto jobj = Polygon::toJSON();
+    jobj["price"] = price;
+    return jobj;
 }
 }
 }

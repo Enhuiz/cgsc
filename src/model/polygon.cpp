@@ -44,27 +44,30 @@ bool Polygon::contains(const Point &point) const
     return boost::geometry::within(point, boostPolygon);
 }
 
-bool Polygon::overlaps(const shared_ptr<Polygon> &other) const
+bool Polygon::overlaps(const Polygon &other) const
 {
-    return boost::geometry::overlaps(boostPolygon, other->boostPolygon);
+    return boost::geometry::overlaps(boostPolygon, other.boostPolygon);
 }
 
-bool Polygon::intersects(const shared_ptr<Polygon> &other) const
+bool Polygon::intersects(const Polygon &other) const
 {
-    return boost::geometry::intersects(boostPolygon, other->boostPolygon);
+    return boost::geometry::intersects(boostPolygon, other.boostPolygon);
 }
 
-double Polygon::getArea()
+double Polygon::getArea() const
 {
-    if (area < 0)
-    {
-        area = boost::geometry::area(boostPolygon);
-    }
-    return area;
+    return boost::geometry::area(boostPolygon);
 }
 
 string Polygon::toString() const
 {
+    return toJSON().dump();
+}
+
+nlohmann::json Polygon::toJSON() const
+{
+    nlohmann::json jobj;
+
     string ret;
     ostringstream oss(ret);
 
@@ -81,15 +84,18 @@ string Polygon::toString() const
     }
     oss << "]";
 
-    return oss.str();
+    jobj["polygon"] = oss.str();
+    jobj["area"] = getArea();
+
+    return jobj;
 }
 
 // friends
 
-list<shared_ptr<Polygon>> union2(const shared_ptr<Polygon> &a, const shared_ptr<Polygon> &b)
+list<shared_ptr<Polygon>> union2(const Polygon &a, const Polygon &b)
 {
     list<BoostPolygon> boostPolygons;
-    boost::geometry::union_(a->boostPolygon, b->boostPolygon, boostPolygons);
+    boost::geometry::union_(a.boostPolygon, b.boostPolygon, boostPolygons);
     list<shared_ptr<Polygon>> ret;
     for (const auto &boostPolygon : boostPolygons)
     {
@@ -111,9 +117,9 @@ list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
                     const auto &polygon1 = *i;
                     const auto &polygon2 = *j;
 
-                    if (polygon1->overlaps(polygon2)) // only try two merge two polygon when they overlaps
+                    if (polygon1->overlaps(*polygon2)) // only try two merge two polygon when they overlaps
                     {
-                        auto unionedPolygons = union2(polygon1, polygon2);
+                        auto unionedPolygons = union2(*polygon1, *polygon2);
                         for (const auto &unionedPolygon : unionedPolygons)
                         {
                             polygons.push_back(unionedPolygon);
@@ -136,10 +142,10 @@ list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
     return performUnion(list<shared_ptr<Polygon>>(polygons.begin(), polygons.end()));
 }
 
-list<shared_ptr<Polygon>> intersection2(const shared_ptr<Polygon> &a, const shared_ptr<Polygon> &b)
+list<shared_ptr<Polygon>> intersection2(const Polygon &a, const Polygon &b)
 {
     list<BoostPolygon> boostPolygons;
-    boost::geometry::intersection(a->boostPolygon, b->boostPolygon, boostPolygons);
+    boost::geometry::intersection(a.boostPolygon, b.boostPolygon, boostPolygons);
     list<shared_ptr<Polygon>> ret;
     for (const auto &boostPolygon : boostPolygons)
     {

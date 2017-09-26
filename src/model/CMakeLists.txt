@@ -1,1 +1,1 @@
-add_library(model aoi.cpp grid.cpp polygon.cpp scene.cpp utils.cpp)
+add_library(model aoi.cpp grid.cpp polygon.cpp scene.cpp misc.cpp)

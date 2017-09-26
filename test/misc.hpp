@@ -1,4 +1,4 @@
-#pragma once  
+#pragma once
 #ifndef CGSC_TEST_UTILS_H
 #define CGSC_TEST_UTILS_H
 
@@ -24,7 +24,7 @@ std::list<T> roll(const std::list<T> &l, int n)
     return ret;
 }
 
-std::string to_string(const std::list<model::Point> &l)
+std::string toString(const std::list<model::Point> &l)
 {
     std::string ret;
     std::ostringstream oss(ret);

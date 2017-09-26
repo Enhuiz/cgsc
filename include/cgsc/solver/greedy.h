@@ -6,9 +6,8 @@
 #include <memory>
 
 #include "cgsc/model/grid.h"
-
-#include "solver.h"
-#include "result.h"
+#include "cgsc/solver/solver.h"
+#include "cgsc/utils/result.h"
 
 namespace cgsc
 {
@@ -17,9 +16,9 @@ namespace solver
 class Greedy : public Solver
 {
 public:
-  Greedy(const std::shared_ptr<Data> &data);
+  Greedy(std::shared_ptr<Data> data);
 
-  Result query(const std::shared_ptr<model::AOI> &aoi) const;
+  Result query(const model::AOI &aoi) const;
 
 private:
   std::shared_ptr<model::Scene> pickGreedily(const std::set<std::shared_ptr<model::Grid>> &U,

@@ -8,11 +8,12 @@
 #include "cgsc/model/grid.h"
 #include "cgsc/model/aoi.h"
 #include "cgsc/model/scene.h"
-#include "cgsc/solver/data.h"
 #include "cgsc/solver/greedy.h"
-#include "cgsc/solver/result.h"
+#include "cgsc/utils/data.h"
+#include "cgsc/utils/result.h"
+#include "cgsc/utils/timestamp.h"
 
-#include "utils.hpp"
+#include "misc.hpp"
 
 using namespace cgsc::model;
 using namespace cgsc::test;
@@ -20,11 +21,6 @@ using namespace cgsc::test;
 using namespace cgsc::solver;
 
 using namespace std;
-
-TEST(Polygon, tostring)
-{
-	EXPECT_EQ(Polygon("[[0, 0], [1, 0], [1, 1], [0, 1]]").toString(), "[[0, 0], [1, 0], [1, 1], [0, 1]]");
-}
 
 TEST(AOI, area)
 {
@@ -85,9 +81,12 @@ TEST(Data, grid_equal)
 
 TEST(Data, calculate_result)
 {
+	Timestamp::Add("begin calculate");
 	auto results = greedy->calculateResults();
 	for (const auto &result : results)
 	{
 		cout << result << endl;
 	}
+	Timestamp::Add("end calculate");
+	cout << Timestamp::GetJSON() << endl;
 }

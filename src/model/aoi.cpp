@@ -55,12 +55,16 @@ void AOI::updateGrids()
         for (int j = minyi; j < maxyi; ++j)
         {
             auto grid = make_shared<Grid>(i, j, delta);
-            if (overlaps(grid))
+            if (overlaps(*grid))
             {
                 grids.insert(grid);
             }
         }
     }
 }
+
+  
+  
+
 }
 }
