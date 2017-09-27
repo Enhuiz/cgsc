@@ -2,3 +2,4 @@
 /.vscode
 /lib/
 /data
+/**/__pycache__/
