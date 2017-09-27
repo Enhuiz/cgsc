@@ -17,26 +17,36 @@ namespace cgsc
 {
 namespace utils
 {
-Result::Result(const AOI &aoi, const list<shared_ptr<Scene>> &scenes)
+Result::Result(const AOI &aoi,
+               const vector<shared_ptr<const Scene>> &possibleScenes,
+               const vector<shared_ptr<const Scene>> &resultScenes)
 {
     double price = 0;
-    for (const auto &scene : scenes)
+    for (const auto &scene : resultScenes)
     {
         price += scene->getPrice();
     }
-
     jobj["price"] = price;
+
     jobj["aoi"] = aoi.toJSON();
 
-    jobj["scenes"] = {};
-    for (const auto &scene : scenes)
     {
-        jobj["scenes"].push_back(scene->toJSON());
+        auto addScenes = [&](const std::string &tag,
+                            const vector<shared_ptr<const Scene>> &scenes) {
+            jobj[tag] = {};
+            for (const auto &scene : scenes)
+            {
+                jobj[tag].push_back(scene->toJSON());
+            }
+        };
+
+        addScenes("possible_scenes", possibleScenes);
+        addScenes("result_scenes", resultScenes);
     }
 
     double coverageArea = 0;
 
-    auto unionedPolygon = union_(list<shared_ptr<Polygon>>(scenes.begin(), scenes.end()));
+    auto unionedPolygon = union_(list<shared_ptr<const Polygon>>(resultScenes.begin(), resultScenes.end()));
     for (const auto &polygon : unionedPolygon)
     {
         auto intersectionPolygons = intersection2(aoi, *polygon);

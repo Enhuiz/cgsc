@@ -33,10 +33,10 @@ Polygon::Polygon(const string &s)
 {
 }
 
-list<Point> Polygon::outer() const
+vector<Point> Polygon::outer() const
 {
     auto boostOuter = boostPolygon.outer();
-    return list<Point>(boostOuter.begin(), boostOuter.end());
+    return boostPolygon.outer();
 }
 
 bool Polygon::contains(const Point &point) const
@@ -90,21 +90,21 @@ nlohmann::json Polygon::toJSON() const
 }
 
 // friends
-list<shared_ptr<Polygon>> union2(const Polygon &a, const Polygon &b)
+list<shared_ptr<const Polygon>> union2(const Polygon &a, const Polygon &b)
 {
     list<BoostPolygon> boostPolygons;
     boost::geometry::union_(a.boostPolygon, b.boostPolygon, boostPolygons);
-    list<shared_ptr<Polygon>> ret;
+    list<shared_ptr<const Polygon>> ret;
     for (const auto &boostPolygon : boostPolygons)
     {
-        ret.push_back(make_shared<Polygon>(boostPolygon));
+        ret.push_back(make_shared<const Polygon>(boostPolygon));
     }
     return ret;
 }
 
-list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
+list<shared_ptr<const Polygon>> union_(const list<shared_ptr<const Polygon>> &polygons)
 {
-    auto performUnion = [](list<shared_ptr<Polygon>> &&polygons) {
+    auto performUnion = [](list<shared_ptr<const Polygon>> &&polygons) {
         // input list will keep shrinking until finish
 
         const auto unionIteration = [&]() {
@@ -115,7 +115,7 @@ list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
                     const auto &polygon1 = *i;
                     const auto &polygon2 = *j;
 
-                    if (polygon1->overlaps(*polygon2)) // only try two merge two polygon when they overlaps
+                    if (polygon1->intersects(*polygon2)) // only try two merge two polygon when they intersects
                     {
                         auto unionedPolygons = union2(*polygon1, *polygon2);
                         for (const auto &unionedPolygon : unionedPolygons)
@@ -134,20 +134,20 @@ list<shared_ptr<Polygon>> union_(const list<shared_ptr<Polygon>> &polygons)
         while (unionIteration())
             ;
 
-        return list<shared_ptr<Polygon>>(polygons.begin(), polygons.end());
+        return list<shared_ptr<const Polygon>>(polygons.begin(), polygons.end());
     };
 
-    return performUnion(list<shared_ptr<Polygon>>(polygons.begin(), polygons.end()));
+    return performUnion(list<shared_ptr<const Polygon>>(polygons.begin(), polygons.end()));
 }
 
-list<shared_ptr<Polygon>> intersection2(const Polygon &a, const Polygon &b)
+list<shared_ptr<const Polygon>> intersection2(const Polygon &a, const Polygon &b)
 {
     list<BoostPolygon> boostPolygons;
     boost::geometry::intersection(a.boostPolygon, b.boostPolygon, boostPolygons);
-    list<shared_ptr<Polygon>> ret;
+    list<shared_ptr<const Polygon>> ret;
     for (const auto &boostPolygon : boostPolygons)
     {
-        ret.push_back(make_shared<Polygon>(boostPolygon));
+        ret.push_back(make_shared<const Polygon>(boostPolygon));
     }
     return ret;
 }

@@ -30,7 +30,7 @@ public:
 
   Polygon(const std::string &s);
 
-  std::list<Point> outer() const;
+  std::vector<Point> outer() const;
 
   bool contains(const Point &point) const;
 
@@ -45,10 +45,10 @@ public:
   virtual nlohmann::json toJSON() const;
 
 public:
-  friend std::list<std::shared_ptr<Polygon>> union_(const std::list<std::shared_ptr<Polygon>> &polygons);
-  friend std::list<std::shared_ptr<Polygon>> union2(const Polygon &a, const Polygon &b);
+  friend std::list<std::shared_ptr<const Polygon>> union_(const std::list<std::shared_ptr<const Polygon>> &polygons);
+  friend std::list<std::shared_ptr<const Polygon>> union2(const Polygon &a, const Polygon &b);
 
-  friend std::list<std::shared_ptr<Polygon>> intersection2(const Polygon &a, const Polygon &b);
+  friend std::list<std::shared_ptr<const Polygon>> intersection2(const Polygon &a, const Polygon &b);
 
 private:
   double area;

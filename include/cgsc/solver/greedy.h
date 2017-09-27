@@ -16,13 +16,12 @@ namespace solver
 class Greedy : public Solver
 {
 public:
-  Greedy(std::shared_ptr<utils::Data> data);
-
-  utils::Result query(const model::AOI &aoi) const;
+  std::vector<std::shared_ptr<const model::Scene>> optimize(const model::AOI &aoi,
+                                                            const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes) const;
 
 private:
-  std::shared_ptr<model::Scene> pickGreedily(const std::set<std::shared_ptr<const model::Grid>> &U,
-                                             std::list<std::shared_ptr<model::Scene>> &possibleScenes) const;
+  std::shared_ptr<const model::Scene> pickGreedily(const std::set<std::shared_ptr<const model::Grid>> &U,
+                                                   std::list<std::shared_ptr<const model::Scene>> &gridCoveringScenes) const;
 
   double gamma(double price, const std::set<std::shared_ptr<const model::Grid>> &U,
                const std::set<std::shared_ptr<const model::Grid>> &S) const;

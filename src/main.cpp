@@ -19,20 +19,36 @@ using namespace std;
 
 int main()
 {
-    shared_ptr<Data> data = make_shared<Data>("../../data/input/scenes_small.csv", "../../data/input/aois.csv");
-
-    shared_ptr<Greedy> greedy = make_shared<Greedy>(data);
-
+    auto timestamp = Timestamp();
+    
+    timestamp.add("BEGIN data load");
+    auto data = Data("../../data/input/scenes_small.csv", "../../data/input/aois.csv");
+    timestamp.add("END data load");
+    
+    auto greedy = Greedy();
     string path = "../../data/output/";
 
-    auto results = greedy->calculateResults();
-    for (int i = 0; i < results.size(); ++i)
     {
-        results[i].save(path + "result" + to_string(i) + ".json");
+        const auto &aois = data.getAOIs();
+
+        for (int i = 0; i < aois.size(); ++i)
+        {
+            const auto &aoi = aois[i];
+
+            timestamp.add("BEGIN select possible scenes " + to_string(i));
+            auto possibleScenes = greedy.selectPossibleScenes(*aoi, data.getScenes());
+            timestamp.add("END select possible scenes " + to_string(i));
+
+            timestamp.add("BEGIN optimize " + to_string(i));
+            auto resultScenes = greedy.optimize(*aoi, possibleScenes);
+            timestamp.add("END optimize " + to_string(i));
+
+            auto result = Result(*aoi, possibleScenes, resultScenes);
+            result.save(path + "result_" + to_string(i) + ".json");
+        }
     }
 
-    cout << Timestamp::GetJSON() << endl;
-    Timestamp::Save(path + "timestamp.json");
+    timestamp.save(path + "timestamp.json");
 
     return 0;
 }

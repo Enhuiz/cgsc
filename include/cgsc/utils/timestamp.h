@@ -15,17 +15,18 @@ namespace utils
 class Timestamp
 {
 public:
-  static nlohmann::json GetJSON();
-  static void Add(const std::string &tag);
-  static void Save(const std::string &path);
-private:
   Timestamp();
 
-  static double Now();
+  void add(const std::string &tag);
+  void save(const std::string &path) const;
+  nlohmann::json toJSON() const;
 
 private:
-  static nlohmann::json jobj;
-  static clock_t startTime;
+  double now() const;
+
+private:
+  nlohmann::json jobj;
+  clock_t startTime;
 };
 }
 }

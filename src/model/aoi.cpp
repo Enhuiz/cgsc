@@ -34,7 +34,10 @@ void AOI::updateGrids()
 {
     const auto &vertices = outer();
 
-    double minx, miny, maxx, maxy;
+    double minx = vertices[0].x();
+    double miny = vertices[0].y(); 
+    double maxx = vertices[0].x(); 
+    double maxy = vertices[0].y();
 
     for (const auto &vertex : vertices)
     {
@@ -56,7 +59,7 @@ void AOI::updateGrids()
         for (int j = minyi; j < maxyi; ++j)
         {
             auto grid = make_shared<Grid>(i, j, delta);
-            if (overlaps(*grid))
+            if (intersects(*grid))
             {
                 grids.insert(grid);
             }

@@ -18,14 +18,11 @@ namespace solver
 class Solver
 {
 public:
-  Solver(std::shared_ptr<utils::Data> data);
+  std::vector<std::shared_ptr<const model::Scene>> optimize(const model::AOI &aoi,
+                                                            const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes) const;
 
-  virtual utils::Result query(const model::AOI &aoi) const = 0;
-
-  std::vector<utils::Result> calculateResults();
-
-protected:
-  std::shared_ptr<utils::Data> data;
+  std::vector<std::shared_ptr<const model::Scene>> selectPossibleScenes(const model::AOI &aoi,
+                                                                        const std::vector<std::shared_ptr<const model::Scene>> &scenes) const;
 };
 }
 }
