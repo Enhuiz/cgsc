@@ -6,5 +6,5 @@ add_subdirectory(model)
 add_subdirectory(solver)
 add_subdirectory(utils)
 
-add_executable(main main.cpp)
-target_link_libraries(main model solver utils pthread)
+add_executable(expt expt.cpp)
+target_link_libraries(expt model solver utils pthread boost_program_options)

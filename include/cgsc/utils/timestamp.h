@@ -17,16 +17,18 @@ class Timestamp
 public:
   Timestamp();
 
-  void add(const std::string &tag);
-  void save(const std::string &path) const;
+  void begin(const std::string &tag);
+  double end();
+
   nlohmann::json toJSON() const;
 
 private:
-  double now() const;
-
-private:
   nlohmann::json jobj;
-  clock_t startTime;
+
+  clock_t createdTime;
+  clock_t beginTime;
+
+  std::string currentTag;
 };
 }
 }

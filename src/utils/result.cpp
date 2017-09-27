@@ -21,18 +21,18 @@ Result::Result(const AOI &aoi,
                const vector<shared_ptr<const Scene>> &possibleScenes,
                const vector<shared_ptr<const Scene>> &resultScenes)
 {
-    double price = 0;
+    double totalPrice = 0;
     for (const auto &scene : resultScenes)
     {
-        price += scene->getPrice();
+        totalPrice += scene->getPrice();
     }
-    jobj["price"] = price;
+    jobj["totalPrice"] = totalPrice;
 
     jobj["aoi"] = aoi.toJSON();
 
     {
         auto addScenes = [&](const std::string &tag,
-                            const vector<shared_ptr<const Scene>> &scenes) {
+                             const vector<shared_ptr<const Scene>> &scenes) {
             jobj[tag] = {};
             for (const auto &scene : scenes)
             {
@@ -40,8 +40,8 @@ Result::Result(const AOI &aoi,
             }
         };
 
-        addScenes("possible_scenes", possibleScenes);
-        addScenes("result_scenes", resultScenes);
+        addScenes("possibleScenes", possibleScenes);
+        addScenes("resultScenes", resultScenes);
     }
 
     double coverageArea = 0;
@@ -56,14 +56,13 @@ Result::Result(const AOI &aoi,
         }
     }
 
-    jobj["coverage_area"] = coverageArea;
-    jobj["coverage_ratio"] = coverageArea / aoi.getArea();
+    jobj["coverageArea"] = coverageArea;
+    jobj["coverageRatio"] = coverageArea / aoi.getArea();
 }
 
-void Result::save(const string &path) const
+nlohmann::json Result::toJSON() const
 {
-    ofstream ofs(path);
-    ofs << jobj << endl;
+    return jobj;
 }
 
 ostream &operator<<(ostream &os, const Result &result)

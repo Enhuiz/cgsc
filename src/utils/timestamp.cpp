@@ -12,35 +12,41 @@ namespace cgsc
 namespace utils
 {
 Timestamp::Timestamp()
-    : startTime(clock())
+    : createdTime(clock())
 {
 }
 
-void Timestamp::add(const string &tag)
+void Timestamp::begin(const string &tag)
 {
-    auto ts = to_string(now());
-    jobj[ts] = tag;
+    auto ts = to_string((clock() - createdTime) * 1.0 / CLOCKS_PER_SEC);
     cout << "\033[1;34m"
-         << "Timestamp("
-         << ts
-         << "s): \033[0m"
-         << tag << endl;
+    << "Timestamp("
+    << ts
+    << "s): \033[0m"
+    << tag << endl;
+    
+    currentTag = tag;
+    beginTime = clock();
 }
 
-double Timestamp::now() const
+double Timestamp::end()
 {
-    return (clock() - startTime) * 1.0 / CLOCKS_PER_SEC;
+    if (currentTag.size() > 0)
+    {
+        auto tmpJobj = nlohmann::json();
+        tmpJobj["beginTime"] = (beginTime - createdTime) * 1.0 / CLOCKS_PER_SEC;
+        tmpJobj["interval"] = (clock() - beginTime) * 1.0 / CLOCKS_PER_SEC;
+        jobj.push_back(tmpJobj);
+        currentTag.clear();
+
+        return tmpJobj["interval"];
+    }
+    return 0;
 }
 
 nlohmann::json Timestamp::toJSON() const
 {
     return jobj;
-}
-
-void Timestamp::save(const std::string &path) const
-{
-    ofstream ofs(path);
-    ofs << jobj << endl;
 }
 }
 }

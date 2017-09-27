@@ -21,10 +21,10 @@ class Result
 {
 public:
   Result(const model::AOI &aoi,
-    const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes,
-    const std::vector<std::shared_ptr<const model::Scene>> &resultScenes);
+         const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes,
+         const std::vector<std::shared_ptr<const model::Scene>> &resultScenes);
 
-  void save(const std::string &path) const;
+  nlohmann::json toJSON() const;
 
 public:
   friend std::ostream &operator<<(std::ostream &os, const Result &result);
