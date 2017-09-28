@@ -28,7 +28,7 @@ public:
 
   const std::set<std::shared_ptr<const Grid>>& getGrids() const;
 
-  nlohmann::json toJSON() const;
+  nlohmann::json toJSON(bool verbose) const;
 
 private:
   bool covers(const Grid &grid) const;

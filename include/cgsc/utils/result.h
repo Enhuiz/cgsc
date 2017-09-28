@@ -20,9 +20,12 @@ namespace utils
 class Result
 {
 public:
-  Result(const model::AOI &aoi,
-         const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes,
-         const std::vector<std::shared_ptr<const model::Scene>> &resultScenes);
+  void addPossibleScenes(const std::vector<std::shared_ptr<const model::Scene>> &scenes, bool verbose);
+  void addTotalPrice(const std::vector<std::shared_ptr<const model::Scene>> &scenes);
+  void addCoverageArea(const model::AOI &aoi, const std::vector<std::shared_ptr<const model::Scene>> &scenes);
+  void addResultScense(const std::vector<std::shared_ptr<const model::Scene>> &scenes, bool verbose);
+  void addAOI(const model::AOI &aoi, bool verbose);
+  void addJSON(const std::string &tag, const nlohmann::json &j);
 
   nlohmann::json toJSON() const;
 

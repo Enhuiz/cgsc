@@ -23,11 +23,10 @@ public:
 
   void setDelta(double delta);
 
-  nlohmann::json toJSON() const;
+  nlohmann::json toJSON(bool verbose) const;
 
   const std::set<std::shared_ptr<const Grid>> &getGrids() const;
 
-private:
   void updateGrids();
 
 private:

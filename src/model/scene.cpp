@@ -37,7 +37,7 @@ void Scene::setGrids(const set<shared_ptr<const Grid>> &grids)
     }
 }
 
-const set<shared_ptr<const Grid>>& Scene::getGrids() const
+const set<shared_ptr<const Grid>> &Scene::getGrids() const
 {
     return grids;
 }
@@ -54,16 +54,19 @@ bool Scene::covers(const Grid &grid) const
     return true;
 }
 
-nlohmann::json Scene::toJSON() const
+nlohmann::json Scene::toJSON(bool verbose) const
 {
     auto jobj = Polygon::toJSON();
-    jobj["price"] = price;
-    jobj["grids"] = {};
-    for (const auto &grid : grids)
+    if (verbose)
     {
-        jobj["grids"].push_back(grid->toJSON());
+        jobj["grids"] = {};
+        for (const auto &grid : grids)
+        {
+            jobj["grids"].push_back(grid->toJSON());
+        }
     }
     jobj["area"] = getArea();
+    jobj["price"] = price;
     return jobj;
 }
 }

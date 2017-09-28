@@ -1,6 +1,11 @@
 import numpy as np
+import pandas as pd
+import sys
+sys.path.append("../")
+
 from visualize.plot import show_polygons
 import matplotlib.pyplot as plt
+
 
 def apply_transform(mat, vertices):
     return [v.dot(mat.T) for v in vertices]
@@ -32,17 +37,20 @@ def unit_polygon(n_vertices):
     return scale(vertices, [1 / area, 1 / area])
 
 def generate_aoi(n_aois, size=1):
+    length = np.sqrt(size)
     polygons = [unit_polygon(np.random.randint(3, 10)) for i in range(n_aois)]
     polygons = [scale(polygon, [np.sqrt(size), np.sqrt(size)]) for polygon in polygons]
     for i in range(3):
         polygons = [scale(polygon, [0.8, 1.25]) for polygon in polygons]
         polygons = [rotate(polygon, np.random.uniform() * 2 * np.pi) for polygon in polygons]
-    polygons = [move(polygon, [np.random.uniform(60, 133), np.random.uniform(4, 50)]) for polygon in polygons]
+    polygons = [move(polygon, [np.random.uniform(120 + length, 128 - length), np.random.uniform(42 + length, 50 - length)]) for polygon in polygons]
     return polygons
 
+
 def main():
+
     fig, ax = plt.subplots()
-    show_polygons(ax, generate_aoi(100))
+    show_polygons(ax, generate_aoi(100, 0.25))
     plt.show()
 
 if __name__ == '__main__':

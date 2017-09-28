@@ -21,8 +21,6 @@ AOI::AOI(const string &s, double delta)
 void AOI::setDelta(double delta)
 {
     this->delta = delta;
-
-    this->updateGrids();
 }
 
 const std::set<std::shared_ptr<const Grid>> &AOI::getGrids() const
@@ -35,8 +33,8 @@ void AOI::updateGrids()
     const auto &vertices = outer();
 
     double minx = vertices[0].x();
-    double miny = vertices[0].y(); 
-    double maxx = vertices[0].x(); 
+    double miny = vertices[0].y();
+    double maxx = vertices[0].x();
     double maxy = vertices[0].y();
 
     for (const auto &vertex : vertices)
@@ -67,18 +65,22 @@ void AOI::updateGrids()
     }
 }
 
-nlohmann::json AOI::toJSON() const
+nlohmann::json AOI::toJSON(bool verbose) const
 {
     auto jobj = Polygon::toJSON();
 
     jobj["delta"] = delta;
-    jobj["grids"] = {};
-    for (const auto &grid : grids)
-    {
-        jobj["grids"].push_back(grid->toJSON());
-    }
     jobj["area"] = getArea();
-    
+
+    if (verbose)
+    {
+        jobj["grids"] = {};
+        for (const auto &grid : grids)
+        {
+            jobj["grids"].push_back(grid->toJSON());
+        }
+    }
+
     return jobj;
 }
 }

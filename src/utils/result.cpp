@@ -17,36 +17,31 @@ namespace cgsc
 {
 namespace utils
 {
-Result::Result(const AOI &aoi,
-               const vector<shared_ptr<const Scene>> &possibleScenes,
-               const vector<shared_ptr<const Scene>> &resultScenes)
+
+void Result::addPossibleScenes(const vector<shared_ptr<const Scene>> &scenes, bool verbose)
+{
+    jobj["resultScenes"] = {};
+    for (const auto &scene : scenes)
+    {
+        jobj["resultScenes"].push_back(scene->toJSON(verbose));
+    }
+}
+
+void Result::addTotalPrice(const vector<shared_ptr<const Scene>> &scenes)
 {
     double totalPrice = 0;
-    for (const auto &scene : resultScenes)
+    for (const auto &scene : scenes)
     {
         totalPrice += scene->getPrice();
     }
     jobj["totalPrice"] = totalPrice;
+}
 
-    jobj["aoi"] = aoi.toJSON();
-
-    {
-        auto addScenes = [&](const std::string &tag,
-                             const vector<shared_ptr<const Scene>> &scenes) {
-            jobj[tag] = {};
-            for (const auto &scene : scenes)
-            {
-                jobj[tag].push_back(scene->toJSON());
-            }
-        };
-
-        addScenes("possibleScenes", possibleScenes);
-        addScenes("resultScenes", resultScenes);
-    }
-
+void Result::addCoverageArea(const AOI& aoi, const vector<shared_ptr<const Scene>> &scenes)
+{
     double coverageArea = 0;
 
-    auto unionedPolygon = union_(list<shared_ptr<const Polygon>>(resultScenes.begin(), resultScenes.end()));
+    auto unionedPolygon = union_(list<shared_ptr<const Polygon>>(scenes.begin(), scenes.end()));
     for (const auto &polygon : unionedPolygon)
     {
         auto intersectionPolygons = intersection2(aoi, *polygon);
@@ -57,7 +52,25 @@ Result::Result(const AOI &aoi,
     }
 
     jobj["coverageArea"] = coverageArea;
-    jobj["coverageRatio"] = coverageArea / aoi.getArea();
+}
+
+void Result::addResultScense(const vector<shared_ptr<const Scene>> &scenes, bool verbose)
+{
+    jobj["resultScenes"] = {};
+    for (const auto &scene : scenes)
+    {
+        jobj["resultScenes"].push_back(scene->toJSON(verbose));
+    }
+}
+
+void Result::addAOI(const AOI &aoi, bool verbose)
+{
+    jobj["aoi"] = aoi.toJSON(verbose);
+}
+
+void Result::addJSON(const string &tag, const nlohmann::json& j)
+{
+    jobj[tag] = j;
 }
 
 nlohmann::json Result::toJSON() const

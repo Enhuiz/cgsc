@@ -33,22 +33,26 @@ void experiment(const std::string &scenesPath, const std::string &aoisPath, cons
     const auto &aois = data.getAOIs();
     for (int i = 0; i < aois.size(); ++i)
     {
-        const auto &aoi = aois[i];
+        // copy an aoi so that we can modify it
+        AOI aoi = *aois[i]; 
 
         timestamp.begin("aoi" + to_string(i) + "::t1");
-        auto possibleScenes = greedy.selectPossibleScenes(*aoi, data.getScenes());
+        auto possibleScenes = greedy.selectPossibleScenes(aoi, data.getScenes());
         double t1 = timestamp.end();
 
         timestamp.begin("aoi" + to_string(i) + "::t2");
-        auto resultScenes = greedy.optimize(*aoi, possibleScenes);
+        aoi.updateGrids();
+        auto resultScenes = greedy.optimize(aoi, possibleScenes);
         double t2 = timestamp.end();
 
-        auto resultJobj = Result(*aoi, possibleScenes, resultScenes).toJSON();
+        auto result = Result();
 
-        resultJobj["t1"] = t1;
-        resultJobj["t2"] = t2;
-
-        jobj.push_back(resultJobj);
+        result.addTotalPrice(resultScenes);
+        result.addCoverageArea(aoi, resultScenes);
+        result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});
+        result.addJSON("scenesCount", {resultScenes.size()});
+        
+        jobj.push_back(result.toJSON());
     }
 
     ofstream ofs(outPath);

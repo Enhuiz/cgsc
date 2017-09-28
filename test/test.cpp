@@ -56,28 +56,3 @@ TEST(Grid, equal)
 {
 	EXPECT_EQ(Grid(0, 0, 10), Grid(0, 0, 10));
 }
-
-shared_ptr<Data> data;
-TEST(Data, load)
-{
-	data = make_shared<Data>("../../data/input/scenes_small.csv", "../../data/input/aois.csv");
-	Greedy greedy(data);
-}
-
-shared_ptr<Greedy> greedy;
-TEST(Data, greedy)
-{
-	greedy = make_shared<Greedy>(data);
-}
-
-TEST(Data, calculate_result)
-{
-	Timestamp::Add("begin calculate");
-	auto results = greedy->calculateResults();
-	for (const auto &result : results)
-	{
-		cout << result << endl;
-	}
-	Timestamp::Add("end calculate");
-	cout << Timestamp::GetJSON() << endl;
-}
