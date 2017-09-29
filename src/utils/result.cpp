@@ -37,7 +37,7 @@ void Result::addTotalPrice(const vector<shared_ptr<const Scene>> &scenes)
     jobj["totalPrice"] = totalPrice;
 }
 
-void Result::addCoverageArea(const AOI& aoi, const vector<shared_ptr<const Scene>> &scenes)
+double Result::calculateCoverageArea(const AOI &aoi, const vector<shared_ptr<const Scene>> &scenes) const
 {
     double coverageArea = 0;
 
@@ -50,8 +50,18 @@ void Result::addCoverageArea(const AOI& aoi, const vector<shared_ptr<const Scene
             coverageArea += intersectionPolygon->getArea();
         }
     }
+    return coverageArea;
+}
 
-    jobj["coverageArea"] = coverageArea;
+void Result::addCoverageArea(const AOI &aoi, const vector<shared_ptr<const Scene>> &scenes)
+{
+    jobj["coverageArea"] = calculateCoverageArea(aoi, scenes);
+}
+
+void Result::addCoverageRatio(const AOI &aoi, const vector<shared_ptr<const Scene>> &scenes)
+{
+    double coverageArea = calculateCoverageArea(aoi, scenes);
+    jobj["coverageRatio"] = coverageArea / aoi.getArea();
 }
 
 void Result::addResultScense(const vector<shared_ptr<const Scene>> &scenes, bool verbose)
@@ -68,7 +78,7 @@ void Result::addAOI(const AOI &aoi, bool verbose)
     jobj["aoi"] = aoi.toJSON(verbose);
 }
 
-void Result::addJSON(const string &tag, const nlohmann::json& j)
+void Result::addJSON(const string &tag, const nlohmann::json &j)
 {
     jobj[tag] = j;
 }

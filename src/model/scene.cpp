@@ -26,18 +26,7 @@ double Scene::getPrice() const
     return price;
 }
 
-void Scene::setGrids(const set<shared_ptr<const Grid>> &grids)
-{
-    for (const auto &grid : grids)
-    {
-        if (covers(*grid))
-        {
-            this->grids.insert(grid);
-        }
-    }
-}
-
-const set<shared_ptr<const Grid>> &Scene::getGrids() const
+const list<shared_ptr<const Grid>> &Scene::getGrids() const
 {
     return grids;
 }
@@ -52,6 +41,56 @@ bool Scene::covers(const Grid &grid) const
         }
     }
     return true;
+}
+
+void Scene::updateGrids(double delta)
+{
+    const auto &vertices = outer();
+
+    double minx = vertices[0].x();
+    double miny = vertices[0].y();
+    double maxx = vertices[0].x();
+    double maxy = vertices[0].y();
+
+    for (const auto &vertex : vertices)
+    {
+        minx = min(minx, vertex.x());
+        miny = min(miny, vertex.y());
+        maxx = max(maxx, vertex.x());
+        maxy = max(maxy, vertex.y());
+    }
+
+    int minxi = ceil(minx / delta); // ceil for min
+    int minyi = ceil(miny / delta);
+
+    int maxxi = floor(maxx / delta); // floor for max
+    int maxyi = floor(maxy / delta);
+
+    grids.clear();
+    for (int i = minxi; i < maxxi; ++i)
+    {
+        for (int j = minyi; j < maxyi; ++j)
+        {
+            auto grid = make_shared<Grid>(i, j, delta);
+            if (covers(*grid)) // covering is neccessary
+            {
+                grids.push_back(grid);
+            }
+        }
+    }
+}
+
+void Scene::filterGrids(const AOI &aoi)
+{
+    auto oldGrids = grids;
+    auto aoiGrids = aoi.getGrids();
+
+    grids.clear();
+    set_intersection(oldGrids.begin(),
+                     oldGrids.end(),
+                     aoiGrids.begin(),
+                     aoiGrids.end(),
+                     back_inserter(grids));
 }
 
 nlohmann::json Scene::toJSON(bool verbose) const

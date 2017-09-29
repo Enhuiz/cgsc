@@ -21,6 +21,9 @@ public:
   const std::vector<std::shared_ptr<const model::Scene>> &getScenes() const;
   const std::vector<std::shared_ptr<const model::AOI>> &getAOIs() const;
 
+  std::vector<std::shared_ptr<model::Scene>> cloneScenes() const;
+  std::vector<std::shared_ptr<model::AOI>> cloneAOIs() const;
+
 private:
   void loadScenes(const std::string &path, int maxRecords = -1);
   void loadAOIs(const std::string &path, int maxRecords = -1);

@@ -7,28 +7,22 @@ namespace cgsc
 namespace model
 {
 
-AOI::AOI(const list<Point> &vertices, double delta)
+AOI::AOI(const list<Point> &vertices)
     : Polygon(vertices)
 {
-    setDelta(delta);
 }
 
-AOI::AOI(const string &s, double delta)
-    : AOI(parseListOf<Point>(s), delta)
+AOI::AOI(const string &s)
+    : AOI(parseListOf<Point>(s))
 {
 }
 
-void AOI::setDelta(double delta)
-{
-    this->delta = delta;
-}
-
-const std::set<std::shared_ptr<const Grid>> &AOI::getGrids() const
+const list<shared_ptr<const Grid>> &AOI::getGrids() const
 {
     return grids;
 }
 
-void AOI::updateGrids()
+void AOI::updateGrids(double delta)
 {
     const auto &vertices = outer();
 
@@ -44,11 +38,11 @@ void AOI::updateGrids()
         maxx = max(maxx, vertex.x());
         maxy = max(maxy, vertex.y());
     }
-
-    int minxi = floor(minx / delta);
+ 
+    int minxi = floor(minx / delta); // floor for min
     int minyi = floor(miny / delta);
 
-    int maxxi = ceil(maxx / delta);
+    int maxxi = ceil(maxx / delta); // ceil for max
     int maxyi = ceil(maxy / delta);
 
     grids.clear();
@@ -57,9 +51,9 @@ void AOI::updateGrids()
         for (int j = minyi; j < maxyi; ++j)
         {
             auto grid = make_shared<Grid>(i, j, delta);
-            if (intersects(*grid))
+            if (intersects(*grid)) // intersections is ok
             {
-                grids.insert(grid);
+                grids.push_back(grid);
             }
         }
     }
@@ -69,7 +63,6 @@ nlohmann::json AOI::toJSON(bool verbose) const
 {
     auto jobj = Polygon::toJSON();
 
-    jobj["delta"] = delta;
     jobj["area"] = getArea();
 
     if (verbose)

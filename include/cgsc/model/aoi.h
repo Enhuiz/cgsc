@@ -17,22 +17,17 @@ namespace model
 class AOI : public Polygon
 {
 public:
-  AOI(const std::list<Point> &vertices, double delta = 1);
-
-  AOI(const std::string &s, double delta = 1);
-
-  void setDelta(double delta);
+  AOI(const std::list<Point> &vertices);
+  AOI(const std::string &s);
 
   nlohmann::json toJSON(bool verbose) const;
 
-  const std::set<std::shared_ptr<const Grid>> &getGrids() const;
+  const std::list<std::shared_ptr<const Grid>> &getGrids() const;
 
-  void updateGrids();
+  void updateGrids(double delta);
 
 private:
-  std::set<std::shared_ptr<const Grid>> grids;
-
-  double delta;
+  std::list<std::shared_ptr<const Grid>> grids;
 };
 }
 }

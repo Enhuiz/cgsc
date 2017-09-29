@@ -6,7 +6,6 @@
 #include <string>
 #include <ctime>
 
-#include "json.hpp"
 namespace cgsc
 {
 namespace utils
@@ -17,18 +16,13 @@ class Timestamp
 public:
   Timestamp();
 
-  void begin(const std::string &tag);
-  double end();
-
-  nlohmann::json toJSON() const;
+  static void Begin(const std::string& tag);
+  static double End();
 
 private:
-  nlohmann::json jobj;
+  static clock_t beginTime;
 
-  clock_t createdTime;
-  clock_t beginTime;
-
-  std::string currentTag;
+  static std::string currentTag;
 };
 }
 }

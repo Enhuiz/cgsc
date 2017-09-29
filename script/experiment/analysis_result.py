@@ -2,8 +2,6 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 
-results = json.load(open('../../data/output/results.json', 'r'))
-
 def bar_char(xs, ys, title, ylabel):
     fig, ax = plt.subplots()
 
@@ -80,4 +78,8 @@ def plot_all(results):
         ys = [data[variable][x]['count'] for x in xs]
         bar_char(xs, ys, variable, 'count')
 
-plot_all(results)
+def main():
+    plot_all(results)
+
+if __name__ == '__main__':
+    main()

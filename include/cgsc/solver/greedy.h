@@ -24,7 +24,7 @@ private:
                                                    std::list<std::shared_ptr<const model::Scene>> &gridCoveringScenes) const;
 
   double gamma(double price, const std::set<std::shared_ptr<const model::Grid>> &U,
-               const std::set<std::shared_ptr<const model::Grid>> &S) const;
+               const std::list<std::shared_ptr<const model::Grid>> &S) const;
 };
 }
 }

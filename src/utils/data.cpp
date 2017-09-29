@@ -30,6 +30,26 @@ const vector<shared_ptr<const AOI>> &Data::getAOIs() const
     return aois;
 }
 
+vector<shared_ptr<Scene>> Data::cloneScenes() const
+{
+    vector<shared_ptr<Scene>> ret;
+    for (const auto &scene : scenes)
+    {
+        ret.push_back(make_shared<Scene>(*scene));
+    }
+    return ret;
+}
+
+vector<shared_ptr<AOI>> Data::cloneAOIs() const
+{
+    vector<shared_ptr<AOI>> ret;
+    for (const auto &aoi : aois)
+    {
+        ret.push_back(make_shared<AOI>(*aoi));
+    }
+    return ret;
+}
+
 void Data::loadScenes(const string &path, int maxRecords)
 {
     io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
@@ -46,13 +66,12 @@ void Data::loadScenes(const string &path, int maxRecords)
 
 void Data::loadAOIs(const string &path, int maxRecords)
 {
-    io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
-    in.read_header(io::ignore_extra_column, "Polygon", "Delta");
+    io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
+    in.read_header(io::ignore_extra_column, "Polygon");
     string polygon;
-    double delta;
-    while (in.read_row(polygon, delta) && maxRecords != 0)
+    while (in.read_row(polygon) && maxRecords != 0)
     {
-        aois.push_back(make_shared<AOI>(polygon, delta));
+        aois.push_back(make_shared<AOI>(polygon));
         --maxRecords;
     }
     cout << aois.size() << " AOIs loaded" << endl;

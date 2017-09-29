@@ -4,10 +4,10 @@
 
 #include <string>
 #include <list>
-#include <set>
 
 #include "cgsc/model/polygon.h"
 #include "cgsc/model/grid.h"
+#include "cgsc/model/aoi.h"
 
 namespace cgsc
 {
@@ -23,10 +23,11 @@ public:
 
   double getPrice() const;
 
-  void setGrids(const std::set<std::shared_ptr<const Grid>> &grids);
+  void updateGrids(double delta);
 
+  void filterGrids(const AOI& aoi);
 
-  const std::set<std::shared_ptr<const Grid>>& getGrids() const;
+  const std::list<std::shared_ptr<const Grid>> &getGrids() const;
 
   nlohmann::json toJSON(bool verbose) const;
 
@@ -34,8 +35,8 @@ private:
   bool covers(const Grid &grid) const;
 
 private:
-  std::set<std::shared_ptr<const Grid>> grids;
-  
+  std::list<std::shared_ptr<const Grid>> grids;
+
   double price;
 };
 }

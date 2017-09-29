@@ -8,23 +8,23 @@ namespace cgsc
 {
 namespace model
 {
-Grid::Grid(int x, int y, double delta)
-    : x(x), y(y), delta(delta),
-      Polygon({Point(x * delta, y * delta),
-               Point(x * delta + delta, y * delta),
-               Point(x * delta + delta, y * delta + delta),
-               Point(x * delta, y * delta + delta)})
+Grid::Grid(int xi, int yi, double delta)
+    : xi(xi), yi(yi), delta(delta),
+      Polygon({Point(xi * delta, yi * delta),
+               Point(xi * delta + delta, yi * delta),
+               Point(xi * delta + delta, yi * delta + delta),
+               Point(xi * delta, yi * delta + delta)})
 {
 }
 
 bool Grid::operator==(const Grid &other) const
 {
-    return x == other.x && y == other.y && delta == other.delta;
+    return xi == other.xi && yi == other.yi && delta == other.delta;
 }
 
 bool Grid::operator!=(const Grid &other) const
 {
-    return x != other.x || y != other.y || delta != other.delta;
+    return xi != other.xi || yi != other.yi || delta != other.delta;
 }
 
 bool Grid::operator<(const Grid &other) const
@@ -46,6 +46,22 @@ bool operator<(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
 {
     return *a < *b;
 }
+
+bool operator==(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
+{
+    return *a == *b;
+}
+
+bool operator!=(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
+{
+    return *a != *b;
+}
+
+bool operator<(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
+{
+    return *a < *b;
+}
+
 
 
 

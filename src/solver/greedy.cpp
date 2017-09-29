@@ -7,6 +7,7 @@
 #include "cgsc/solver/greedy.h"
 #include "cgsc/model/grid.h"
 #include "cgsc/utils/result.h"
+#include "cgsc/utils/timestamp.h"
 
 using namespace std;
 using namespace cgsc::model;
@@ -24,18 +25,19 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
     // here a list is used because we are gonna pick elements one by one from it
     list<shared_ptr<const Scene>> gridCoveringScenes;
 
-    for (const auto &scene : possibleScenes)
+    for (const auto &possibleScene : possibleScenes)
     {
-        // here, copy the scene so that we are free to modify them (e.g. add grids to it)
-        auto newScene = make_shared<Scene>(*scene);
+        // copy scene so that we can filter
+        auto scene = make_shared<Scene>(*possibleScene);
+        
+        scene->filterGrids(aoi);
 
-        newScene->setGrids(aoi.getGrids());
-        if (newScene->getGrids().size() > 0)
+        if (scene->getGrids().size() > 0)
         {
-            // after modify the scene, make it const again
-            gridCoveringScenes.push_back(shared_ptr<const Scene>(newScene));
+            gridCoveringScenes.push_back(shared_ptr<const Scene>(scene));
         }
     }
+
 
     vector<shared_ptr<const Scene>> resultScenes;
 
@@ -43,7 +45,7 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
         set<shared_ptr<const Grid>> U;
 
         for (auto scene = pickGreedily(U, gridCoveringScenes);
-             U.size() != aoi.getGrids().size() && scene != nullptr;
+             U.size() < aoi.getGrids().size() && scene != nullptr;
              scene = pickGreedily(U, gridCoveringScenes))
         {
             resultScenes.push_back(scene);
@@ -94,15 +96,15 @@ shared_ptr<const Scene> Greedy::pickGreedily(const set<shared_ptr<const Grid>> &
 
 double Greedy::gamma(double price,
                      const set<shared_ptr<const Grid>> &U,
-                     const set<shared_ptr<const Grid>> &S) const
+                     const list<shared_ptr<const Grid>> &S) const
 {
-    set<shared_ptr<const Grid>> diff;
+    list<shared_ptr<const Grid>> diff;
 
     set_difference(S.begin(),
                    S.end(),
                    U.begin(),
                    U.end(),
-                   inserter(diff, diff.begin()));
+                   back_inserter(diff));
 
     if (diff.size() == 0)
     {

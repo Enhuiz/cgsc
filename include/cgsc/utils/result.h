@@ -23,14 +23,18 @@ public:
   void addPossibleScenes(const std::vector<std::shared_ptr<const model::Scene>> &scenes, bool verbose);
   void addTotalPrice(const std::vector<std::shared_ptr<const model::Scene>> &scenes);
   void addCoverageArea(const model::AOI &aoi, const std::vector<std::shared_ptr<const model::Scene>> &scenes);
+  void addCoverageRatio(const model::AOI &aoi, const std::vector<std::shared_ptr<const model::Scene>> &scenes);
   void addResultScense(const std::vector<std::shared_ptr<const model::Scene>> &scenes, bool verbose);
   void addAOI(const model::AOI &aoi, bool verbose);
   void addJSON(const std::string &tag, const nlohmann::json &j);
-
+  
   nlohmann::json toJSON() const;
 
 public:
   friend std::ostream &operator<<(std::ostream &os, const Result &result);
+
+private:
+  double calculateCoverageArea(const model::AOI &aoi, const std::vector<std::shared_ptr<const model::Scene>> &scenes) const;
 
 private:
   nlohmann::json jobj;

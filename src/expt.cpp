@@ -19,50 +19,66 @@ using namespace cgsc::model;
 using namespace cgsc::utils;
 using namespace cgsc::solver;
 
-void experiment(const std::string &scenesPath, const std::string &aoisPath, const std::string &outPath)
+void experiment(double delta, const std::string &scenesPath, const std::string &aoisPath, const std::string &outPath)
 {
-    nlohmann::json jobj;
-    auto timestamp = Timestamp();
+    vector<shared_ptr<const Scene>> scenes;
 
-    timestamp.begin("loading data");
     auto data = Data(scenesPath, aoisPath);
-    timestamp.end();
 
-    auto greedy = Greedy();
+    { // preprocess
+        Timestamp::Begin("loading data");
+        auto rawScenes = data.cloneScenes();
+        Timestamp::End();
 
-    const auto &aois = data.getAOIs();
-    for (int i = 0; i < aois.size(); ++i)
-    {
-        // copy an aoi so that we can modify it
-        AOI aoi = *aois[i]; 
-
-        timestamp.begin("aoi" + to_string(i) + "::t1");
-        auto possibleScenes = greedy.selectPossibleScenes(aoi, data.getScenes());
-        double t1 = timestamp.end();
-
-        timestamp.begin("aoi" + to_string(i) + "::t2");
-        aoi.updateGrids();
-        auto resultScenes = greedy.optimize(aoi, possibleScenes);
-        double t2 = timestamp.end();
-
-        auto result = Result();
-
-        result.addTotalPrice(resultScenes);
-        result.addCoverageArea(aoi, resultScenes);
-        result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});
-        result.addJSON("scenesCount", {resultScenes.size()});
-        
-        jobj.push_back(result.toJSON());
+        Timestamp::Begin("scenes preprocessing");
+        for (auto &scene : rawScenes)
+        {
+            scene->updateGrids(delta);
+            scenes.push_back(shared_ptr<const Scene>(scene)); // lock to avoid modification
+        }
+        Timestamp::End();
     }
 
-    ofstream ofs(outPath);
-    ofs << jobj << endl;
+    auto jobj = nlohmann::json();
+    
+    { // query
+        auto greedy = Greedy();
+        auto aois = data.cloneAOIs();
+
+        for (int i = 0; i < aois.size(); ++i)
+        {
+            auto &aoi = *aois[i];
+
+            Timestamp::Begin("aoi" + to_string(i) + "::t1");
+            auto possibleScenes = greedy.selectPossibleScenes(aoi, scenes);
+            double t1 = Timestamp::End();
+
+            Timestamp::Begin("aoi" + to_string(i) + "::t2");
+            aoi.updateGrids(delta); // calculate aoi for each query here, rather than during preprocessing
+
+            auto resultScenes = greedy.optimize(aoi, scenes);
+            double t2 = Timestamp::End();
+
+            auto result = Result();
+
+            result.addTotalPrice(resultScenes);
+            result.addCoverageRatio(aoi, resultScenes);
+            result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});
+
+            jobj.push_back(result.toJSON());
+        }
+    }
+
+    { // output result
+        ofstream ofs(outPath);
+        ofs << jobj << endl;
+    }
 }
 
 int main(int argc, char *argv[])
 {
     auto desc = options_description("Options");
-    desc.add_options()("aoi-path,a", value<string>(), "source file of aoi")("scenes-path,s", value<string>(), "source file of scenes")("output-path,o", value<string>(), "output path");
+    desc.add_options()("aoi-path,a", value<string>(), "source file of aoi")("scenes-path,s", value<string>(), "source file of scenes")("output-path,o", value<string>(), "output path")("delta,d", value<double>(), "grid length");
 
     variables_map vm;
     try
@@ -76,9 +92,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (vm.count("aoi-path") && vm.count("scenes-path") && vm.count("output-path"))
+    if (vm.count("delta") && vm.count("aoi-path") && vm.count("scenes-path") && vm.count("output-path"))
     {
-        experiment(vm["scenes-path"].as<string>(), vm["aoi-path"].as<string>(), vm["output-path"].as<string>());
+        experiment(vm["delta"].as<double>(), vm["scenes-path"].as<string>(), vm["aoi-path"].as<string>(), vm["output-path"].as<string>());
     }
     else
     {

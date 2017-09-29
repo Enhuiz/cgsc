@@ -2,11 +2,9 @@ import numpy as np
 import json
 import pandas as pd
 from aoi_generator import generate_aoi, show_polygons
+from analysis_result import plot_all
 import matplotlib.pyplot as plt
 import os
-
-results = {}
-
 
 def save_polygon(tag, polygon):
     fig, ax = plt.subplots()
@@ -15,24 +13,20 @@ def save_polygon(tag, polygon):
 
 
 def extract_result(path):
-    j = json.load(open(path, 'r'))
-    average_t1 = np.mean([result['timestamp']['t1'] for result in j])
-    average_t2 = np.mean([result['timestamp']['t2'] for result in j])
+    results = json.load(open(path, 'r'))
 
-    average_price = np.mean([result['totalPrice'] / result['coverageArea']
-                             for result in j if result['coverageArea'] > 0])
+    average_t1 = np.mean([result['timestamp']['t1'] for result in results])
+    average_t2 = np.mean([result['timestamp']['t2'] for result in results])
 
-    average_count = np.mean([result['scenesCount'] for result in j])
+    average_price = np.mean([result['totalPrice'] for result in results])
+    average_count = np.mean([result['coverageRatio'] for result in results])
 
-    scenes_count = len(j)
-
-    return {'t1': average_t1, 't2': average_t2, 'price': average_price, 'count': average_count}
+    return {'t1': average_t1, 't2': average_t2, 'price': average_price, 'coverage-ratio': average_count}
 
 
-def generate_aoi_file(path, aois, delta):
+def generate_aoi_file(path, aois):
     df = pd.DataFrame([str([list(v) for v in aoi]) for aoi in aois])
     df.columns = ['Polygon']
-    df['Delta'] = delta
 
     df.to_csv(path, index=None)
 
@@ -42,22 +36,22 @@ def run_expt(tag, aois, delta, scenes):
     ret = {}
 
     # read
-    scenes_path = '/data/input/csv/{}.csv'.format(scenes)
+    scenes_path = '/data/experiment/input/{}.csv'.format(scenes)
     bin_path = '/bin/expt'
 
     # write
-    aoi_path = '/data/tmp/aoi_{}.csv'.format(tag)
+    aoi_path = '/data/experiment/tmp/aoi_{}.csv'.format(tag)
 
     # write
-    target_path = '/data/output/result_{}.json'.format(tag)
+    target_path = '/data/experiment/output/result_{}.json'.format(tag)
 
     # add root
     bin_path, scenes_path, aoi_path, target_path = map(
-        lambda s: '../../' + s, (bin_path, scenes_path, aoi_path, target_path))
+        lambda s: '../..' + s, (bin_path, scenes_path, aoi_path, target_path))
 
-    generate_aoi_file(aoi_path, aois, delta)
+    generate_aoi_file(aoi_path, aois)
 
-    os.system('{} -a {} -s {} -o {}'.format(bin_path, aoi_path,
+    os.system('{} -d {} -a {} -s {} -o {}'.format(bin_path, delta, aoi_path,
                                             scenes_path, target_path))
 
     ret['tag'] = tag
@@ -95,12 +89,15 @@ def var_size():
     return ret
 
 
-AOI_SAMPES = 50
+AOI_SAMPES = 10
 
 def main():
     # 50 aois, with size 1
-    aois = generate_aoi(AOI_SAMPES, 0.25)
+    aois = generate_aoi(AOI_SAMPES, 1)
     save_polygon('general', aois)
+
+    print(run_expt('test', aois, 0.005, 1000))
+    exit()
 
     ret = []
 
@@ -108,8 +105,9 @@ def main():
     ret += var_scenes(aois)
     ret += var_size()
 
-    json.dump(ret, open('../../data/output/results.json', 'w'))
+    json.dump(ret, open('../../data/experiment/output/results.json', 'w'))
 
+    plot_all(ret)
 
 if __name__ == '__main__':
     main()
