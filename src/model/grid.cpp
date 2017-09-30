@@ -32,7 +32,7 @@ bool Grid::operator<(const Grid &other) const
     // this one is killing me!
     // return *this != other;
 
-    // if you gonna use set_xxxxxxx function, make sure your container are ordered!
+    // if you are gonna use set_xxxxxxx function, make sure your container is ordered!
 
     if (xi != other.xi)
     {

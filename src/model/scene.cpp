@@ -92,8 +92,6 @@ void Scene::filterGrids(const AOI &aoi)
                      aoiGrids.begin(),
                      aoiGrids.end(),
                      inserter(grids, grids.begin()));
-
-    cout << grids.size() << endl;
 }
 
 nlohmann::json Scene::toJSON(bool verbose) const

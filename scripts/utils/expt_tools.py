@@ -133,6 +133,7 @@ def run_expt(configs):
 
     for config_values in itertools.product(*configs_values):
         config = {k: v for k, v in zip(configs_keys, config_values)}
+        print(get_tag(config), 'start running!')
         result_path = run_expt_helper(config)
         result = extract_result(result_path)
         result = {**result, **config}

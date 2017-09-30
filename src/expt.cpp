@@ -21,29 +21,14 @@ using namespace cgsc::solver;
 
 void experiment(double delta, const std::string &scenesPath, const std::string &aoisPath, const std::string &outPath)
 {
-    vector<shared_ptr<const Scene>> scenes;
+    auto jobj = nlohmann::json();
 
     auto data = Data(scenesPath, aoisPath);
 
-    { // preprocess
-        Timestamp::Begin("loading data");
-        auto rawScenes = data.cloneScenes();
-        Timestamp::End();
-
-        Timestamp::Begin("scenes preprocessing");
-        for (auto &scene : rawScenes)
-        {
-            scene->updateGrids(delta);
-            scenes.push_back(shared_ptr<const Scene>(scene)); // lock to avoid modification
-        }
-        Timestamp::End();
-    }
-
-    auto jobj = nlohmann::json();
-    
     { // query
         auto greedy = Greedy();
         auto aois = data.cloneAOIs();
+        auto scenes = data.getScenes();
 
         for (int i = 0; i < aois.size(); ++i)
         {
@@ -54,9 +39,25 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             double t1 = Timestamp::End();
 
             Timestamp::Begin("aoi" + to_string(i) + "::t2");
-            aoi.updateGrids(delta); // calculate aoi for each query here, rather than during preprocessing
 
-            auto resultScenes = greedy.optimize(aoi, possibleScenes);
+            vector<shared_ptr<const Scene>> discretedPossibleScenes;
+            { // discretization
+
+                for (const auto &possibleScene : possibleScenes)
+                {
+                    // copy one to modify, remove const for this moment
+                    auto clonedScene = make_shared<Scene>(*possibleScene);
+                    clonedScene->updateGrids(delta);
+
+                    // add const to lock it
+                    discretedPossibleScenes.push_back(shared_ptr<const Scene>(clonedScene));
+                }
+
+                // calculate aoi for each query here, rather than during preprocessing
+                aoi.updateGrids(delta);
+            }
+
+            auto resultScenes = greedy.optimize(aoi, discretedPossibleScenes);
             double t2 = Timestamp::End();
 
             auto result = Result();
@@ -64,7 +65,7 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             result.addPossibleScenes(possibleScenes, true);
             result.addResultScense(resultScenes, true);
             result.addAOI(aoi, true);
-            
+
             result.addTotalPrice(resultScenes);
             result.addCoverageRatio(aoi, resultScenes);
             result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});

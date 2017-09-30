@@ -1,18 +1,18 @@
 from utils.path import data_dir
 from utils.expt_tools import run_expt
-
+import json
 
 def main():
     results = []
 
-    default_delta = 0.1
+    default_delta = 0.01
     default_aoi_size = 0.25
-    default_archive = 1000
-    default_n_aois = 10
+    default_archive = 15000
+    default_n_aois = 50
 
     # var delta
     results += run_expt({
-        'delta': [0.0125, 0.025, 0.0375, 0.05, 0.075],
+        'delta': [0.002, 0.005, 0.01, 0.015, 0.02, 0.03],
         'n_aois': [default_n_aois],
         'aoi_size': [default_aoi_size],
         'archive': [default_archive],
