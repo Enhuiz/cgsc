@@ -22,12 +22,12 @@ public:
 
   nlohmann::json toJSON(bool verbose) const;
 
-  const std::list<std::shared_ptr<const Grid>> &getGrids() const;
+  const ConstGridPtrSet &getGrids() const;
 
   void updateGrids(double delta);
 
 private:
-  std::list<std::shared_ptr<const Grid>> grids;
+  ConstGridPtrSet grids;
 };
 }
 }

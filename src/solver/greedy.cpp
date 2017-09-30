@@ -41,10 +41,10 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
     vector<shared_ptr<const Scene>> resultScenes;
 
     { // calculate result scenes
-        set<shared_ptr<const Grid>> U;
+        ConstGridPtrSet U;
 
         for (auto scene = pickGreedily(U, gridCoveringScenes);
-             U.size() < aoi.getGrids().size() && scene != nullptr;
+             U.size() != aoi.getGrids().size() && scene != nullptr;
              scene = pickGreedily(U, gridCoveringScenes))
         {
             resultScenes.push_back(scene);
@@ -59,7 +59,7 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
     return resultScenes;
 }
 
-shared_ptr<const Scene> Greedy::pickGreedily(const set<shared_ptr<const Grid>> &U,
+shared_ptr<const Scene> Greedy::pickGreedily(const ConstGridPtrSet &U,
                                              list<shared_ptr<const Scene>> &gridCoveringScenes) const
 {
     if (gridCoveringScenes.size() == 0)
@@ -94,20 +94,16 @@ shared_ptr<const Scene> Greedy::pickGreedily(const set<shared_ptr<const Grid>> &
 }
 
 double Greedy::gamma(double price,
-                     const set<shared_ptr<const Grid>> &U,
-                     const list<shared_ptr<const Grid>> &S) const
+                     const ConstGridPtrSet &U,
+                     const ConstGridPtrSet &S) const
 {
-    list<shared_ptr<const Grid>> diff;
+    ConstGridPtrSet diff;
 
     set_difference(S.begin(),
                    S.end(),
                    U.begin(),
                    U.end(),
-                   back_inserter(diff),
-                   [](const shared_ptr<const Grid> &a,
-                      const shared_ptr<const Grid> &b) {
-                       return *a < *b;
-                   });
+                   inserter(diff, diff.begin())); // this is not compared by value but pointer, notice
 
     if (diff.size() == 0)
     {

@@ -25,9 +25,9 @@ public:
 
   void updateGrids(double delta);
 
-  void filterGrids(const AOI& aoi);
+  void filterGrids(const AOI &aoi);
 
-  const std::list<std::shared_ptr<const Grid>> &getGrids() const;
+  const ConstGridPtrSet &getGrids() const;
 
   nlohmann::json toJSON(bool verbose) const;
 
@@ -35,7 +35,7 @@ private:
   bool covers(const Grid &grid) const;
 
 private:
-  std::list<std::shared_ptr<const Grid>> grids;
+  ConstGridPtrSet grids;
 
   double price;
 };

@@ -20,11 +20,12 @@ public:
                                                             const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes) const;
 
 private:
-  std::shared_ptr<const model::Scene> pickGreedily(const std::set<std::shared_ptr<const model::Grid>> &U,
+  std::shared_ptr<const model::Scene> pickGreedily(const model::ConstGridPtrSet &U,
                                                    std::list<std::shared_ptr<const model::Scene>> &gridCoveringScenes) const;
 
-  double gamma(double price, const std::set<std::shared_ptr<const model::Grid>> &U,
-               const std::list<std::shared_ptr<const model::Grid>> &S) const;
+  double gamma(double price,
+               const model::ConstGridPtrSet &U,
+               const model::ConstGridPtrSet &S) const;
 };
 }
 }

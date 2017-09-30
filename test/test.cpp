@@ -52,39 +52,49 @@ TEST(Scene, area)
 	}
 }
 
+bool operator<(const shared_ptr<Grid> &a, const shared_ptr<Grid> &b)
+{
+    cout << "p < t" << endl;
+    return *a < *b;
+}
+
+
+bool operator<(const shared_ptr<const Grid> &a, const shared_ptr<const Grid> &b)
+{
+    cout << "const p < t" << endl;
+    return *a < *b;
+}
+
 TEST(Grid, equal)
 {
 	list<shared_ptr<Grid>> U1;
 	list<shared_ptr<Grid>> U2;
+
 	for (int i = 0; i < 10; ++i)
 	{
-		U1.push_back(make_shared<Grid>(i, i, 10.5));
+		// U1.push_back(make_shared<Grid>(1, 1, 1));
 		if ((i & 1) == 0)
 		{
-			U2.push_back(make_shared<Grid>(i, i, 10.5));
+			U1.push_back(make_shared<Grid>(6284, 2307, 0.020));
+			U2.push_back(make_shared<Grid>(6284, 2307, 0.020));
+			// U2.push_back(make_shared<Grid>(1, 1, 1));
+		} else {
+			U1.push_back(make_shared<Grid>(2, 5, 0));
 		}
 	}
 
-	auto oldU1 = U1;
-	U1.clear();
+	set<shared_ptr<Grid>> U;
 
 	set_difference(
-		oldU1.begin(),
-		oldU1.end(),
+		U1.begin(),
+		U1.end(),
 		U2.begin(),
 		U2.end(),
-		back_inserter(U1),
-		[](const shared_ptr<Grid> &a,
-		   const shared_ptr<Grid> &b) {
-			return *a < *b;
-		});
+		inserter(U, U.begin()));
 
-	for (const auto &grid : U2)
-	{
-		cout << *grid << endl;
-	}
+	EXPECT_EQ(U.size(), 1);
 
-	for (const auto &grid : U1)
+	for (const auto &grid : U)
 	{
 		cout << *grid << endl;
 	}

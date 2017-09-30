@@ -29,7 +29,23 @@ bool Grid::operator!=(const Grid &other) const
 
 bool Grid::operator<(const Grid &other) const
 {
-    return *this != other;
+    // this one is killing me!
+    // return *this != other;
+
+    // if you gonna use set_xxxxxxx function, make sure your container are ordered!
+
+    if (xi != other.xi)
+    {
+        return xi < other.xi;
+    }
+    else if (yi != other.yi)
+    {
+        return yi < other.yi;
+    }
+    else
+    {
+        return delta < other.delta;
+    }
 }
 
 ostream &operator<<(ostream &os, const Grid &grid)
@@ -38,34 +54,34 @@ ostream &operator<<(ostream &os, const Grid &grid)
     return os;
 }
 
-// bool operator==(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
+// bool operator==(const shared_ptr<Grid> &a, const shared_ptr<Grid> &b)
 // {
 //     return *a == *b;
 // }
 
-// bool operator!=(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
+// bool operator!=(const shared_ptr<Grid> &a, const shared_ptr<Grid> &b)
 // {
 //     return *a != *b;
 // }
 
-// bool operator<(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b)
-// {
-//     return *a < *b;
-// }
+bool operator<(const shared_ptr<Grid> &a, const shared_ptr<Grid> &b)
+{
+    return *a < *b;
+}
 
-// bool operator==(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
+// bool operator==(const shared_ptr<const Grid> &a, const shared_ptr<const Grid> &b)
 // {
 //     return *a == *b;
 // }
 
-// bool operator!=(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
+// bool operator!=(const shared_ptr<const Grid> &a, const shared_ptr<const Grid> &b)
 // {
 //     return *a != *b;
 // }
 
-// bool operator<(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b)
-// {
-//     return *a < *b;
-// }
+bool operator<(const shared_ptr<const Grid> &a, const shared_ptr<const Grid> &b)
+{
+    return *a < *b;
+}
 }
 }

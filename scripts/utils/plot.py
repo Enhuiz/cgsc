@@ -38,8 +38,8 @@ def plot_query_result(ax, query_result_path):
     show_polygons(ax, [aoi], 'red', 0.5)
     show_polygons(ax, possible_scenes, 'yellow', alpha=0.1)
     show_polygons(ax, result_scenes, 'green', alpha=1)
-    # show_polygons(ax, result_grids, 'blue', alpha=1)
-    show_polygons(ax, possible_grids, 'red', alpha=1)
+    show_polygons(ax, result_grids, 'blue', alpha=1)
+    # show_polygons(ax, possible_grids, 'red', alpha=1)
 
 def plot_directly(f, *args):
     fig, ax = plt.subplots()

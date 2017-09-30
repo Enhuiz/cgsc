@@ -17,7 +17,7 @@ AOI::AOI(const string &s)
 {
 }
 
-const list<shared_ptr<const Grid>> &AOI::getGrids() const
+const ConstGridPtrSet &AOI::getGrids() const
 {
     return grids;
 }
@@ -53,7 +53,7 @@ void AOI::updateGrids(double delta)
             auto grid = make_shared<Grid>(i, j, delta);
             if (intersects(*grid)) // intersections is ok
             {
-                grids.push_back(grid);
+                grids.insert(grid);
             }
         }
     }

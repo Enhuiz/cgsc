@@ -26,7 +26,7 @@ double Scene::getPrice() const
     return price;
 }
 
-const list<shared_ptr<const Grid>> &Scene::getGrids() const
+const ConstGridPtrSet &Scene::getGrids() const
 {
     return grids;
 }
@@ -74,7 +74,7 @@ void Scene::updateGrids(double delta)
             auto grid = make_shared<Grid>(i, j, delta);
             if (covers(*grid)) // covering is neccessary
             {
-                grids.push_back(grid);
+                grids.insert(grid);
             }
         }
     }
@@ -82,21 +82,18 @@ void Scene::updateGrids(double delta)
 
 void Scene::filterGrids(const AOI &aoi)
 {
-    auto oldGrids = grids;
+    auto sceneGrids = grids;
     auto aoiGrids = aoi.getGrids();
 
     grids.clear();
 
-    set_intersection(
-        oldGrids.begin(),
-        oldGrids.end(),
-        aoiGrids.begin(),
-        aoiGrids.end(),
-        back_inserter(grids),
-        [](const shared_ptr<const Grid> &a,
-           const shared_ptr<const Grid> &b) {
-            return *a < *b;
-        });
+    set_intersection(sceneGrids.begin(),
+                     sceneGrids.end(),
+                     aoiGrids.begin(),
+                     aoiGrids.end(),
+                     inserter(grids, grids.begin()));
+
+    cout << grids.size() << endl;
 }
 
 nlohmann::json Scene::toJSON(bool verbose) const
