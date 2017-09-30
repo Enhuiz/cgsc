@@ -54,5 +54,38 @@ TEST(Scene, area)
 
 TEST(Grid, equal)
 {
-	EXPECT_EQ(Grid(0, 0, 10), Grid(0, 0, 10));
+	list<shared_ptr<Grid>> U1;
+	list<shared_ptr<Grid>> U2;
+	for (int i = 0; i < 10; ++i)
+	{
+		U1.push_back(make_shared<Grid>(i, i, 10.5));
+		if ((i & 1) == 0)
+		{
+			U2.push_back(make_shared<Grid>(i, i, 10.5));
+		}
+	}
+
+	auto oldU1 = U1;
+	U1.clear();
+
+	set_difference(
+		oldU1.begin(),
+		oldU1.end(),
+		U2.begin(),
+		U2.end(),
+		back_inserter(U1),
+		[](const shared_ptr<Grid> &a,
+		   const shared_ptr<Grid> &b) {
+			return *a < *b;
+		});
+
+	for (const auto &grid : U2)
+	{
+		cout << *grid << endl;
+	}
+
+	for (const auto &grid : U1)
+	{
+		cout << *grid << endl;
+	}
 }

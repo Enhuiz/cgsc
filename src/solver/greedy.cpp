@@ -29,7 +29,7 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
     {
         // copy scene so that we can filter
         auto scene = make_shared<Scene>(*possibleScene);
-        
+
         scene->filterGrids(aoi);
 
         if (scene->getGrids().size() > 0)
@@ -37,7 +37,6 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
             gridCoveringScenes.push_back(shared_ptr<const Scene>(scene));
         }
     }
-
 
     vector<shared_ptr<const Scene>> resultScenes;
 
@@ -104,7 +103,11 @@ double Greedy::gamma(double price,
                    S.end(),
                    U.begin(),
                    U.end(),
-                   back_inserter(diff));
+                   back_inserter(diff),
+                   [](const shared_ptr<const Grid> &a,
+                      const shared_ptr<const Grid> &b) {
+                       return *a < *b;
+                   });
 
     if (diff.size() == 0)
     {

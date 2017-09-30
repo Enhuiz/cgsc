@@ -56,11 +56,15 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             Timestamp::Begin("aoi" + to_string(i) + "::t2");
             aoi.updateGrids(delta); // calculate aoi for each query here, rather than during preprocessing
 
-            auto resultScenes = greedy.optimize(aoi, scenes);
+            auto resultScenes = greedy.optimize(aoi, possibleScenes);
             double t2 = Timestamp::End();
 
             auto result = Result();
 
+            result.addPossibleScenes(possibleScenes, true);
+            result.addResultScense(resultScenes, true);
+            result.addAOI(aoi, true);
+            
             result.addTotalPrice(resultScenes);
             result.addCoverageRatio(aoi, resultScenes);
             result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});

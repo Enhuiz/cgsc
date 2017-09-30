@@ -20,10 +20,10 @@ namespace utils
 
 void Result::addPossibleScenes(const vector<shared_ptr<const Scene>> &scenes, bool verbose)
 {
-    jobj["resultScenes"] = {};
+    jobj["possibleScenes"] = {};
     for (const auto &scene : scenes)
     {
-        jobj["resultScenes"].push_back(scene->toJSON(verbose));
+        jobj["possibleScenes"].push_back(scene->toJSON(verbose));
     }
 }
 

@@ -4,7 +4,9 @@ import matplotlib.path as mpltPath
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import math
+from utils.path import get_data_path
 
+# China Region
 XMIN = 73
 XMAX = 135
 YMIN = 4
@@ -34,9 +36,8 @@ def bounds(polygon):
     return xmin, xmax, ymin, ymax
 
 def main():
-    n_scenes = 1000000
-
-    df = pd.read_csv('../../data/input/scenes.csv', nrows=n_scenes)
+    n_scenes = 10000 # to draw a nicer dist, try to use 1,000,000
+    df = pd.read_csv(get_data_path() + '/scenes/origin/scenes.csv', nrows=n_scenes)
 
     polygons = [eval(s) for s in df['Polygon'].values]
 

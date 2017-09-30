@@ -1,8 +1,8 @@
 import numpy as np
 import json
 import pandas as pd
-from aoi_generator import generate_aoi, show_polygons
-from analysis_result import plot_all
+from .aoi_generator import generate_aoi, show_polygons
+from .analysis_result import plot_all
 import matplotlib.pyplot as plt
 import os
 
@@ -92,12 +92,6 @@ def var_size():
 AOI_SAMPES = 10
 
 def main():
-    # 50 aois, with size 1
-    aois = generate_aoi(AOI_SAMPES, 1)
-    save_polygon('general', aois)
-
-    print(run_expt('test', aois, 0.005, 1000))
-    exit()
 
     ret = []
 

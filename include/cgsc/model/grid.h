@@ -5,6 +5,7 @@
 #include "cgsc/model/polygon.h"
 
 #include <memory>
+#include <iostream>
 
 namespace cgsc
 {
@@ -20,14 +21,14 @@ public:
   bool operator<(const Grid &other) const;
 
 public:
-  friend bool operator==(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
-  friend bool operator!=(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
-  friend bool operator<(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
+  friend std::ostream &operator<<(std::ostream &os, const Grid &grid);
+  // friend bool operator==(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
+  // friend bool operator!=(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
+  // friend bool operator<(const std::shared_ptr<Grid> &a, const std::shared_ptr<Grid> &b);
 
-  friend bool operator==(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
-  friend bool operator!=(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
-  friend bool operator<(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
-
+  // friend bool operator==(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
+  // friend bool operator!=(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
+  // friend bool operator<(const std::shared_ptr<const Grid> &a, const std::shared_ptr<const Grid> &b);
 
 private:
   int xi, yi;

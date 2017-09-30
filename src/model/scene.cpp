@@ -86,11 +86,17 @@ void Scene::filterGrids(const AOI &aoi)
     auto aoiGrids = aoi.getGrids();
 
     grids.clear();
-    set_intersection(oldGrids.begin(),
-                     oldGrids.end(),
-                     aoiGrids.begin(),
-                     aoiGrids.end(),
-                     back_inserter(grids));
+
+    set_intersection(
+        oldGrids.begin(),
+        oldGrids.end(),
+        aoiGrids.begin(),
+        aoiGrids.end(),
+        back_inserter(grids),
+        [](const shared_ptr<const Grid> &a,
+           const shared_ptr<const Grid> &b) {
+            return *a < *b;
+        });
 }
 
 nlohmann::json Scene::toJSON(bool verbose) const
