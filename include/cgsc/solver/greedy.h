@@ -17,7 +17,8 @@ class Greedy : public Solver
 {
 public:
   std::vector<std::shared_ptr<const model::Scene>> optimize(const model::AOI &aoi,
-                                                            const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes) const;
+                                                            const std::vector<std::shared_ptr<const model::Scene>> &possibleScenes,
+                                                            double delta) const;
 
 private:
   std::shared_ptr<const model::Scene> pickGreedily(const model::ConstGridPtrSet &U,

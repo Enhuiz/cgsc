@@ -12,7 +12,7 @@ def main():
 
     # var delta
     results += run_expt({
-        'delta': [0.002, 0.005, 0.01, 0.015, 0.02, 0.03],
+        'delta': [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02],
         'n_aois': [default_n_aois],
         'aoi_size': [default_aoi_size],
         'archive': [default_archive],

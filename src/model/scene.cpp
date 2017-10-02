@@ -43,7 +43,19 @@ bool Scene::covers(const Grid &grid) const
     return true;
 }
 
-void Scene::updateGrids(double delta)
+void Scene::updateGrids(const AOI &aoi) // cost less memory, maybe time costing
+{
+    grids.clear();
+    for (const auto &grid : aoi.getGrids())
+    {
+        if (covers(*grid))
+        {
+            grids.insert(grid);
+        }
+    }
+}
+
+void Scene::updateGrids(double delta, const AOI &aoi) // memory costing, maybe faster
 {
     const auto &vertices = outer();
 
@@ -67,24 +79,21 @@ void Scene::updateGrids(double delta)
     int maxyi = floor(maxy / delta);
 
     grids.clear();
+    const auto &aoiGrids = aoi.getGrids();
     for (int i = minxi; i < maxxi; ++i)
     {
         for (int j = minyi; j < maxyi; ++j)
         {
-            auto grid = make_shared<Grid>(i, j, delta);
-            if (covers(*grid)) // covering is neccessary
+            auto grid = make_shared<const Grid>(i, j, delta); // create a new grid, which is memory consuming
+            if (covers(*grid))    // covering is neccessary, and should be in aoi
             {
                 grids.insert(grid);
             }
         }
     }
-}
 
-void Scene::filterGrids(const AOI &aoi)
-{
+    // filter
     auto sceneGrids = grids;
-    auto aoiGrids = aoi.getGrids();
-
     grids.clear();
 
     set_intersection(sceneGrids.begin(),

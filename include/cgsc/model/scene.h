@@ -23,9 +23,9 @@ public:
 
   double getPrice() const;
 
-  void updateGrids(double delta);
+  void updateGrids(const AOI &aoi);
 
-  void filterGrids(const AOI &aoi);
+  void updateGrids(double delta, const AOI &aoi);
 
   const ConstGridPtrSet &getGrids() const;
 

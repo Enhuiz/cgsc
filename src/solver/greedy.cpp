@@ -19,18 +19,23 @@ namespace solver
 {
 
 vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
-                                                 const vector<shared_ptr<const Scene>> &possibleScenes) const
+                                                 const vector<shared_ptr<const Scene>> &possibleScenes,
+                                                 double delta) const
 {
+    // cloned to discretize
+    auto discretedAOI = aoi;
+    discretedAOI.updateGrids(delta);
+
     // only get scenes contains some grids in the AOI
     // here a list is used because we are gonna pick elements one by one from it
     list<shared_ptr<const Scene>> gridCoveringScenes;
 
     for (const auto &possibleScene : possibleScenes)
     {
-        // copy scene so that we can filter
+        // copy scene so that we can discretize it
         auto scene = make_shared<Scene>(*possibleScene);
 
-        scene->filterGrids(aoi);
+        scene->updateGrids(discretedAOI);
 
         if (scene->getGrids().size() > 0)
         {
@@ -44,7 +49,7 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
         ConstGridPtrSet U;
 
         for (auto scene = pickGreedily(U, gridCoveringScenes);
-             U.size() != aoi.getGrids().size() && scene != nullptr;
+             U.size() != discretedAOI.getGrids().size() && scene != nullptr;
              scene = pickGreedily(U, gridCoveringScenes))
         {
             resultScenes.push_back(scene);

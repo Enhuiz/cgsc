@@ -26,7 +26,7 @@ def plot_query_result(ax, query_result_path):
     query_result = json.load(open(query_result_path, 'r'))[0]
 
     aoi = eval(query_result['aoi']['vertices'])
-    aoi_grids = [eval(grid['vertices']) for grid in query_result['aoi']['grids']]
+    # aoi_grids = [eval(grid['vertices']) for grid in query_result['aoi']['grids']]
     
     possible_scenes = [eval(scene['vertices']) for scene in query_result['possibleScenes'] or []]
     possible_grids = [eval(grid['vertices']) for scene in query_result['possibleScenes'] or [] for grid in scene['grids'] or []]
@@ -34,11 +34,11 @@ def plot_query_result(ax, query_result_path):
     result_scenes = [eval(scene['vertices']) for scene in query_result['resultScenes'] or []]
     result_grids = [eval(grid['vertices']) for scene in query_result['resultScenes'] or [] for grid in scene['grids'] or []]
 
-    show_polygons(ax, aoi_grids, 'white')
+    # show_polygons(ax, aoi_grids, 'white')
     show_polygons(ax, [aoi], 'red', 0.5)
     show_polygons(ax, possible_scenes, 'yellow', alpha=0.1)
-    show_polygons(ax, result_scenes, 'green', alpha=1)
-    show_polygons(ax, result_grids, 'blue', alpha=1)
+    # show_polygons(ax, result_scenes, 'green', alpha=1)
+    show_polygons(ax, result_grids, 'blue', alpha=0.3)
     # show_polygons(ax, possible_grids, 'red', alpha=1)
 
 def plot_directly(f, *args):

@@ -19,6 +19,7 @@ using namespace cgsc::model;
 using namespace cgsc::utils;
 using namespace cgsc::solver;
 
+
 void experiment(double delta, const std::string &scenesPath, const std::string &aoisPath, const std::string &outPath)
 {
     auto jobj = nlohmann::json();
@@ -39,33 +40,13 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             double t1 = Timestamp::End();
 
             Timestamp::Begin("aoi" + to_string(i) + "::t2");
-
-            vector<shared_ptr<const Scene>> discretedPossibleScenes;
-            { // discretization
-
-                for (const auto &possibleScene : possibleScenes)
-                {
-                    // copy one to modify, remove const for this moment
-                    auto clonedScene = make_shared<Scene>(*possibleScene);
-                    clonedScene->updateGrids(delta);
-
-                    // add const to lock it
-                    discretedPossibleScenes.push_back(shared_ptr<const Scene>(clonedScene));
-                }
-
-                // calculate aoi for each query here, rather than during preprocessing
-                aoi.updateGrids(delta);
-            }
-
-            auto resultScenes = greedy.optimize(aoi, discretedPossibleScenes);
+            auto resultScenes = greedy.optimize(aoi, possibleScenes, delta);
             double t2 = Timestamp::End();
 
             auto result = Result();
-
-            result.addPossibleScenes(possibleScenes, true);
-            result.addResultScense(resultScenes, true);
-            result.addAOI(aoi, true);
-
+            // result.addPossibleScenes(possibleScenes, true);
+            // result.addResultScense(resultScenes, true);
+            // result.addAOI(aoi, true);
             result.addTotalPrice(resultScenes);
             result.addCoverageRatio(aoi, resultScenes);
             result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});
