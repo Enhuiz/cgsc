@@ -35,7 +35,6 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
         for (int i = 0; i < aois.size(); ++i)
         {
             Timestamp::Begin("aoi" + to_string(i) + "::t1");
-
             // copy to discretize
             auto aoi = *aois[i];
 
@@ -50,7 +49,7 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             cellCoveringScenes.reserve(possibleScenes.size());
             for (const auto &scene : possibleScenes)
             {
-                auto cellCoveringScene = make_shared<Scene>(*scene);
+                auto cellCoveringScene = make_shared<Scene>(*scene); // copy to update Cells
                 cellCoveringScene->updateCells();
                 cellCoveringScene->filterCells(aoi.getCells());
                 if (cellCoveringScene->getCells().size() > 0)
@@ -65,9 +64,9 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
             double t2 = Timestamp::End();
 
             auto result = Result();
-            result.addPossibleScenes(possibleScenes, true);
-            result.addResultScense(resultScenes, true);
-            result.addAOI(aoi, true);
+            // result.addPossibleScenes(possibleScenes, true);
+            // result.addResultScense(resultScenes, true);
+            // result.addAOI(aoi, true);
             result.addTotalPrice(resultScenes);
             result.addCoverageRatio(aoi, resultScenes);
             result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});
