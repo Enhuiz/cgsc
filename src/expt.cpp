@@ -19,7 +19,6 @@ using namespace cgsc::model;
 using namespace cgsc::utils;
 using namespace cgsc::solver;
 
-
 void experiment(double delta, const std::string &scenesPath, const std::string &aoisPath, const std::string &outPath)
 {
     auto jobj = nlohmann::json();
@@ -31,22 +30,44 @@ void experiment(double delta, const std::string &scenesPath, const std::string &
         auto aois = data.cloneAOIs();
         auto scenes = data.getScenes();
 
+        Cell::SetDelta(delta); // globally set delta
+
         for (int i = 0; i < aois.size(); ++i)
         {
-            auto &aoi = *aois[i];
-
             Timestamp::Begin("aoi" + to_string(i) + "::t1");
+
+            // copy to discretize
+            auto aoi = *aois[i];
+
+            // discretize
+            aoi.updateCells();
+
+            // select possible scenes
             auto possibleScenes = greedy.selectPossibleScenes(aoi, scenes);
+
+            // copy possible scenes and discretize
+            auto cellCoveringScenes = vector<shared_ptr<const Scene>>();
+            cellCoveringScenes.reserve(possibleScenes.size());
+            for (const auto &scene : possibleScenes)
+            {
+                auto cellCoveringScene = make_shared<Scene>(*scene);
+                cellCoveringScene->updateCells();
+                cellCoveringScene->filterCells(aoi.getCells());
+                if (cellCoveringScene->getCells().size() > 0)
+                {
+                    cellCoveringScenes.push_back(shared_ptr<const Scene>(cellCoveringScene));
+                }
+            }
             double t1 = Timestamp::End();
 
             Timestamp::Begin("aoi" + to_string(i) + "::t2");
-            auto resultScenes = greedy.optimize(aoi, possibleScenes, delta);
+            auto resultScenes = greedy.optimize(aoi, cellCoveringScenes);
             double t2 = Timestamp::End();
 
             auto result = Result();
-            // result.addPossibleScenes(possibleScenes, true);
-            // result.addResultScense(resultScenes, true);
-            // result.addAOI(aoi, true);
+            result.addPossibleScenes(possibleScenes, true);
+            result.addResultScense(resultScenes, true);
+            result.addAOI(aoi, true);
             result.addTotalPrice(resultScenes);
             result.addCoverageRatio(aoi, resultScenes);
             result.addJSON("timestamp", {{"t1", t1}, {"t2", t2}});

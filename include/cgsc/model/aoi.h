@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "cgsc/model/polygon.h"
-#include "cgsc/model/grid.h"
+#include "cgsc/model/cell.h"
 
 namespace cgsc
 {
@@ -22,12 +22,12 @@ public:
 
   nlohmann::json toJSON(bool verbose) const;
 
-  const ConstGridPtrSet &getGrids() const;
+  const std::set<CellID> &getCells() const;
 
-  void updateGrids(double delta);
+  void updateCells();
 
 private:
-  ConstGridPtrSet grids;
+  std::set<CellID> cells;
 };
 }
 }

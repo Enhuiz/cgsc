@@ -8,15 +8,15 @@ def main():
     default_delta = 0.01
     default_aoi_size = 0.25
     default_archive = 15000
-    default_n_aois = 50
+    default_n_aois = 5
 
     # var delta
-    results += run_expt({
-        'delta': [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02],
-        'n_aois': [default_n_aois],
-        'aoi_size': [default_aoi_size],
-        'archive': [default_archive],
-    })
+    # results += run_expt({
+    #     'delta': [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02],
+    #     'n_aois': [default_n_aois],
+    #     'aoi_size': [default_aoi_size],
+    #     'archive': [default_archive],
+    # })
 
     # var aoi size
     results += run_expt({

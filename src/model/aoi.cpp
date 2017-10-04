@@ -17,46 +17,14 @@ AOI::AOI(const string &s)
 {
 }
 
-const ConstGridPtrSet &AOI::getGrids() const
+const std::set<CellID> &AOI::getCells() const
 {
-    return grids;
+    return cells;
 }
 
-void AOI::updateGrids(double delta)
+void AOI::updateCells()
 {
-    const auto &vertices = outer();
-
-    double minx = vertices[0].x();
-    double miny = vertices[0].y();
-    double maxx = vertices[0].x();
-    double maxy = vertices[0].y();
-
-    for (const auto &vertex : vertices)
-    {
-        minx = min(minx, vertex.x());
-        miny = min(miny, vertex.y());
-        maxx = max(maxx, vertex.x());
-        maxy = max(maxy, vertex.y());
-    }
- 
-    int minxi = floor(minx / delta); // floor for min
-    int minyi = floor(miny / delta);
-
-    int maxxi = ceil(maxx / delta); // ceil for max
-    int maxyi = ceil(maxy / delta);
-
-    grids.clear();
-    for (int i = minxi; i < maxxi; ++i)
-    {
-        for (int j = minyi; j < maxyi; ++j)
-        {
-            auto grid = make_shared<Grid>(i, j, delta);
-            if (intersects(*grid)) // intersections is ok
-            {
-                grids.insert(grid);
-            }
-        }
-    }
+    cells = Cell::GetCellIDSetByPolygon(this, true);
 }
 
 nlohmann::json AOI::toJSON(bool verbose) const
@@ -67,10 +35,11 @@ nlohmann::json AOI::toJSON(bool verbose) const
 
     if (verbose)
     {
-        jobj["grids"] = {};
-        for (const auto &grid : grids)
+        jobj["cells"] = {};
+        for (const auto &cell : cells)
         {
-            jobj["grids"].push_back(grid->toJSON());
+            auto polygon = Cell::GetPolygonByCellID(cell);
+            jobj["cells"].push_back(polygon.toJSON());
         }
     }
 

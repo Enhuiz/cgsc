@@ -120,7 +120,7 @@ def run_expt_helper(config):
     return output_arg
 
 
-def run_expt(configs):
+def run_expt(configs, draw_result=True):
     '''
     side effect: 
         1. create aoi files
@@ -139,7 +139,8 @@ def run_expt(configs):
         result = {**result, **config}
         results.append(result)
 
-    to_figures(results, configs_keys)
+    if draw_result:
+        to_figures(results, configs_keys)
     
     return results
 

@@ -6,7 +6,7 @@
 #include <list>
 
 #include "cgsc/model/polygon.h"
-#include "cgsc/model/grid.h"
+#include "cgsc/model/cell.h"
 #include "cgsc/model/aoi.h"
 
 namespace cgsc
@@ -23,19 +23,15 @@ public:
 
   double getPrice() const;
 
-  void updateGrids(const AOI &aoi);
+  void updateCells();
+  void filterCells(std::set<CellID> aoiCells);
 
-  void updateGrids(double delta, const AOI &aoi);
-
-  const ConstGridPtrSet &getGrids() const;
+  const std::set<CellID> &getCells() const;
 
   nlohmann::json toJSON(bool verbose) const;
 
 private:
-  bool covers(const Grid &grid) const;
-
-private:
-  ConstGridPtrSet grids;
+  std::set<CellID> cells;
 
   double price;
 };

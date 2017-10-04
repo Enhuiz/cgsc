@@ -5,7 +5,7 @@
 #include <list>
 
 #include "cgsc/solver/greedy.h"
-#include "cgsc/model/grid.h"
+#include "cgsc/model/cell.h"
 #include "cgsc/utils/result.h"
 #include "cgsc/utils/timestamp.h"
 
@@ -19,42 +19,24 @@ namespace solver
 {
 
 vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
-                                                 const vector<shared_ptr<const Scene>> &possibleScenes,
-                                                 double delta) const
+                                                 const vector<shared_ptr<const Scene>> &cellCoveringScenes) const
 {
-    // cloned to discretize
-    auto discretedAOI = aoi;
-    discretedAOI.updateGrids(delta);
+    auto resultScenes = vector<shared_ptr<const Scene>>();
 
-    // only get scenes contains some grids in the AOI
-    // here a list is used because we are gonna pick elements one by one from it
-    list<shared_ptr<const Scene>> gridCoveringScenes;
+    auto clonedCellCoveringScenes = list<shared_ptr<const Scene>>(cellCoveringScenes.begin(),
+                                                                  cellCoveringScenes.end());
 
-    for (const auto &possibleScene : possibleScenes)
-    {
-        // copy scene so that we can discretize it
-        auto scene = make_shared<Scene>(*possibleScene);
-
-        scene->updateGrids(discretedAOI);
-
-        if (scene->getGrids().size() > 0)
-        {
-            gridCoveringScenes.push_back(shared_ptr<const Scene>(scene));
-        }
-    }
-
-    vector<shared_ptr<const Scene>> resultScenes;
 
     { // calculate result scenes
-        ConstGridPtrSet U;
+        auto U = set<CellID>();
 
-        for (auto scene = pickGreedily(U, gridCoveringScenes);
-             U.size() != discretedAOI.getGrids().size() && scene != nullptr;
-             scene = pickGreedily(U, gridCoveringScenes))
+        for (auto scene = pickGreedily(U, clonedCellCoveringScenes);
+             U.size() != aoi.getCells().size() && scene != nullptr;
+             scene = pickGreedily(U, clonedCellCoveringScenes))
         {
             resultScenes.push_back(scene);
 
-            for (const auto &grid : scene->getGrids())
+            for (const auto &grid : scene->getCells())
             {
                 U.insert(grid);
             }
@@ -64,22 +46,22 @@ vector<shared_ptr<const Scene>> Greedy::optimize(const AOI &aoi,
     return resultScenes;
 }
 
-shared_ptr<const Scene> Greedy::pickGreedily(const ConstGridPtrSet &U,
-                                             list<shared_ptr<const Scene>> &gridCoveringScenes) const
+shared_ptr<const Scene> Greedy::pickGreedily(const set<CellID> &U,
+                                             list<shared_ptr<const Scene>> &cellCoveringScenes) const
 {
-    if (gridCoveringScenes.size() == 0)
+    if (cellCoveringScenes.size() == 0)
     {
         return nullptr;
     }
 
     double minGamma = numeric_limits<double>::max();
 
-    auto targetIt = gridCoveringScenes.begin();
+    auto targetIt = cellCoveringScenes.begin();
 
-    for (auto it = gridCoveringScenes.begin(); it != gridCoveringScenes.end(); ++it)
+    for (auto it = cellCoveringScenes.begin(); it != cellCoveringScenes.end(); ++it)
     {
         auto scene = *it;
-        double currentGamma = gamma(scene->getPrice(), U, scene->getGrids());
+        double currentGamma = gamma(scene->getPrice(), U, scene->getCells());
         if (minGamma > currentGamma)
         {
             targetIt = it;
@@ -93,16 +75,16 @@ shared_ptr<const Scene> Greedy::pickGreedily(const ConstGridPtrSet &U,
     }
 
     auto ret = *targetIt;               // save our target pointer
-    gridCoveringScenes.erase(targetIt); // erase the picked pointer, so that we won't pick it again
+    cellCoveringScenes.erase(targetIt); // erase the picked pointer, so that we won't pick it again
 
     return ret;
 }
 
 double Greedy::gamma(double price,
-                     const ConstGridPtrSet &U,
-                     const ConstGridPtrSet &S) const
+                     const set<CellID> &U,
+                     const set<CellID> &S) const
 {
-    ConstGridPtrSet diff;
+    auto diff = set<CellID>();
 
     set_difference(S.begin(),
                    S.end(),
