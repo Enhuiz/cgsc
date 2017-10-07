@@ -59,13 +59,13 @@ def prepare_output_arg(config):
 
 
 def extract_result(path):
-    results = json.load(open(path, 'r'))
+    reports = json.load(open(path, 'r'))
 
-    average_t1 = np.mean([result['timestamp']['t1'] for result in results])
-    average_t2 = np.mean([result['timestamp']['t2'] for result in results])
+    average_t1 = np.mean([report['timestamp']['t1'] for report in reports])
+    average_t2 = np.mean([report['timestamp']['t2'] for report in reports])
 
-    average_price = np.mean([result['totalPrice'] for result in results])
-    average_count = np.mean([result['coverageRatio'] for result in results])
+    average_price = np.mean([np.sum([scene['price'] for scene in report['resultScenes']]) for report in reports])
+    average_count = np.mean([report['coverageRatio'] for report in reports])
 
     return {'t1': average_t1, 't2': average_t2, 'price': average_price, 'coverage-ratio': average_count}
 
