@@ -104,7 +104,7 @@ double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<Scene *> 
 nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
 {
     nlohmann::json report;
-    Analysor analysor{true, true};
+    Analysor analysor{false, false};
     auto discretizer = Discretizer{delta};
 
     timer.begin("t1");
