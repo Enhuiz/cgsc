@@ -130,7 +130,8 @@ nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
     {
         scene->cell_set.clear();
     }
-
+    aoi->cell_set.clear();
+    
     return report;
 }
 
