@@ -44,7 +44,7 @@ vector<Scene *> select_approx_optimal_scenes(const AOI *aoi, const vector<Scene 
     int covered = 0;
     int num_aoi_cells = aoi->cell_set.size();
 
-    auto remove_scenes_with_empty_cellset = [](list<Scene *> &scenes) {
+    auto remove_scenes_with_empty_cell_set = [](list<Scene *> &scenes) {
         scenes.erase(remove_if(scenes.begin(),
                                scenes.end(),
                                [](const Scene *scene) {
@@ -53,7 +53,7 @@ vector<Scene *> select_approx_optimal_scenes(const AOI *aoi, const vector<Scene 
                      scenes.end());
     };
 
-    remove_scenes_with_empty_cellset(possible_scenes);
+    remove_scenes_with_empty_cell_set(possible_scenes);
     while (covered < num_aoi_cells && possible_scenes.size() > 0) // n
     {
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
@@ -72,7 +72,7 @@ vector<Scene *> select_approx_optimal_scenes(const AOI *aoi, const vector<Scene 
         }
         covered += scene->cell_set.size();
         result_scenes.push_back(scene);
-        remove_scenes_with_empty_cellset(possible_scenes);
+        remove_scenes_with_empty_cell_set(possible_scenes);
     }
     return result_scenes;
 }
