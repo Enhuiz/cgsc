@@ -104,7 +104,7 @@ double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<Scene *> 
 nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
 {
     nlohmann::json report;
-    Analysor analysor{false, false};
+    Analysor analysor{true, true};
     auto discretizer = Discretizer{delta};
 
     timer.begin("t1");
@@ -124,6 +124,12 @@ nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
     report["coverage_ratio"] = analysor.calculate_coverage_ratio(aoi, result_scenes);
     report["timer"] = {{"t1", t1}, {"t2", t2}};
     report["delta"] = delta;
+
+    // release memory
+    for (auto scene : scenes)
+    {
+        scene->cell_set.clear();
+    }
 
     return report;
 }
