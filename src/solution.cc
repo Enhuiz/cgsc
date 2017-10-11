@@ -27,7 +27,7 @@ void discretize_scenes(const Discretizer &discretizer, AOI *aoi, const vector<Sc
     for (auto scene : scenes) // n
     {
         scene->cell_set = discretizer.discretize(scene->poly, false); //mlogm
-        
+
         // intersection
         CellSet new_cs;
         auto &cs = scene->cell_set;
@@ -42,19 +42,21 @@ vector<Scene *> select_approx_optimal_scenes(const AOI *aoi, const vector<Scene 
     list<Scene *> possible_scenes(scenes.begin(), scenes.end());
     vector<Scene *> result_scenes;
     int covered = 0;
-    int num_possible_scenes = possible_scenes.size();
     int num_aoi_cells = aoi->cell_set.size();
-    while (covered < num_aoi_cells && result_scenes.size() < num_possible_scenes) // n
+
+    auto remove_scenes_with_empty_cellset = [](list<Scene *> &scenes) {
+        scenes.erase(remove_if(scenes.begin(),
+                               scenes.end(),
+                               [](const Scene *scene) {
+                                   return scene->cell_set.size() == 0;
+                               }),
+                     scenes.end());
+    };
+
+    remove_scenes_with_empty_cellset(possible_scenes);
+    while (covered < num_aoi_cells && possible_scenes.size() > 0) // n
     {
-        // remove empty cell_set, n
-        possible_scenes.erase(remove_if(possible_scenes.begin(),
-                                        possible_scenes.end(),
-                                        [](const Scene *scene) {
-                                            return scene->cell_set.size() == 0;
-                                        }),
-                              possible_scenes.end());
-        // n
-        auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) {
+        auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / a->cell_set.size() < b->price / b->cell_set.size();
         });
         // remove the selected
@@ -70,6 +72,7 @@ vector<Scene *> select_approx_optimal_scenes(const AOI *aoi, const vector<Scene 
         }
         covered += scene->cell_set.size();
         result_scenes.push_back(scene);
+        remove_scenes_with_empty_cellset(possible_scenes);
     }
     return result_scenes;
 }
