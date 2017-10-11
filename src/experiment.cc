@@ -1,57 +1,60 @@
 #include "experiment.h"
 
+#include "global.h"
+
+#include <iostream>
+
 using namespace std;
 
 Loader::Loader(const string &aois_path, const string &scenes_path)
 {
     { // load aoi
-        io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
+        io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(aois_path);
         in.read_header(io::ignore_extra_column, "Polygon");
         string poly_s;
         while (in.read_row(poly_s))
         {
-            auto aoi = unique_ptr<AOI>();
+            auto aoi = unique_ptr<AOI>(new AOI);
             aoi->s = poly_s;
-            aoi->poly = parse_points(poly_s);
-            aois.push_back(aoi);
+            aoi->poly = parse_polygon(poly_s);
+            aois.push_back(move(aoi));
         }
     }
-
     { // load scenes
-        io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(path);
+        io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(scenes_path);
         in.read_header(io::ignore_extra_column, "Polygon", "Price");
         string poly_s;
         double price;
         while (in.read_row(poly_s, price))
         {
-            auto scene = unique_ptr<Scene>();
+            auto scene = unique_ptr<Scene>(new Scene);
             scene->s = poly_s;
-            scene->poly = parse_points(poly_s);
+            scene->poly = parse_polygon(poly_s);
             scene->price = price;
-            scenes.push_back(scene);
+            scenes.push_back(move(scene));
         }
     }
 }
 
-vector<Scene *> Loader::get_scenes()
+vector<Scene *> Loader::get_scenes() const
 {
-    vector<const Scene *> ret;
+    vector<Scene *> ret;
     ret.reserve(scenes.size());
     for (const auto &ptr : scenes)
         ret.push_back(ptr.get());
     return ret;
 }
 
-vector<AOI *> Loader::get_aois()
+vector<AOI *> Loader::get_aois() const
 {
-    vector<const AOI *> ret;
+    vector<AOI *> ret;
     ret.reserve(aois.size());
     for (const auto &ptr : aois)
         ret.push_back(ptr.get());
     return ret;
 }
 
-nlohmann::json Analysor::get_scenes_report(const vector<Scene *> scenes)
+nlohmann::json Analysor::get_scenes_report(const vector<Scene *> scenes) const
 {
     nlohmann::json report;
     for (auto scene : scenes)
@@ -61,7 +64,7 @@ nlohmann::json Analysor::get_scenes_report(const vector<Scene *> scenes)
     return report;
 }
 
-nlohmann::json Analysor::get_scene_report(const Scene *scene)
+nlohmann::json Analysor::get_scene_report(const Scene *scene) const
 {
     nlohmann::json ret;
     if (polygon_enabled)
@@ -70,13 +73,13 @@ nlohmann::json Analysor::get_scene_report(const Scene *scene)
     }
     if (cell_enabled)
     {
-        ret["cells"] = scene.cell_set;
+        ret["cells"] = scene->cell_set;
     }
-    ret["price"] = scene.price;
+    ret["price"] = scene->price;
     return ret;
 };
 
-nlohmann::json Analysor::get_aoi_report(const AOI *aoi)
+nlohmann::json Analysor::get_aoi_report(const AOI *aoi) const
 {
     nlohmann::json ret;
     if (polygon_enabled)
@@ -85,12 +88,12 @@ nlohmann::json Analysor::get_aoi_report(const AOI *aoi)
     }
     if (cell_enabled)
     {
-        ret["cells"] = aoi.cell_set;
+        ret["cells"] = aoi->cell_set;
     }
     return ret;
 };
 
-double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<*Scene> &scenes)
+double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<Scene *> &scenes) const
 {
     int num_covered_cells = accumulate(scenes.begin(), scenes.end(), 0, [](int acc, Scene *scene) {
         return acc + scene->cell_set.size();
@@ -98,16 +101,16 @@ double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<*Scene> &
     return num_covered_cells * 1.0 / aoi->cell_set.size();
 };
 
-nlohmann::json query(AOI *aoi, const vector<*Scene> &scenes, double delta)
+nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
 {
     nlohmann::json report;
-    Analysor analysor;
+    Analysor analysor{true, true};
     auto discretizer = Discretizer{delta};
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
-    aoi = discretize_aoi(aois, discretizer);
-    possible_scenes = discretize_scenes(aoi, possible_scenes, discretizer);
+    discretize_aoi(discretizer, aoi);
+    discretize_scenes(discretizer, aoi, possible_scenes);
     double t1 = timer.end();
 
     report["aoi"] = analysor.get_aoi_report(aoi);
@@ -127,17 +130,18 @@ nlohmann::json query(AOI *aoi, const vector<*Scene> &scenes, double delta)
 
 nlohmann::json experiment(const string &aois_path, const string &scenes_path, double delta)
 {
-    auto report = nlohmann::json();
+    auto reports = nlohmann::json();
 
     timer.begin("loading");
-    const auto scenes = load.scenes(scenes_path);
-    const auto aois = load.aois(aois_path);
+    const auto loader = Loader(aois_path, scenes_path);
+    const auto aois = loader.get_aois();
+    const auto scenes = loader.get_scenes();
     timer.end();
 
     for (auto &aoi : aois)
     {
-        report.push_back(query(*aoi, scenes, delta));
+        reports.push_back(query(aoi, scenes, delta));
     }
 
-    return report;
+    return reports;
 }

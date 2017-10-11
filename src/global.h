@@ -14,6 +14,8 @@ struct Timer
     std::string tag;
     void begin(const std::string& tag);
     double end();
-} timer;
+};
+
+static Timer timer;
 
 #endif

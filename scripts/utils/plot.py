@@ -37,11 +37,11 @@ def plot_query_result(ax, report_path):
     aoi = eval(report['aoi']['polygon'])
     aoi_cells = [parse_cell(cell) for cell in report['aoi']['cells']]
     
-    possible_scenes = [eval(scene['polygon']) for scene in report['possibleScenes'] or []]
-    possible_cells = [parse_cell(cell) for scene in report['possibleScenes'] or [] for cell in scene['cells'] or []]
+    possible_scenes = [eval(scene['polygon']) for scene in report['possible_scenes'] or []]
+    possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cells'] or []]
 
-    result_scenes = [eval(scene['polygon']) for scene in report['resultScenes'] or []]
-    result_cells = [parse_cell(cell) for scene in report['resultScenes'] or [] for cell in scene['cells'] or []]
+    result_scenes = [eval(scene['polygon']) for scene in report['result_scenes'] or []]
+    result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cells'] or []]
 
     show_polygons(ax, aoi_cells, 'white')
     show_polygons(ax, [aoi], 'purple', 0.5)

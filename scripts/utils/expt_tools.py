@@ -61,11 +61,11 @@ def prepare_output_arg(config):
 def extract_result(path):
     reports = json.load(open(path, 'r'))
 
-    average_t1 = np.mean([report['timestamp']['t1'] for report in reports])
-    average_t2 = np.mean([report['timestamp']['t2'] for report in reports])
+    average_t1 = np.mean([report['timer']['t1'] for report in reports])
+    average_t2 = np.mean([report['timer']['t2'] for report in reports])
 
-    average_price = np.mean([np.sum([scene['price'] for scene in report['resultScenes']]) for report in reports])
-    average_count = np.mean([report['coverageRatio'] for report in reports])
+    average_price = np.mean([np.sum([scene['price'] for scene in report['result_scenes'] or []]) for report in reports])
+    average_count = np.mean([report['coverage_ratio'] for report in reports])
 
     return {'t1': average_t1, 't2': average_t2, 'price': average_price, 'coverage-ratio': average_count}
 
@@ -109,7 +109,7 @@ def run_expt_helper(config):
     archive_arg = prepare_archive_arg(config)
     delta_arg = prepare_delta_arg(config)
     output_arg = prepare_output_arg(config)
-    bin_arg = bin_dir(['expt'])
+    bin_arg = bin_dir(['main'])
 
     os.system('{} -a {} -s {} -d {} -o {}'.format(bin_arg,
                                                   aoi_arg,

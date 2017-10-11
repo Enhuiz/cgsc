@@ -1,2 +1,7 @@
-add_executable(experiment experiment.cpp)
-target_link_libraries(experiment pthread boost_program_options)
+file(GLOB main_SRC
+"*.h"
+"*.cc"
+)
+
+add_executable(main ${main_SRC})
+target_link_libraries(main pthread boost_program_options)

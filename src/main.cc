@@ -2,6 +2,9 @@
 
 #include "experiment.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -25,7 +28,9 @@ int main(int argc, char *argv[])
 
     if (vm.count("delta") && vm.count("aoi-path") && vm.count("scenes-path") && vm.count("output-path"))
     {
-        experiment(vm["delta"].as<double>(), vm["aoi-path"].as<string>(), vm["scenes-path"].as<string>(), vm["output-path"].as<string>());
+        auto report = experiment(vm["aoi-path"].as<string>(), vm["scenes-path"].as<string>(), vm["delta"].as<double>());
+        ofstream ofs(vm["output-path"].as<string>());
+        ofs << report << endl;
     }
     else
     {

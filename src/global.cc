@@ -12,7 +12,7 @@ void Timer::begin(const string &tag)
     this->tag = tag;
     cout << "\033[1;34m"
          << "["
-         << current_tag
+         << tag
          << "]"
          << " ...\033[0m"
          << endl;
