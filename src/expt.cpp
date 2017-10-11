@@ -81,7 +81,6 @@ struct Scene
 
 struct
 {
-
     auto aois(const string &path)
     {
         auto ret = list<shared_ptr<AOI>>();
@@ -215,10 +214,6 @@ auto selectPossibleScenes(const AOI &aoi, const list<shared_ptr<Scene>> &scenes)
     return possibleScenes;
 }
 
-set<CellID> discretizeBoostPolygon()
-{
-}
-
 void discretize(AOI &aoi,
                 list<shared_ptr<Scene>> &possibleScenes,
                 double delta)
@@ -242,6 +237,32 @@ void discretize(AOI &aoi,
         int minxi, minyi, maxxi, maxyi;
         function<bool(int, int, const BoostPolygon &)> cond;
 
+        auto cellInside = [delta](int xi, int yi, const BoostPolygon &boostPolygon) {
+            double x = xi * delta;
+            double y = yi * delta;
+
+            auto within = [](double x, double y, const BoostPolygon& boostPolygon)
+            {
+                auto vertices = boostPolygon.outer();
+                for (int i = 0; i < vertices.size(); ++i) 
+                {
+                    
+                }
+            };
+
+            for (int i = 0; i < 2; ++i)
+            {
+                for (int j = 0; j < 2; ++j)
+                {
+                    if (!within(x + i * delta, y + j * delta, boostPolygon))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
+
         if (aggresive)
         {
             minxi = floor(minx / delta);
@@ -250,7 +271,11 @@ void discretize(AOI &aoi,
             maxxi = ceil(maxx / delta);
             maxyi = ceil(maxy / delta);
 
-            cond = [delta](int xi, int yi, const BoostPolygon &boostPolygon) {
+            cond = [cellInside, delta](int xi, int yi, const BoostPolygon &boostPolygon) {
+                if (cellInside(xi, yi, boostPolygon)) {
+                    return true;
+                }
+
                 double x = xi * delta;
                 double y = yi * delta;
 
@@ -260,7 +285,6 @@ void discretize(AOI &aoi,
                                                            BoostPoint(x + delta, y),
                                                            BoostPoint(x + delta, y + delta),
                                                            BoostPoint(x, y + delta)});
-
                 return boost::geometry::intersects(cellBoostPolygon,
                                                    boostPolygon);
             };
@@ -308,7 +332,9 @@ void discretize(AOI &aoi,
     };
 
     // discretize aoi
+    timestamp.begin("aoi discretize");
     aoi.cells = discretizeBoostPolygon(aoi.boostPolygon, true);
+    timestamp.end();
 
     // discretize scenes
     auto it = possibleScenes.begin();
@@ -316,7 +342,9 @@ void discretize(AOI &aoi,
     {
         auto &scene = *it;
 
+        timestamp.begin("scene discretize");
         scene->cells = discretizeBoostPolygon(scene->boostPolygon, false);
+        timestamp.end();
 
         auto cells = scene->cells;
         scene->cells.clear();
@@ -450,12 +478,13 @@ struct
         while (unionIteration(sceneBoostPolygons))
             ;
 
-        double coverageArea = accumulate(sceneBoostPolygons.begin(), sceneBoostPolygons.end(), 0, [&](int acc, const auto &boostPolygon) {
+        double coverageArea = accumulate(sceneBoostPolygons.begin(), sceneBoostPolygons.end(), 0.0, [&aoi](double acc, const auto &boostPolygon) {
             list<BoostPolygon> intersectionPolygons;
             boost::geometry::intersection(aoi.boostPolygon, boostPolygon, intersectionPolygons);
-            return acc + accumulate(intersectionPolygons.begin(), intersectionPolygons.end(), 0, [](int acc, const auto &boostPolygon) {
-                       return acc + boost::geometry::area(boostPolygon);
-                   });
+            
+            return acc + accumulate(intersectionPolygons.begin(), intersectionPolygons.end(), 0.0, [](double acc, const auto &boostPolygon) {
+                return acc + boost::geometry::area(boostPolygon);
+            });
         });
 
         return coverageArea / boost::geometry::area(aoi.boostPolygon);

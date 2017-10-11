@@ -19,13 +19,11 @@ namespace model
 Polygon::Polygon(const BoostPolygon &boostPolygon)
     : boostPolygon(boostPolygon)
 {
-    area = -1;
 }
 
 Polygon::Polygon(const list<Point> &vertices)
 {
     boost::geometry::append(boostPolygon, vertices);
-    area = -1;
 }
 
 Polygon::Polygon(const string &s)
