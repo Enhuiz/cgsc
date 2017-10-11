@@ -1,1 +1,0 @@
-add_library(model aoi.cpp cell.cpp polygon.cpp scene.cpp misc.cpp)

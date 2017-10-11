@@ -1,7 +1,6 @@
-/build/
-/.vscode
-/lib/
-/data
-/**/__pycache__/
+/.vscode/
 /bin/
+/build/
+/data/
 /fig/
+/**/__pycache__/

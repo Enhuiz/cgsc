@@ -1,1 +1,0 @@
-add_library(utils data.cpp result.cpp timestamp.cpp)
