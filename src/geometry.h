@@ -5,6 +5,10 @@
 #include <set>
 #include <string>
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
 struct Vector2
 {
   double x;
@@ -34,19 +38,24 @@ using CID = unsigned long long;
 
 using CellSet = std::set<CID>;
 
+using BoostPoint = boost::geometry::model::d2::point_xy<double>;
+using BoostPolygon = boost::geometry::model::polygon<BoostPoint, false, false>;
+
 struct AOI
 {
   std::string s;
   Polygon poly;
-  CellSet cell_set;
+  CellSet cell_set; // discrete
+  std::vector<BoostPolygon> bpolys; // continous
 };
 
 struct Scene
 {
   std::string s;
   Polygon poly;
-  CellSet cell_set;
   double price;
+  CellSet cell_set;
+  std::vector<BoostPolygon> bpolys;
 };
 
 struct Discretizer
@@ -57,6 +66,5 @@ struct Discretizer
   Point cid_to_point(const CID &cid) const;
   CID index_to_cid(int xi, int yi) const;
 };
-
 
 #endif

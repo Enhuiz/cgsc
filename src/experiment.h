@@ -26,7 +26,9 @@ struct Analysor
   double calculate_coverage_ratio(const AOI *aoi, const std::vector<Scene *> &scenes) const;
 };
 
-nlohmann::json query(AOI *aoi, const std::vector<Scene *> &scenes, double delta);
+nlohmann::json discrete_query(AOI *aoi, const std::vector<Scene *> &scenes, double delta);
+nlohmann::json continuous_query(AOI *aoi, const std::vector<Scene *> &scenes);
+
 nlohmann::json experiment(const std::string &aois_path, const std::string &scenes_path, double delta);
 
 #endif

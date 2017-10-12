@@ -101,8 +101,10 @@ double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<Scene *> 
     return num_covered_cells * 1.0 / aoi->cell_set.size();
 };
 
-nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
+nlohmann::json discrete_query(AOI *aoi, const vector<Scene *> &scenes, double delta)
 {
+    using namespace discrete;
+
     nlohmann::json report;
     Analysor analysor{false, false};
     auto discretizer = Discretizer{delta};
@@ -131,7 +133,39 @@ nlohmann::json query(AOI *aoi, const vector<Scene *> &scenes, double delta)
         scene->cell_set.clear();
     }
     aoi->cell_set.clear();
-    
+
+    return report;
+}
+
+nlohmann::json continuous_query(AOI *aoi, const vector<Scene *> &scenes)
+{
+    using namespace continuous;
+
+    nlohmann::json report;
+    Analysor analysor{false, false};
+
+    timer.begin("t1");
+    auto possible_scenes = select_possible_scenes(aoi, scenes);
+    double t1 = timer.end();
+
+    report["aoi"] = analysor.get_aoi_report(aoi);
+    report["possible_scenes"] = analysor.get_scenes_report(possible_scenes);
+
+    timer.begin("t2");
+    auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes);
+    double t2 = timer.end();
+
+    report["result_scenes"] = analysor.get_scenes_report(result_scenes);
+    report["coverage_ratio"] = analysor.calculate_coverage_ratio(aoi, result_scenes);
+    report["timer"] = {{"t1", t1}, {"t2", t2}};
+
+    // release memory
+    for (auto scene : scenes)
+    {
+        scene->bpolys.clear();
+    }
+    aoi->bpolys.clear();
+
     return report;
 }
 
@@ -147,7 +181,8 @@ nlohmann::json experiment(const string &aois_path, const string &scenes_path, do
 
     for (auto &aoi : aois)
     {
-        reports.push_back(query(aoi, scenes, delta));
+        // reports.push_back(discrete_query(aoi, scenes, delta));
+        reports.push_back(continuous_query(aoi, scenes));
     }
 
     return reports;
