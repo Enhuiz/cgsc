@@ -27,11 +27,11 @@ The median area of 185,300 scenes is 0.025322, which is about 0.040% of the area
 
 The max area of 185,300 scenes is 0.446420, which is about 0.7% of the area of this region.
 
-## $\delta$ Selection
+## Choose different delta
 
-The cells that max, median, min scenes contains when different $\delta$ is selected.
+The cells that max, median, min scenes contains when different delta is selected.
 
-### $\delta = 0.02$ 
+### delta = 0.02 
 
 #### min
 ![](fig/min_delta_0.02.png)
@@ -42,7 +42,7 @@ The cells that max, median, min scenes contains when different $\delta$ is selec
 #### max
 ![](fig/max_delta_0.02.png)
 
-### $\delta = 0.01$ 
+### delta = 0.01 
 
 #### min
 ![](fig/min_delta_0.01.png)
@@ -53,7 +53,7 @@ The cells that max, median, min scenes contains when different $\delta$ is selec
 #### max
 ![](fig/max_delta_0.01.png)
 
-### $\delta = 0.005$ 
+### delta = 0.005
 
 #### min
 ![](fig/min_delta_0.005.png)
