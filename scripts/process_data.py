@@ -27,11 +27,15 @@ def is_interested(polygon):
 def main():
     df = load_scenes()
     df = df[df['Polygon'].map(is_interested)]
-    df = df.sample(frac=1)  # important, to shuffle the data
 
+    filepath = lambda s: data_dir(['scenes', 'archives', '{}.csv'.format(s)])
+    df.to_csv(filepath('total'), index=None)
+
+    exit()
+    
+    df = df.sample(frac=1)  # important, to shuffle the data
     for i in [1000, 1500, 2000, 2500, 5000, 10000, 15000, 20000, 50000]:
-        path = data_dir(['scenes', 'archives', '{}.csv'.format(i)])
-        df.head(i).to_csv(path, index=None)
+        df.head(i).to_csv(filepath(str(i)), index=None)
 
 
 if __name__ == '__main__':
