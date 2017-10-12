@@ -4,7 +4,7 @@ There are totally 1,211,874 scenes on rscloudmart whose capture date are in 01/0
 Since rscloudmart only provide scenes in China. All the scenes are in the region whose longitude is in 73°E \~ 135°E and latitude is in 3°N \~ 53°N
 ![](fig/scenes_dist.png)
 
-For convenince, only 185,300 scenes from region whose longitude is in 120°E~128°E and latitude is in 42°N~50°N are selected. They are picked randomly to form experiment archieves of different size.
+For convenince, only 185,300 scenes from region whose longitude is in 120°E \~ 128°E and latitude is in 42°N \~ 50°N are selected. They are picked randomly to form experiment archieves of different size.
 ![](fig/selected_region.png)
 
 
