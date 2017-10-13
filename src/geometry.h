@@ -38,7 +38,7 @@ using CID = unsigned long long;
 
 using CellSet = std::set<CID>;
 
-using BoostPoint = boost::geometry::model::d2::point_xy<double>;
+using BoostPoint = boost::geometry::model::d2::point_xy<float>;
 using BoostPolygon = boost::geometry::model::polygon<BoostPoint, false, false>;
 
 struct AOI

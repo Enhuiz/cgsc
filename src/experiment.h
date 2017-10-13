@@ -20,9 +20,11 @@ struct Analysor
 {
   bool cell_enabled;
   bool polygon_enabled;
+  bool bpolys_enabled;
   nlohmann::json get_aoi_report(const AOI *aoi) const;
   nlohmann::json get_scene_report(const Scene *scene) const;
   nlohmann::json get_scenes_report(const std::vector<Scene *> scenes) const;
+  nlohmann::json get_bpolys_report(const std::vector<BoostPolygon>& bpolys) const;
   double calculate_coverage_ratio(const AOI *aoi, const std::vector<Scene *> &scenes) const;
 };
 

@@ -75,6 +75,10 @@ nlohmann::json Analysor::get_scene_report(const Scene *scene) const
     {
         ret["cells"] = scene->cell_set;
     }
+    if (bpolys_enabled) 
+    {
+        ret["bpolys"] = get_bpolys_report(scene->bpolys);
+    }
     ret["price"] = scene->price;
     return ret;
 };
@@ -90,8 +94,34 @@ nlohmann::json Analysor::get_aoi_report(const AOI *aoi) const
     {
         ret["cells"] = aoi->cell_set;
     }
+    if (bpolys_enabled) 
+    {
+        ret["bpolys"] = get_bpolys_report(aoi->bpolys);
+    }
     return ret;
 };
+
+nlohmann::json Analysor::get_bpolys_report(const vector<BoostPolygon>& bpolys) const
+{
+    auto report = nlohmann::json();
+    auto boost_polygon_to_string = [](const BoostPolygon& bpoly) {
+        string ret = "[";
+        for (auto p: bpoly.outer()) {
+            ret += "[" + to_string(p.x()) + ", " + to_string(p.y()) + "], ";
+        }
+        // ", " to "]"
+        ret.pop_back();
+        ret[ret.size() - 1] = ']';
+        return ret;
+    };
+
+    for (const auto& bpoly: bpolys)
+    {
+        report.push_back(boost_polygon_to_string(bpoly));
+    }
+    return report;
+};
+
 
 double Analysor::calculate_coverage_ratio(const AOI *aoi, const vector<Scene *> &scenes) const
 {
@@ -106,7 +136,7 @@ nlohmann::json discrete_query(AOI *aoi, const vector<Scene *> &scenes, double de
     using namespace discrete;
 
     nlohmann::json report;
-    Analysor analysor{false, false};
+    Analysor analysor{false, false, false};
     auto discretizer = Discretizer{delta};
 
     timer.begin("t1");
@@ -142,7 +172,7 @@ nlohmann::json continuous_query(AOI *aoi, const vector<Scene *> &scenes)
     using namespace continuous;
 
     nlohmann::json report;
-    Analysor analysor{false, false};
+    Analysor analysor{false, true, true}; 
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
@@ -156,7 +186,7 @@ nlohmann::json continuous_query(AOI *aoi, const vector<Scene *> &scenes)
     double t2 = timer.end();
 
     report["result_scenes"] = analysor.get_scenes_report(result_scenes);
-    report["coverage_ratio"] = analysor.calculate_coverage_ratio(aoi, result_scenes);
+    report["coverage_ratio"] = 1;
     report["timer"] = {{"t1", t1}, {"t2", t2}};
 
     // release memory
