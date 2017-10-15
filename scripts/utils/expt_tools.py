@@ -5,9 +5,9 @@ import itertools
 import matplotlib.pyplot as plt
 import os
 
-from .gen_aoi import gen_aoi
+from .gen_poly import gen_poly, gen_axis_aligned_rectangle
 from .path import fig_dir, data_dir, bin_dir
-from .plot import show_polygons
+from .plot import show_polygons, plot_directly
 
 
 def prepare_aoi_arg(config):
@@ -15,16 +15,17 @@ def prepare_aoi_arg(config):
     side effect:
         1. create aoi files
     '''
-    n_aois, aoi_size = config['n_aois'], config['aoi_size']
+    n_aois, aoi_ratio = config['n_aois'], config['aoi_ratio']
 
-    tag = '{}-{}'.format(n_aois, aoi_size)
+    tag = '{}-{}-rect'.format(n_aois, aoi_ratio)
     path = data_dir(['experiment', 'generated_aois', '{}.csv'.format(tag)])
 
     if not os.path.exists(path):
-        aois = gen_aoi(n_aois, aoi_size)
+        aois = gen_axis_aligned_rectangle(n_aois, aoi_ratio)
         df = pd.DataFrame([str([list(v) for v in aoi]) for aoi in aois])
         df.columns = ['Polygon']
         df.to_csv(path, index=None)
+        # plot_directly(show_polygons, aois)
 
     return path
 
@@ -41,10 +42,10 @@ def prepare_delta_arg(config):
 
 def get_tag(config):
     delta = config['delta']
-    aoi_size = config['aoi_size']
+    aoi_ratio = config['aoi_ratio']
     n_aois = config['n_aois']
     archive = config['archive']
-    tag = '{}-{}-{}-{}'.format(delta, n_aois, aoi_size, archive)
+    tag = '{}-{}-{}-{}'.format(delta, n_aois, aoi_ratio, archive)
 
     return tag
 

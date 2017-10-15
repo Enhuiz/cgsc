@@ -12,14 +12,14 @@ def query_dir(l):
 def main():
     # config = {
     #     'delta': [0.02],
-    #     'aoi_size': [0.1],
+    #     'aoi_ratio': [0.1],
     #     'n_aois': [1],
     #     'archive': [1000],
     # }
 
     config = {
         'delta': [0.01],
-        'aoi_size': [0.2],
+        'aoi_ratio': [0.2],
         'n_aois': [1],
         'archive': [15000],
     }
