@@ -4,6 +4,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <functional>
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
@@ -45,7 +46,7 @@ struct AOI
 {
   std::string s;
   Polygon poly;
-  CellSet cell_set; // discrete
+  CellSet cell_set;                 // discrete
   std::vector<BoostPolygon> bpolys; // continous
 };
 
@@ -61,10 +62,12 @@ struct Scene
 struct Discretizer
 {
   double delta;
-  CellSet discretize(const Polygon &poly, bool keep_edge_point) const;
+  CellSet discretize(const Polygon &poly, bool keep_edge_cells) const;
   CID point_to_cid(const Point &p) const;
   Point cid_to_point(const CID &cid) const;
   CID index_to_cid(int xi, int yi) const;
+  std::tuple<double, double, double, double> axis_aligned_bounding_box_lu_corner(const Polygon &poly, const std::function<double(double)> &min_trunc, const std::function<double(double)> &max_trunc) const;
+  Polygon axis_aligned_bounding_box(const Polygon &poly, const std::function<double(double)> &min_trunc, const std::function<double(double)> &max_trunc) const;
 };
 
 #endif

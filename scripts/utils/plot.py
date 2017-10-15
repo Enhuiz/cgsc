@@ -77,28 +77,28 @@ def plot_query_result(ax, report_path):
     parse_cell = lambda cid: parse_cell_helper(cid, report['delta'])
 
     aoi = eval(report['aoi']['polygon'])
-    # # aoi_cells = [parse_cell(cell) for cell in report['aoi']['cells']]
+    aoi_cells = [parse_cell(cell) for cell in report['aoi']['cells']]
 
     possible_scenes = [eval(scene['polygon']) for scene in report['possible_scenes'] or []]
-    # # possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cells'] or []]
+    possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cells'] or []]
 
     result_scenes = [eval(scene['polygon']) for scene in report['result_scenes'] or []]
-    # # result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cells'] or []]
+    result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cells'] or []]
 
-    result_scenes_bpolys = []
-    for scene in report['result_scenes'] or []:
-        for bpoly in scene['bpolys'] or []:
-            result_scenes_bpolys.append(eval(bpoly))
+    # result_scenes_bpolys = []
+    # for scene in report['result_scenes'] or []:
+    #     for bpoly in scene['bpolys'] or []:
+    #         result_scenes_bpolys.append(eval(bpoly))
 
-    # show_polygons(ax, aoi_cells, 'white')
-    show_polygons(ax, generate_cells(aoi, 0.05, True), 'white', 1)
-    show_polygons(ax, [aoi], 'white', 0.5)
+    show_polygons(ax, aoi_cells, 'none')
+    show_polygons(ax, [aoi], 'none')
+    # show_polygons(ax, generate_cells(aoi, 0.05, True), 'white', 1)
     # show_polygons(ax, possible_scenes, 'yellow', alpha=0.1)
     # show_polygons(ax, possible_cells, 'red', alpha=0.5)
-    # show_polygons(ax, result_scenes, 'green', alpha=0.3)
-    # show_polygons(ax, result_cells, 'blue', alpha=0.3)
+    show_polygons(ax, result_scenes, 'green', alpha=0.5)
+    show_polygons(ax, result_cells, 'blue', alpha=0.5)
 
-    show_polygons(ax, result_scenes_bpolys, ['yellow', 'green', 'blue', 'red', 'black', 'orange', 'purple'], alpha=0.5)
+    # show_polygons(ax, result_scenes_bpolys, ['yellow', 'green', 'blue', 'red', 'black', 'orange', 'purple'], alpha=0.5)
 
 def plot_directly(f, *args):
     fig, ax = plt.subplots()

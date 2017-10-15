@@ -172,7 +172,7 @@ nlohmann::json continuous_query(AOI *aoi, const vector<Scene *> &scenes)
     using namespace continuous;
 
     nlohmann::json report;
-    Analysor analysor{false, true, true}; 
+    Analysor analysor{false, false, false}; 
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
@@ -211,8 +211,8 @@ nlohmann::json experiment(const string &aois_path, const string &scenes_path, do
 
     for (auto &aoi : aois)
     {
-        // reports.push_back(discrete_query(aoi, scenes, delta));
-        reports.push_back(continuous_query(aoi, scenes));
+        reports.push_back(discrete_query(aoi, scenes, delta));
+        // reports.push_back(continuous_query(aoi, scenes));
     }
 
     return reports;

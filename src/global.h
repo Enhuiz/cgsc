@@ -17,5 +17,5 @@ struct Timer
 };
 
 static Timer timer;
- 
+
 #endif

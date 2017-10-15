@@ -18,8 +18,8 @@ struct Loader
 
 struct Analysor
 {
-  bool cell_enabled;
   bool polygon_enabled;
+  bool cell_enabled;
   bool bpolys_enabled;
   nlohmann::json get_aoi_report(const AOI *aoi) const;
   nlohmann::json get_scene_report(const Scene *scene) const;

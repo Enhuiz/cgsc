@@ -15,6 +15,47 @@ vector<Scene *> select_possible_scenes(AOI *aoi, const vector<Scene *> &scenes)
     return ret;
 }
 
+BoostPoint point_to_boost_point(const Point &p)
+{
+    return BoostPoint(p.x, p.y);
+}
+
+BoostPolygon polygon_to_boost_polygon(const Polygon &poly)
+{
+    vector<BoostPoint> bps;
+    bps.reserve(poly.size());
+    for (const auto &p : poly)
+    {
+        bps.push_back(point_to_boost_point(p));
+    }
+    BoostPolygon bpoly;
+    boost::geometry::append(bpoly, bps);
+    return bpoly;
+}
+
+string boost_polygon_to_string(const BoostPolygon &bpoly)
+{
+    string ret = "[";
+    for (auto p : bpoly.outer())
+    {
+        ret += "[" + to_string(p.x()) + ", " + to_string(p.y()) + "], ";
+    }
+    // ", " to "]"
+    ret.pop_back();
+    ret[ret.size() - 1] = ']';
+    return ret;
+}
+
+Polygon boost_polygon_to_polygon(const BoostPolygon &bpoly)
+{
+    Polygon ret;
+    for (const auto &bp : bpoly.outer())
+    {
+        ret.push_back(Point{bp.x(), bp.y()});
+    }
+    return ret;
+}
+
 namespace discrete
 {
 
@@ -26,16 +67,31 @@ void discretize_aoi(const Discretizer &discretizer, AOI *aoi)
 // O(nmlogm)
 void discretize_scenes(const Discretizer &discretizer, AOI *aoi, const vector<Scene *> &scenes)
 {
-    auto &acs = aoi->cell_set;
+    auto aoi_bbox = discretizer.axis_aligned_bounding_box(aoi->poly, static_cast<double (*)(double)>(floor), static_cast<double (*)(double)>(ceil));
+    auto aoi_bbox_bpoly = polygon_to_boost_polygon(aoi_bbox);
+
     for (auto scene : scenes) // n
     {
-        scene->cell_set = discretizer.discretize(scene->poly, false); //mlogm
-
+        auto scene_bpoly = polygon_to_boost_polygon(scene->poly);
+        vector<BoostPolygon> output_bpolys;
+        boost::geometry::intersection(aoi_bbox_bpoly, scene_bpoly, output_bpolys);
+        CellSet cs;
+        for (const auto &output_bpoly : output_bpolys)
+        {
+            // find cid in the intersecitons
+            auto itersection_cs = discretizer.discretize(boost_polygon_to_polygon(output_bpoly), false);
+            for (const auto &cid : itersection_cs)
+            {
+                cs.insert(cid);
+            }
+        }
         // intersection
-        CellSet new_cs;
-        auto &cs = scene->cell_set;
-        set_intersection(cs.begin(), cs.end(), acs.begin(), acs.end(), inserter(new_cs, new_cs.begin()));
-        cs = new_cs;
+        scene->cell_set.clear();
+        set_intersection(cs.begin(),
+                         cs.end(),
+                         aoi->cell_set.begin(),
+                         aoi->cell_set.end(),
+                         inserter(scene->cell_set, scene->cell_set.begin()));
     }
 }
 
@@ -86,20 +142,11 @@ namespace continuous
 
 vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &scenes)
 {
-    auto boost_polygon_to_string = [](const BoostPolygon& bpoly) {
-        string ret = "[";
-        for (auto p: bpoly.outer()) {
-            ret += "[" + to_string(p.x()) + ", " + to_string(p.y()) + "], ";
-        }
-        // ", " to "]"
-        ret.pop_back();
-        ret[ret.size() - 1] = ']';
-        return ret;
-    };
 
-    auto boost_polygons_to_string = [boost_polygon_to_string](const vector<BoostPolygon>& bpolys) {
+    auto boost_polygons_to_string = [](const vector<BoostPolygon> &bpolys) {
         string ret = "[";
-        for (const auto& bpoly: bpolys) {
+        for (const auto &bpoly : bpolys)
+        {
             ret += boost_polygon_to_string(bpoly) + ", ";
         }
         // ", " to "]"
@@ -119,10 +166,11 @@ vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &sc
             }
             catch (...)
             {
-     
             }
-            for (const auto& output_bpoly: output_bpolys) {
-                if (boost::geometry::area(output_bpoly) > 1e-4) {
+            for (const auto &output_bpoly : output_bpolys)
+            {
+                if (boost::geometry::area(output_bpoly) > 1e-4)
+                {
                     result_bpolys.push_back(output_bpoly);
                 }
             }
@@ -131,7 +179,7 @@ vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &sc
     };
 
     auto scene_different_boost_polygons = [scene_different_boost_polygon](Scene *scene, vector<BoostPolygon> &bpolys) {
-        for (const auto& bpoly : bpolys)
+        for (const auto &bpoly : bpolys)
         {
             scene_different_boost_polygon(scene, bpoly);
         }
@@ -143,8 +191,10 @@ vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &sc
         {
             vector<BoostPolygon> output_bpolys;
             boost::geometry::intersection(scene_bpoly, bpoly, output_bpolys);
-            for (const auto& output_bpoly: output_bpolys) {
-                if (boost::geometry::area(output_bpoly) > 1e-4) {
+            for (const auto &output_bpoly : output_bpolys)
+            {
+                if (boost::geometry::area(output_bpoly) > 1e-4)
+                {
                     result_bpolys.push_back(output_bpoly);
                 }
             }
@@ -153,33 +203,17 @@ vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &sc
     };
 
     auto scene_intersection_boost_polygons = [scene_intersection_boost_polygon](Scene *scene, vector<BoostPolygon> &bpolys) {
-        for (const auto& bpoly : bpolys)
+        for (const auto &bpoly : bpolys)
         {
             scene_intersection_boost_polygon(scene, bpoly);
         }
     };
 
-    auto point_to_boost_point = [](const Point &p) {
-        return BoostPoint(p.x, p.y);
-    };
-
-    auto polygon_to_boost_polygons = [point_to_boost_point](const Polygon &poly) {
-        vector<BoostPoint> bps;
-        bps.reserve(poly.size());
-        for (const auto &p : poly)
-        {
-            bps.push_back(point_to_boost_point(p));
-        }
-        BoostPolygon bpoly;
-        boost::geometry::append(bpoly, bps);
-        return vector<BoostPolygon>{bpoly};
-    };
-
     { // assemble bpoly
-        aoi->bpolys = polygon_to_boost_polygons(aoi->poly);
+        aoi->bpolys = vector<BoostPolygon>{polygon_to_boost_polygon(aoi->poly)};
         for (auto scene : scenes)
         {
-            scene->bpolys = polygon_to_boost_polygons(scene->poly);
+            scene->bpolys = vector<BoostPolygon>{polygon_to_boost_polygon(scene->poly)};
             scene_intersection_boost_polygons(scene, aoi->bpolys);
         }
     }
@@ -210,7 +244,8 @@ vector<Scene *> select_approx_optimal_scenes(AOI *aoi, const vector<Scene *> &sc
                                    return scene_area(scene) < 1e-3;
                                }),
                      scenes.end());
-        cout << "after: " << scenes.size() << endl << endl;
+        cout << "after: " << scenes.size() << endl
+             << endl;
     };
 
     // return vector<Scene *>(possible_scenes.begin(), possible_scenes.end());

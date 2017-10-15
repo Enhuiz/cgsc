@@ -133,7 +133,37 @@ string to_string(const Polygon &poly)
     return ret;
 }
 
-CellSet Discretizer::discretize(const Polygon &poly, bool keep_edge_point) const
+tuple<double, double, double, double> Discretizer::axis_aligned_bounding_box_lu_corner(const Polygon &poly,
+                                                                                       const function<double(double)> &min_trunc,
+                                                                                       const function<double(double)> &max_trunc) const
+{
+    double minx, miny, maxx, maxy;
+    minx = maxx = poly.begin()->x;
+    miny = maxy = poly.begin()->y;
+    for (const auto &p : poly)
+    {
+        minx = min(minx, p.x);
+        miny = min(miny, p.y);
+        maxx = max(maxx, p.x);
+        maxy = max(maxy, p.y);
+    }
+    minx = min_trunc(minx / delta) * delta;
+    miny = min_trunc(miny / delta) * delta;
+    maxx = max_trunc(maxx / delta) * delta;
+    maxy = max_trunc(maxy / delta) * delta;
+    return make_tuple(minx, miny, maxx, maxy);
+}
+
+Polygon Discretizer::axis_aligned_bounding_box(const Polygon &poly,
+                                               const function<double(double)> &min_trunc,
+                                               const function<double(double)> &max_trunc) const
+{
+    double minx, miny, maxx, maxy;
+    tie(minx, miny, maxx, maxy) = axis_aligned_bounding_box_lu_corner(poly, min_trunc, max_trunc);
+    return {Point{minx, miny}, Point{maxx, miny}, Point{maxx, maxy}, Point{minx, maxy}};
+}
+
+CellSet Discretizer::discretize(const Polygon &poly, bool keep_edge_cells) const
 {
     auto get_cell_polygon = [this](int xi, int yi) {
         double x = xi * delta;
@@ -158,24 +188,22 @@ CellSet Discretizer::discretize(const Polygon &poly, bool keep_edge_point) const
         return intersects(poly, cell_poly);
     };
 
-    auto min_trunc = keep_edge_point ? static_cast<double (*)(double)>(floor) : static_cast<double (*)(double)>(ceil);
-    auto max_trunc = keep_edge_point ? static_cast<double (*)(double)>(ceil) : static_cast<double (*)(double)>(floor);
-    ConditionType condition = keep_edge_point ? intersection : inside;
+    ConditionType condition = keep_edge_cells ? intersection : inside;
 
-    Point min_p, max_p;
-    min_p = max_p = poly[0];
-    for (const auto &p : poly)
+    double minx, miny, maxx, maxy;
+    if (keep_edge_cells)
     {
-        min_p.x = min(min_p.x, p.x);
-        min_p.y = min(min_p.y, p.y);
-        max_p.x = max(max_p.x, p.x);
-        max_p.y = max(max_p.y, p.y);
+        tie(minx, miny, maxx, maxy) = axis_aligned_bounding_box_lu_corner(poly, static_cast<double (*)(double)>(floor), static_cast<double (*)(double)>(ceil));
+    }
+    else
+    {
+        tie(minx, miny, maxx, maxy) = axis_aligned_bounding_box_lu_corner(poly, static_cast<double (*)(double)>(ceil), static_cast<double (*)(double)>(floor));
     }
 
-    int minxi = min_trunc(min_p.x / delta);
-    int minyi = min_trunc(min_p.y / delta);
-    int maxxi = max_trunc(max_p.x / delta);
-    int maxyi = max_trunc(max_p.y / delta);
+    int minxi = round(minx / delta);
+    int minyi = round(miny / delta);
+    int maxxi = round(maxx / delta);
+    int maxyi = round(maxy / delta);
 
     CellSet ret;
     for (int i = minxi; i < maxxi; ++i)
