@@ -23,7 +23,7 @@ def main():
     results += run_expt({
         'delta': [default_delta],
         'n_aois': [default_n_aois],
-        'aoi_ratio': [0.5],
+        'aoi_ratio': [0.01, 0.05, 0.1, 0.2, 0.5, 0.7],
         'archive': [default_archive],
     })
 
