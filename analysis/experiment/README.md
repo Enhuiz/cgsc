@@ -1,5 +1,5 @@
-# Exp 1 (5/10/2017)
-Still using boost::geometry. The first time use cell id to indentify a cell.
+# Exp1 (5/10/2017)
+Still use boost::geometry. The first time use cell id to indentify a cell.
 
 |Term | Value |
 |:-|:-|
@@ -17,8 +17,8 @@ Still using boost::geometry. The first time use cell id to indentify a cell.
 |size of archive| 15000|
 |experiment result|![](1/t-aoi_size.png)|
 
-# Exp 2 (12/10/2017)
-Based on Exp 1, give up boost::geometry. Change greedy method: update cell id sets by removing covered cells from them after each greedy selection instead of calculating difference of the original cell sets every time.
+# Exp2 (12/10/2017)
+Based on Exp1, give up boost::geometry. Change greedy method: update cell id sets by removing covered cells from them after each greedy selection instead of calculating difference of the original cell sets every time.
 
 |Term | Value |
 |:-|:-|
@@ -38,8 +38,8 @@ Based on Exp 1, give up boost::geometry. Change greedy method: update cell id se
 
 Giving up boost:geometry gives almost 5x faster in t1. Removing covered cells from all rest cell id sets after each greedy selection also make t2 process 2x faster.
 
-# Exp 3 (14/10/2017)
-Based on Exp 2, optimize the scene discretization method by checking only the cells inside the intersection of AOI bounding-box and scenes.
+# Exp3 (14/10/2017)
+Based on Exp2, optimize the scene discretization method by checking only the cells inside the intersection of AOI bounding-box and scenes.
 
 |Term | Value |
 |:-|:-|
@@ -61,7 +61,7 @@ Checking only the cells inside the intersection of AOI bounding-box and scenes m
 
 Note that the calculation of intersection is based on the boost::geometry toolkit. While other polygon checking algorithms are implemented from scratch.
 
-# Exp 4 (16/10/2017)
+# Exp4 (16/10/2017)
 Change AOI to axis-aligned rectangle. Change the aoi-size variable to aoi-ratio, where aoi-ratio = the aoi-size / area of archive region.
 
 |Term |Value |
