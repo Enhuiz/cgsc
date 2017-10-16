@@ -24,9 +24,9 @@ Checking only the cells inside the intersection of bounding-box of AOI and scene
 Note that the calculation of intersection is based on the boost::geometry toolkit. While other polygon checking algorithms are implemented from scratch.
 
 # Exp 4. 16/10/2017
-Change the aoi-size variable to aoi-ratio, where aoi-ratio = the aoi-size / archieve region size.
+Change AOI to axis-aligned rectangle. Change the aoi-size variable to aoi-ratio, where aoi-ratio = the aoi-size / area of archieve region.
 
 ![](4/t-aoi_ratio.png)
 
-0.01, 0.02, 0.05, 0.1, 0.2, 0.5 means 1%, 2%, 5%, 10%, 20%, 50% of the area of archieve region (8 * 8).
+0.01, 0.02, 0.05, 0.1, 0.2, 0.5 means 1%, 2%, 5%, 10%, 20%, 50% of the area of archieve region (i.e. 8 * 8 = 64).
 
