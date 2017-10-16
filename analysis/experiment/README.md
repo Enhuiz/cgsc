@@ -2,7 +2,7 @@
 Still using boost::geometry. The first time use cell id to indentify a cell.
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.25 (0.39% archive area)|
 |delta| 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02|
 |number of aoi|50|
@@ -10,7 +10,7 @@ Still using boost::geometry. The first time use cell id to indentify a cell.
 |experiment result|![](1/t-delta.png)|
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.1 (0.16% archive area), 0.25 (0.39% archive area), 0.5 (0.78% archive area), 0.75 (1.17% archive area), 1.0 (1.56% archive area)|
 |delta| 0.01 |
 |number of aoi|50|
@@ -21,7 +21,7 @@ Still using boost::geometry. The first time use cell id to indentify a cell.
 Based on Exp 1, give up boost::geometry. Change greedy method: update cell id sets by removing covered cells from them after each greedy selection instead of calculating difference of the original cell sets every time.
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.25 (0.39% archive area)|
 |delta| 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02|
 |number of aoi|50|
@@ -29,7 +29,7 @@ Based on Exp 1, give up boost::geometry. Change greedy method: update cell id se
 |experiment result|![](2/t-delta.png)|
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.1 (0.16% archive area), 0.25 (0.39% archive area), 0.5 (0.78% archive area), 0.75 (1.17% archive area), 1.0 (1.56% archive area)|
 |delta| 0.01 |
 |number of aoi|50|
@@ -42,7 +42,7 @@ Giving up boost:geometry gives almost 5x faster in t1. Removing covered cells fr
 Based on Exp 2, optimize the scene discretization method by checking only the cells inside the intersection of AOI bounding-box and scenes.
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.25 (0.39% archive area)|
 |delta| 0.0005, 0.001, 0.002, 0.005, 0.01, 0.02|
 |number of aoi|50|
@@ -50,7 +50,7 @@ Based on Exp 2, optimize the scene discretization method by checking only the ce
 |experiment result|![](3/t-delta.png)|
 
 |Term | Value |
-|-|-|
+|:-|:-|
 |aoi size|0.1 (0.16% archive area), 0.25 (0.39% archive area), 0.5 (0.78% archive area), 0.75 (1.17% archive area), 1.0 (1.56% archive area)|
 |delta| 0.01 |
 |number of aoi|50|
@@ -65,7 +65,7 @@ Note that the calculation of intersection is based on the boost::geometry toolki
 Change AOI to axis-aligned rectangle. Change the aoi-size variable to aoi-ratio, where aoi-ratio = the aoi-size / area of archive region.
 
 |Term |Value |
-|-|-|
+|:-|:-|
 |aoi ratio| 1%, 2%, 5%, 10%, 20%, 50% |
 |delta| 0.01 |
 |number of aoi|50|
