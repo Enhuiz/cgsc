@@ -10,11 +10,11 @@ Since rscloudmart only provide scenes in China. All the scenes are in the region
 
 ## Archive
 
-For convenince, only 185,300 scenes from region whose longitude is in 120°E \~ 128°E and latitude is in 42°N \~ 50°N are selected. They are picked randomly to form archieves of different size.
+For convenience, only 185,300 scenes from region whose longitude is in 120°E \~ 128°E and latitude is in 42°N \~ 50°N are selected. They are picked randomly to form archives of different size.
 
 ![](fig/selected_region.png)
 
-After we map the longtitude and latitude directly to the Euclidean space, we can calculate area.
+After we map the longitude and latitude directly to the Euclidean space, we can calculate area.
 
 The area of the archive region is 8 * 8 = 64
 
