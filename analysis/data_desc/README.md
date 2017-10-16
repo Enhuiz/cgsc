@@ -34,33 +34,33 @@ The illustration of cells of max, median, min scenes when different δ is select
 
 ### δ = 0.02 
 
-#### min
+#### min scene (0.017% of the whole archive area)
 ![](fig/min_delta_0.02.png)
 
-#### median
+#### median scene (0.040% of the whole archive area)
 ![](fig/median_delta_0.02.png)
 
-#### max
+#### max scene (0.7% of the whole archive area)
 ![](fig/max_delta_0.02.png)
 
 ### δ = 0.01 (default)
 
-#### min
+#### min scene (0.017% of the whole archive area)
 ![](fig/min_delta_0.01.png)
 
-#### median
+#### median scene (0.040% of the whole archive area)
 ![](fig/median_delta_0.01.png)
 
-#### max
+#### max scene (0.7% of the whole archive area)
 ![](fig/max_delta_0.01.png)
 
 ### δ = 0.005
 
-#### min
+#### min scene (0.017% of the whole archive area)
 ![](fig/min_delta_0.005.png)
 
-#### median 
+#### median scene (0.040% of the whole archive area) 
 ![](fig/median_delta_0.005.png)
 
-#### max
+#### max scene (0.7% of the whole archive area)
 ![](fig/max_delta_0.005.png)
