@@ -72,6 +72,4 @@ Change AOI to axis-aligned rectangle. Change the aoi-size variable to aoi-ratio,
 |size of archive| 15000 |
 |experiment result|![](4/t-aoi_ratio.png)|
 
-The aoi ratio here means the percentage of archive area (i.e. 8 * 8 = 64). 0.01, 0.02, 0.05, 0.1, 0.2, 0.5 means 1%, 2%, 5%, 10%, 20%, 50% archive area respectly. The corresponding size is 0.64, 1.28, 3.2, 6.4, 12.8, 32.
-
-
+The aoi ratio here means the percentage of archive area (i.e. 8 * 8 = 64). 0.01, 0.02, 0.05, 0.1, 0.2, 0.5 means respectively 1%, 2%, 5%, 10%, 20%, 50% of area of the whole archive. The corresponding size (previous used measurement) is 0.64, 1.28, 3.2, 6.4, 12.8, 32.
