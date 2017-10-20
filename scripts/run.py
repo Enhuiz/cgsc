@@ -19,16 +19,14 @@ def main():
 
     config = {
         'delta': [0.01],
-        'aoi_ratio': [0.2],
+        'aoi_ratio': [0.01, 0.005],
         'n_aois': [1],
         'archive': [15000],
     }
 
     query_result_path = query_dir(['{}.json'.format(get_tag({k: v[0] for k, v in config.items()}))])
     # if os.path.exists(query_result_path):
-    run_expt(config, False)
-    
-
+    run_expt(config)
     plot_directly(plot_query_result, query_result_path)
 
 if __name__ == '__main__':

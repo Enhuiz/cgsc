@@ -76,16 +76,16 @@ void discretize_scenes(const Discretizer &discretizer, AOI *aoi, const vector<Sc
         vector<BoostPolygon> output_bpolys;
         boost::geometry::intersection(aoi_bbox_bpoly, scene_bpoly, output_bpolys);
         CellSet cs;
-        for (const auto &output_bpoly : output_bpolys)
+        for (const auto &output_bpoly : output_bpolys) // 1
         {
-            // find cid in the intersecitons
+            // find cid in the intesections
             auto itersection_cs = discretizer.discretize(boost_polygon_to_polygon(output_bpoly), false);
-            for (const auto &cid : itersection_cs)
+            for (const auto &cid : itersection_cs) // O(m)
             {
-                cs.insert(cid);
+                cs.insert(cid); // O(logm)
             }
         }
-        // intersection
+        // intersection, O(m/n)
         scene->cell_set.clear();
         set_intersection(cs.begin(),
                          cs.end(),

@@ -9,7 +9,7 @@ def main():
     default_delta = 0.01
     default_aoi_ratio = 0.25
     default_archive = 15000
-    default_n_aois = 50
+    default_n_aois = 5
 
     # var delta
     # results += run_expt({

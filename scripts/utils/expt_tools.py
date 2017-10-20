@@ -40,6 +40,7 @@ def prepare_delta_arg(config):
     delta = config['delta']
     return delta
 
+
 def get_tag(config):
     delta = config['delta']
     aoi_ratio = config['aoi_ratio']
@@ -48,6 +49,7 @@ def get_tag(config):
     tag = '{}-{}-{}-{}'.format(delta, n_aois, aoi_ratio, archive)
 
     return tag
+
 
 def prepare_output_arg(config):
     tag = get_tag(config)
@@ -59,48 +61,34 @@ def prepare_output_arg(config):
     return path
 
 
-def extract_result(path):
-    reports = json.load(open(path, 'r'))
+def extract_reports(path):
+    raw_reports = json.load(open(path, 'r'))
+    reports = {}
+    from numbers import Number
+    for k, v in raw_reports[0].items():
+        if isinstance(v, Number):
+            reports[k] = np.mean([raw_report[k] for raw_report in raw_reports])
 
-    average_t1 = np.mean([report['timer']['t1'] for report in reports])
-    average_t2 = np.mean([report['timer']['t2'] for report in reports])
-
-    average_price = np.mean([np.sum([scene['price'] for scene in report['result_scenes'] or []]) for report in reports])
-    average_count = np.mean([report['coverage_ratio'] for report in reports])
-
-    return {'t1': average_t1, 't2': average_t2, 'price': average_price, 'coverage-ratio': average_count}
+    reports['price'] = np.mean([np.sum(
+        [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
+    return reports
 
 
 def save_fig(tag):
     plt.savefig(fig_dir(['experiment', '{}.png'.format(tag)]))
 
 
-def to_figures(query_results, variable_list):
-    df = pd.DataFrame(query_results)
+def save_figures(reports, var_name):
+    df = pd.DataFrame(reports).sort_values(var_name)
+    for y_name in df.columns:
+        if y_name not in [var_name, 't1', 't2']:
+            df.plot.bar(x=var_name, y=y_name, rot=0)
+            save_fig('{}-{}'.format(y_name, var_name))
+    df[['t1', 't2']].plot.bar(stacked=True, rot=0)
+    save_fig('{}-{}'.format('t', var_name))
 
-    dfs = {}
 
-    for i in range(len(variable_list)):
-        current_variable = variable_list[i]
-        fixed_variables = variable_list[:i] + variable_list[i+1:]
-        groupby_instance = df.groupby(fixed_variables)
-        # the next step select the group which has max rows
-        # the number of rows equal to the len of the varying varaible
-        varying_df = max(groupby_instance, key=lambda grouped_df: len(grouped_df[1]))[1]
-        if len(varying_df) > 1:
-            dfs[current_variable] = varying_df
-
-    for variable, plot_df in dfs.items():
-        plot_df = plot_df.drop([c for c in variable_list if c != variable], axis=1)
-        plot_df = plot_df.set_index(variable).sort_index()
-        for col in plot_df:
-            if col not in ['t1', 't2']:
-                plot_df.plot.bar(y=col, rot=0)
-                save_fig('{}-{}'.format(col, variable))
-        plot_df[['t1','t2']].plot.bar(stacked=True, rot=0)
-        save_fig('{}-{}'.format('t', variable))
-
-def run_expt_helper(config):
+def execute(config):
     '''
     side effect:
         1. create aoi files
@@ -118,79 +106,30 @@ def run_expt_helper(config):
                                                   delta_arg,
                                                   output_arg))
 
-    return output_arg
+    return extract_reports(output_arg)
 
 
-def run_expt(configs, draw_result=True):
+def run_expt(configs):
     '''
     side effect: 
         1. create aoi files
         2. create query result files
         3. create a summary file
-        4. create figs
+        4. create figs (optional)
     '''
-    results = []
-    configs_keys, configs_values = map(list, zip(*configs.items()))
-
-    for config_values in itertools.product(*configs_values):
-        config = {k: v for k, v in zip(configs_keys, config_values)}
+    try:
+        var_name, var_values = next(
+            kv for kv in configs.items() if len(kv[1]) > 1)
+    except:
+        var_name, var_values = next(kv for kv in configs.items())
+    parameters = {k: vs[0] for k, vs in configs.items() if k != var_name}
+    configs = [{**parameters, var_name: var_value} for var_value in var_values]
+    reports = []
+    for config in configs:
         print(get_tag(config), 'start running!')
-        result_path = run_expt_helper(config)
-        result = extract_result(result_path)
-        result = {**result, **config}
-        results.append(result)
-
-    if draw_result:
-        to_figures(results, configs_keys)
-    
-    return results
-
-
-
-
-# def bar_char(xs, ys, title, ylabel):
-#     fig, ax = plt.subplots()
-
-#     ind = np.arange(len(xs))
-
-#     width = 0.2
-
-#     ax.bar(ind, ys, width)
-
-#     plt.xticks(ind, xs)
-#     plt.xlabel(title)
-#     plt.ylabel(ylabel)
-
-#     plt.title(title)
-
-#     plt.savefig(fig_dir(['{}_bar_char.png'.format(title)]))
-
-
-# def stacked_bar_char(xs, y1s, y2s, label1, label2, title):
-#     fig, ax = plt.subplots()
-
-#     ind = np.arange(len(xs))
-
-#     width = 0.2
-
-#     ax.bar(ind, y1s, width, label=label1)
-#     ax.bar(ind, y2s, width, bottom=y1s, label=label2)
-
-#     plt.xticks(ind, xs)
-#     plt.xlabel(title)
-#     plt.ylabel('average time(s)')
-
-#     plt.legend()
-
-#     plt.savefig(fig_dir(['{}_stacked_bar_char.png'.format(title)]))
-
-
-# def line_chart(xs, ys, title, ylabel):
-#     fig, ax = plt.subplots()
-
-#     plt.plot(xs, ys, marker='x')
-
-#     plt.xlabel(title)
-#     plt.ylabel(ylabel)
-
-#     plt.savefig(fig_dir(['{}_line_chart.png'.format(title)]))
+        report = execute(config)
+        report[var_name] = config[var_name]
+        reports.append(report)
+    if len(var_values) > 1:
+        save_figures(reports, var_name)
+    return reports

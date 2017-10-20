@@ -145,6 +145,11 @@ nlohmann::json discrete_query(AOI *aoi, const vector<Scene *> &scenes, double de
     discretize_scenes(discretizer, aoi, possible_scenes);
     double t1 = timer.end();
 
+    report["n_aoi_cells"] = aoi->cell_set.size();
+    report["n_aoi_cells"] = aoi->cell_set.size();
+    report["n_scene_cells"] = accumulate(possible_scenes.begin(), possible_scenes.end(), 0, [](int cnt, Scene* possible_scene){
+        return cnt + possible_scene->cell_set.size();
+    }) * 1.0 / possible_scenes.size();
     report["aoi"] = analysor.get_aoi_report(aoi);
     report["possible_scenes"] = analysor.get_scenes_report(possible_scenes);
 
@@ -154,8 +159,8 @@ nlohmann::json discrete_query(AOI *aoi, const vector<Scene *> &scenes, double de
 
     report["result_scenes"] = analysor.get_scenes_report(result_scenes);
     report["coverage_ratio"] = analysor.calculate_coverage_ratio(aoi, result_scenes);
-    report["timer"] = {{"t1", t1}, {"t2", t2}};
-    report["delta"] = delta;
+    report["t1"] = t1;
+    report["t2"] = t2;
 
     // release memory
     for (auto scene : scenes)
