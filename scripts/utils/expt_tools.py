@@ -74,18 +74,6 @@ def extract_reports(path):
     return reports
 
 
-def save_fig(tag):
-    plt.savefig(fig_dir(['experiment', '{}.png'.format(tag)]))
-
-
-def save_figures(reports, var_name):
-    df = pd.DataFrame(reports).sort_values(var_name)
-    for y_name in df.columns:
-        if y_name not in [var_name, 't1', 't2']:
-            df.plot.bar(x=var_name, y=y_name, rot=0)
-            save_fig('{}-{}'.format(y_name, var_name))
-    df[['t1', 't2']].plot.bar(stacked=True, rot=0)
-    save_fig('{}-{}'.format('t', var_name))
 
 
 def execute(config):
@@ -130,6 +118,7 @@ def run_expt(configs):
         report = execute(config)
         report[var_name] = config[var_name]
         reports.append(report)
-    if len(var_values) > 1:
-        save_figures(reports, var_name)
-    return reports
+
+    return {'variable': {var_name: var_values},
+            'parameters': parameters,
+            'reports': reports}
