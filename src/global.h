@@ -11,7 +11,8 @@
 struct Timer
 {
     clock_t begin_time;
-    std::string tag;
+    std::string ns; // namespace
+    std::string info;
     void begin(const std::string &tag);
     double end();
 };

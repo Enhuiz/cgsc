@@ -193,26 +193,55 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
 
 namespace continuous
 {
-void scene_op_offcut(Scene *scene, const Polygon &offcut, function<list<Polygon>(const Polygon &, const Polygon &)> op)
-{
-    list<Polygon> results;
-    for (const auto &scene_offcut : scene->offcuts)
-    {
-        results.splice(results.end(), op(scene_offcut, offcut));
-    }
-    scene->offcuts = results;
-}
 
-void scene_op_offcuts(Scene *scene, list<Polygon> offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)
+struct Cutter
 {
-    for (const auto &offcut : offcuts)
+    double delta;
+    void remove_tiny_offcuts(list<Polygon> &offcuts)
     {
-        scene_op_offcut(scene, offcut, op);
+        offcuts.erase(remove_if(offcuts.begin(),
+                                offcuts.end(),
+                                [this](const Polygon &offcut) {
+                                    return area(offcut) < delta * delta;
+                                }),
+                      offcuts.end());
     }
-}
 
-void cut_aoi(AOI *aoi)
+    void scene_op_offcut(Scene *scene, const Polygon &offcut, function<list<Polygon>(const Polygon &, const Polygon &)> op)
+    {
+        list<Polygon> results;
+        for (const auto &scene_offcut : scene->offcuts)
+        {
+            results.splice(results.end(), op(scene_offcut, offcut));
+        }
+        scene->offcuts = results;
+        remove_tiny_offcuts(scene->offcuts);
+    }
+
+    void scene_op_offcuts(Scene *scene, const list<Polygon> &offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)
+    {
+        for (const auto &offcut : offcuts)
+        {
+            scene_op_offcut(scene, offcut, op);
+        }
+    }
+
+    void scene_difference_offcuts(Scene *scene, const list<Polygon> &offcuts)
+    {
+        scene_op_offcuts(scene, offcuts, difference);
+    }
+
+    void scene_intersection_offcuts(Scene *scene, const list<Polygon> &offcuts)
+    {
+        scene_op_offcuts(scene, offcuts, [](const Polygon &a, const Polygon &b) {
+            return list<Polygon>{intersection(a, b)};
+        });
+    }
+};
+
+void cut_aoi(AOI *aoi, double delta)
 {
+    Cutter cutter{delta};
     if (convex(aoi->poly))
     {
         aoi->offcuts = list<Polygon>{aoi->poly};
@@ -221,10 +250,12 @@ void cut_aoi(AOI *aoi)
     {
         aoi->offcuts = triangulate(aoi->poly);
     }
+    cutter.remove_tiny_offcuts(aoi->offcuts);
 }
 
-void cut_scenes(const list<Scene *> &scenes, AOI *aoi)
+void cut_scenes(const list<Scene *> &scenes, AOI *aoi, double delta)
 {
+    Cutter cutter{delta};
     for (auto scene : scenes)
     {
         if (convex(scene->poly))
@@ -235,9 +266,7 @@ void cut_scenes(const list<Scene *> &scenes, AOI *aoi)
         {
             scene->offcuts = triangulate(scene->poly);
         }
-        scene_op_offcuts(scene, aoi->offcuts, [](const Polygon &a, const Polygon &b) {
-            return list<Polygon>{intersection(a, b)};
-        });
+        cutter.scene_intersection_offcuts(scene, aoi->offcuts);
     }
 }
 
@@ -271,8 +300,9 @@ void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
                  scenes.end());
 };
 
-list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes)
+list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
+    Cutter cutter{delta};
     list<Scene *> possible_scenes(scenes.begin(), scenes.end());
     list<Scene *> result_scenes;
     double covered_area = 0;
@@ -292,7 +322,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {
-            scene_op_offcuts(possible_scene, scene->offcuts, difference);
+            cutter.scene_difference_offcuts(possible_scene, scene->offcuts);
         }
         remove_scenes_with_no_offcuts(possible_scenes);
         result_scenes.push_back(scene);

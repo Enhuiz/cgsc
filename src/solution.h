@@ -16,9 +16,11 @@ std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, const std::list<Scene 
 
 namespace continuous
 {
-void triangulate_aoi(AOI *aoi);
-void triangulate_scenes(const std::list<Scene *> &scenes, AOI *aoi);
-std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, const std::list<Scene *> &scenes);
+double area(const AOI *aoi);
+double area(const Scene *scene);
+void cut_aoi(AOI *aoi, double delta);
+void cut_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta);
+std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, const std::list<Scene *> &scenes, double delta);
 }
 
 #endif

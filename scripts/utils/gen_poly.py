@@ -73,11 +73,11 @@ def gen_axis_aligned_rectangle(n, ratio=1, x_range=[120, 128], y_range=[42, 50])
 
 def main():
     import matplotlib.pyplot as plt
-    from plot import show_polygons
+    from plot import plot_polygons
 
     fig, ax = plt.subplots()
-    # show_polygons(ax, gen_poly(100, 0.25))
-    show_polygons(ax, gen_axis_aligned_rectangle(100, 0.01))
+    # plot_polygons(ax, gen_poly(100, 0.25))
+    plot_polygons(ax, gen_axis_aligned_rectangle(100, 0.01))
     plt.show()
 
 

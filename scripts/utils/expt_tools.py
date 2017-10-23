@@ -4,10 +4,12 @@ import pandas as pd
 import itertools
 import matplotlib.pyplot as plt
 import os
+import copy
+from collections import ChainMap
 
 from .gen_poly import gen_poly, gen_axis_aligned_rectangle
 from .path import fig_dir, data_dir, bin_dir
-from .plot import show_polygons, plot_directly
+from .plot import plot_polygons, plot_directly
 
 
 def prepare_aoi_arg(config):
@@ -25,7 +27,7 @@ def prepare_aoi_arg(config):
         df = pd.DataFrame([str([list(v) for v in aoi]) for aoi in aois])
         df.columns = ['Polygon']
         df.to_csv(path, index=None)
-        # plot_directly(show_polygons, aois)
+        # plot_directly(plot_polygons, aois)
 
     return path
 
@@ -62,18 +64,29 @@ def prepare_output_arg(config):
 
 
 def extract_reports(path):
+    def extract_reports_helper(raw_reports):
+        from numbers import Number
+        reports = {}
+        for k, v in raw_reports[0].items():
+            if isinstance(v, Number):
+                reports[k] = np.mean([raw_report[k]
+                                      for raw_report in raw_reports])
+        reports['price'] = np.mean([np.sum(
+            [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
+        return reports
+
+    def add_prefix_to_dict_key(d, prefix):
+        ret = copy.deepcopy(d)
+        for k in d.keys():
+            ret[prefix + "_" + k] = ret.pop(k)
+        return ret
+
+    def extract(raw_reports, k):
+        reports = extract_reports_helper(raw_reports[k])
+        return add_prefix_to_dict_key(reports, k)
+
     raw_reports = json.load(open(path, 'r'))
-    reports = {}
-    from numbers import Number
-    for k, v in raw_reports[0].items():
-        if isinstance(v, Number):
-            reports[k] = np.mean([raw_report[k] for raw_report in raw_reports])
-
-    reports['price'] = np.mean([np.sum(
-        [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
-    return reports
-
-
+    return dict(ChainMap(*[extract(raw_reports, k) for k in raw_reports.keys()]))
 
 
 def execute(config):
