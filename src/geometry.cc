@@ -239,7 +239,10 @@ list<Triangle> triangulate(const Polygon &poly)
     };
 
     list<Vertex> vs;
-
+    for (const auto &p : poly)
+    {
+        vs.push_back(Vertex{p, CONVEX});
+    }
     using Iter = decltype(vs.begin());
 
     auto get_prev = [&vs](const Iter &it) {
@@ -339,7 +342,7 @@ list<Triangle> triangulate(const Polygon &poly)
 Point line_line_intersection(const Point &a, const Point &b, const Point &c, const Point &d)
 {
     double denominator = cross(a, c) + cross(b, d) + cross(c, b) + cross(d, a);
-    if (denominator == 0)
+    if (almost_equal(denominator, 0.0, 1))
     {
         throw runtime_error("Error: denominator = 0 in line_line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
     }
@@ -397,51 +400,114 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
     auto s2 = clipper.back();
     for (const auto &e2 : clipper)
     {
-        auto offcut = list<Point>();
         auto input_list = output_list;
         output_list.clear();
+        auto offcut = list<Point>();
         auto s1 = input_list.back();
+        // cout << endl;
         for (const auto &e1 : input_list)
         {
-            if (inside(e1, s2, e2))
+            // if (inside(s1, s2, e2)) {
+            //     cout << "inside" << endl;
+            // } else if (onside(s1, s2, e2))
+            // {
+            //     cout << "onside" << endl;
+            // } else {
+            //     cout << "outside" << endl;
+            // }
+            // if (inside(e1, s2, e2)) {
+            //     cout << "inside" << endl;
+            // } else if (onside(s1, s2, e2))
+            // {
+            //     cout << "onside" << endl;
+            // } else {
+            //     cout << "outside" << endl;
+            // }
+            // treat onsite as insite
+            if (inside(s1, s2, e2))
             {
-                if (!inside(s1, s2, e2))
+                if (inside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                }
+                else if (onside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                }
+                else if (outside(e1, s2, e2))
                 {
                     auto p = line_line_intersection(s1, e1, s2, e2);
                     output_list.push_back(p);
                     offcut.push_back(p);
+                    offcut.push_back(e1);
                 }
-                output_list.push_back(e1);
             }
-            else
+            else if (onside(s1, s2, e2))
             {
-                if (inside(s1, s2, e2))
+                if (inside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                }
+                else if (onside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                }
+                else if (outside(e1, s2, e2))
+                {
+                    output_list.push_back(s1);
+                    offcut.push_back(s1);
+                    offcut.push_back(e1);
+                }
+            }
+            else // outside(s1)
+            {
+                if (inside(e1, s2, e2))
                 {
                     auto p = line_line_intersection(s1, e1, s2, e2);
                     output_list.push_back(p);
+                    output_list.push_back(e1);
                     offcut.push_back(p);
                 }
-                offcut.push_back(e1);
+                else if (onside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                    offcut.push_back(e1);
+                }
+                else if (outside(e1, s2, e2))
+                {
+                    offcut.push_back(e1);
+                }
             }
             s1 = e1;
         }
-        s2 = e2;
-        if (offcut.size() > 0)
+        if (offcut.size() > 2)
         {
-            if (convex(offcut))
-            {
-                ret.push_back(offcut);
-            }
-            else
-            {
-                // throw runtime_error("Error: offcut is not convex after difference!\n" + to_string(offcut));
-            }
+            ret.push_back(offcut);
         }
+        if (area(output_list) < 1e-7)
+        {
+            break;
+        }
+        s2 = e2;
     }
-    if (output_list.size() == 0) // no intersection
+    if (output_list.size() == 0 || area(output_list) < 1e-7) // no intersection
     {
         ret.clear();
         ret.push_back(clippee);
     }
+    for (const auto& offcut : ret) {
+        if (!convex(offcut))
+        {
+            ostringstream oss;
+            oss << clippee << endl;
+            oss << clipper << endl;
+            for (const auto &offcut : ret)
+            {
+                oss << offcut << endl;
+            }
+            throw runtime_error("Error: offcut is not convex after difference!\n" + oss.str());
+        }
+    }
+
     return ret;
 }

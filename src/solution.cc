@@ -5,6 +5,8 @@
 #include <iostream>
 #include <functional>
 
+#include "global.h"
+
 using namespace std;
 
 list<Scene *> select_possible_scenes(AOI *aoi, const list<Scene *> &scenes)
@@ -323,7 +325,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         possible_scenes.erase(it);
         // add covered area
         covered_area += area(scene);
-        cout << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
+        cerr << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {

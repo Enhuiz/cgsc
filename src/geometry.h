@@ -38,7 +38,7 @@ bool disjoint(const Polygon &a, const Polygon &b);
 bool intersects(const Polygon &a, const Polygon &b);
 bool convex(const Polygon& poly);
 // Following 3 functions only support non-closed polygon representation (i.e. first point != last point)
-// std::list<Triangle> triangulate(const Polygon &poly);  // to support concave
+std::list<Triangle> triangulate(const Polygon &poly);  // to support concave
 // Following 2 functions only support convex clipper
 Polygon intersection(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> difference(const Polygon &clippee, const Polygon &clipper);
