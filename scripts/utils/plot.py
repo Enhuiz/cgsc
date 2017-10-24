@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
+from matplotlib.patches import Polygon, Circle
 from matplotlib.collections import PatchCollection
 import numpy as np
 import json
 import pandas as pd
 
 
-def plot_polygons(ax, polygons, face_color='white', alpha=1):
+def plot_polygons(ax, polygons, face_color='white', alpha=1, annotate=False):
     patches = []
 
     if isinstance(face_color, list):
@@ -25,7 +25,9 @@ def plot_polygons(ax, polygons, face_color='white', alpha=1):
             fc=get_face_color(),
             lw=1.5)
         patches.append(polygon)
-
+        if annotate:
+            for i in range(len(vertices)):
+                ax.text(*vertices[i], str(i))
     for patch in patches:
         ax.add_patch(patch)
 

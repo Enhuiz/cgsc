@@ -42,6 +42,15 @@ def generate_cells(poly, delta, keep_edge=False):
 
     return ret
 
+def plot_basic_polygons(ax, report):
+    aoi = eval(report['aoi']['polygon'])
+    possible_scenes = [eval(scene['polygon']) for scene in report['possible_scenes'] or []]
+    result_scenes = [eval(scene['polygon']) for scene in report['result_scenes'] or []]
+
+    # plot_polygons(ax, result_scenes, 'green', alpha=0.7)
+    # plot_polygons(ax, possible_scenes, 'green', alpha=0.2)
+    plot_polygons(ax, [aoi], 'grey', 0.5)
+
 def plot_discrete_query(ax, report):
     def parse_cell(cid): 
         def parse_cell_helper(cid, delta):
@@ -52,39 +61,28 @@ def plot_discrete_query(ax, report):
             return [[x, y], [x + delta, y], [x + delta, y + delta], [x, y + delta]]
         return parse_cell_helper(cid, report['delta'])
 
-    aoi = eval(report['aoi']['polygon'])
+    plot_basic_polygons(ax, report)
+
     aoi_cells = [parse_cell(cell) for cell in report['aoi']['cells']]
-
-    possible_scenes = [eval(scene['polygon'])
-                       for scene in report['possible_scenes'] or []]
     possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cells'] or []]
-
-    result_scenes = [eval(scene['polygon']) for scene in report['result_scenes'] or []]
     result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cells'] or []]
 
-    plot_polygons(ax, aoi_cells, 'white')
-    # plot_polygons(ax, generate_cells(aoi, 0.05, True), 'white', 1)
-    plot_polygons(ax, result_scenes, 'green', alpha=0.7)
+    plot_polygons(ax, aoi_cells, 'none')
+    # plot_polygons(ax, generate_cells(aoi, 0.05, True), 'grey', 1)
     plot_polygons(ax, result_cells, 'blue', alpha=0.7)
-    plot_polygons(ax, possible_scenes, 'green', alpha=0.2)
     plot_polygons(ax, possible_cells, 'blue', alpha=0.2)
-    plot_polygons(ax, [aoi], 'none')
+
 
 def plot_continuous_query(ax, report):
-    aoi = eval(report['aoi']['polygon'])
+    plot_basic_polygons(ax, report)
+
     aoi_offcuts = [eval(offcut) for offcut in report['aoi']['offcuts']]
-
-    possible_scenes = [eval(scene['polygon']) for scene in report['possible_scenes'] or []]
     possible_offcuts = [eval(offcut) for scene in report['possible_scenes'] or [] for offcut in scene['offcuts'] or []]
-
-    result_scenes = [eval(scene['polygon']) for scene in report['result_scenes'] or []]
     result_offcuts = [eval(offcut) for scene in report['result_scenes'] or [] for offcut in scene['offcuts'] or []]
 
-    # plot_polygons(ax, possible_scenes, 'green', alpha=0.2)
-    plot_polygons(ax, result_scenes, 'green', alpha=0.7)
-    plot_polygons(ax, result_offcuts, ['blue', 'red', 'yellow', 'orange', 'purple'], alpha=0.7)
-    # plot_polygons(ax, possible_offcuts, 'blue', alpha=0.2)
-    plot_polygons(ax, [aoi], 'none')
+    print(len(result_offcuts))
+    plot_polygons(ax, possible_offcuts, 'blue', alpha=1)
+    plot_polygons(ax, result_offcuts, ['red'], alpha=0.7)
     plot_polygons(ax, aoi_offcuts, 'none')
 
 def show(plot):
@@ -102,17 +100,17 @@ def main():
 
     config = {
         'delta': [0.02],
-        'aoi_ratio': [0.01],
+        'aoi_ratio': [0.001],
         'n_aois': [1],
         'archive': [15000],
     }
 
-    run_expt(config)
+    print(run_expt(config))
 
     query_result_path = query_dir(['{}.json'.format(get_tag({k: v[0] for k, v in config.items()}))])
     reports = json.load(open(query_result_path, 'r'))
 
-    # show(lambda ax: plot_discrete_query(ax, reports['discrete'][0]))
+    show(lambda ax: plot_discrete_query(ax, reports['discrete'][0]))
     show(lambda ax: plot_continuous_query(ax, reports['continuous'][0]))
 
 
