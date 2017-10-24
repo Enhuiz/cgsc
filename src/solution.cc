@@ -79,7 +79,10 @@ struct Discretizer
         using ConditionType = function<bool(const Point &)>;
 
         ConditionType discard_edge = [&poly, this](const Point &ll) {
-            return all_inside(get_cell_polygon(ll), poly);
+            auto cell_poly = get_cell_polygon(ll);
+            return all_of(cell_poly.begin(), cell_poly.end(), [&poly](const Point &p) {
+                return !outside(p, poly); // it's OK for cell points on edges, while out is not acceptable.
+            });
         };
 
         ConditionType keep_edge = [&poly, this](const Point &ll) {
@@ -91,11 +94,12 @@ struct Discretizer
         double minx, miny, maxx, maxy;
         tie(minx, miny, maxx, maxy) = keep_edge_cells ? bounding_box_corner(poly, floor_double, ceil_double) : bounding_box_corner(poly, ceil_double, floor_double);
 
+        
         int minxi = round(minx / delta);
         int minyi = round(miny / delta);
         int maxxi = round(maxx / delta);
         int maxyi = round(maxy / delta);
-
+        
         CellSet ret;
         for (int i = minxi; i < maxxi; ++i)
         {
@@ -141,7 +145,7 @@ void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
         // find cid in the intersections
         for (const auto &cid : cell_set) // O(m)
         {
-            if (any_inside(discretizer.get_cell_polygon(cid), aoi->poly))
+            if (intersects(discretizer.get_cell_polygon(cid), aoi->poly))
             {
                 scene->cell_set.insert(cid); // O(logm)
             }
@@ -248,7 +252,7 @@ void cut_aoi(AOI *aoi, double delta)
     }
     else
     {
-        aoi->offcuts = triangulate(aoi->poly);
+        // aoi->offcuts = triangulate(aoi->poly);
     }
     cutter.remove_tiny_offcuts(aoi->offcuts);
 }
@@ -264,7 +268,7 @@ void cut_scenes(const list<Scene *> &scenes, AOI *aoi, double delta)
         }
         else
         {
-            scene->offcuts = triangulate(scene->poly);
+            // scene->offcuts = scene->poly;
         }
         cutter.scene_intersection_offcuts(scene, aoi->offcuts);
     }
@@ -309,7 +313,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
     double aoi_area = area(aoi);
 
     remove_scenes_with_no_offcuts(possible_scenes);
-    while (covered_area < aoi_area && possible_scenes.size() > 0) // n
+    while (covered_area < aoi_area && !almost_equal(aoi_area, covered_area, 10) && possible_scenes.size() > 0) // n
     {
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / area(a) < b->price / area(b);
@@ -317,8 +321,9 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         // remove the selected
         auto scene = *it;
         possible_scenes.erase(it);
-        // add coverd area
+        // add covered area
         covered_area += area(scene);
+        cout << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {
