@@ -4,6 +4,7 @@
 #include <list>
 #include <iostream>
 #include <functional>
+#include <fstream>
 
 #include "global.h"
 
@@ -96,12 +97,11 @@ struct Discretizer
         double minx, miny, maxx, maxy;
         tie(minx, miny, maxx, maxy) = keep_edge_cells ? bounding_box_corner(poly, floor_double, ceil_double) : bounding_box_corner(poly, ceil_double, floor_double);
 
-        
         int minxi = round(minx / delta);
         int minyi = round(miny / delta);
         int maxxi = round(maxx / delta);
         int maxyi = round(maxy / delta);
-        
+
         CellSet ret;
         for (int i = minxi; i < maxxi; ++i)
         {
@@ -155,25 +155,27 @@ void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
     }
 }
 
+void remove_scenes_with_empty_cell_set(list<Scene *> &scenes)
+{
+    scenes.erase(remove_if(scenes.begin(),
+                           scenes.end(),
+                           [](const Scene *scene) {
+                               return scene->cell_set.size() == 0;
+                           }),
+                 scenes.end());
+};
+
 // O(n^2 m log m)
 list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes)
 {
-    list<Scene *> possible_scenes(scenes.begin(), scenes.end());
-    list<Scene *> result_scenes;
+    auto visualizer = Visualizer(aoi);
+    auto possible_scenes = list<Scene *>(scenes.begin(), scenes.end());
+    auto result_scenes = list<Scene *>();
     int covered = 0;
-    int num_aoi_cells = aoi->cell_set.size();
-
-    auto remove_scenes_with_empty_cell_set = [](list<Scene *> &scenes) {
-        scenes.erase(remove_if(scenes.begin(),
-                               scenes.end(),
-                               [](const Scene *scene) {
-                                   return scene->cell_set.size() == 0;
-                               }),
-                     scenes.end());
-    };
+    int to_cover = aoi->cell_set.size();
 
     remove_scenes_with_empty_cell_set(possible_scenes);
-    while (covered < num_aoi_cells && possible_scenes.size() > 0) // n
+    while (covered < to_cover && possible_scenes.size() > 0) // n
     {
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / a->cell_set.size() < b->price / b->cell_set.size();
@@ -192,8 +194,15 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         covered += scene->cell_set.size();
         result_scenes.push_back(scene);
         remove_scenes_with_empty_cell_set(possible_scenes);
-        // cerr << covered * 100.0 / num_aoi_cells << "%: " << possible_scenes.size() << endl;
+
+        // visualization
+        // cerr << covered * 100.0 / to_cover << "%: " << possible_scenes.size() << endl;
+        // visualizer.add_frame(scene, possible_scenes);
     }
+    // {
+    //     auto ofs = ofstream(logger.get_namespaces() + "_vinfo.json");
+    //     ofs << visualizer << endl;
+    // }
     return result_scenes;
 }
 }
@@ -309,14 +318,16 @@ void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
 
 list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
-    Cutter cutter{delta};
-    list<Scene *> possible_scenes(scenes.begin(), scenes.end());
-    list<Scene *> result_scenes;
-    double covered_area = 0;
-    double aoi_area = area(aoi);
+    auto visualizer = Visualizer(aoi);
+
+    auto cutter = Cutter{delta};
+    auto possible_scenes = list<Scene *>(scenes.begin(), scenes.end());
+    auto result_scenes = list<Scene *>();
+    double covered = 0;
+    double to_cover = area(aoi);
 
     remove_scenes_with_no_offcuts(possible_scenes);
-    while (covered_area < aoi_area && !almost_equal(aoi_area, covered_area, 10) && possible_scenes.size() > 0) // n
+    while (covered < to_cover && !almost_equal(to_cover, covered, 10) && possible_scenes.size() > 0) // n
     {
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / area(a) < b->price / area(b);
@@ -325,7 +336,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         auto scene = *it;
         possible_scenes.erase(it);
         // add covered area
-        covered_area += area(scene);
+        covered += area(scene);
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {
@@ -333,8 +344,15 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         }
         remove_scenes_with_no_offcuts(possible_scenes);
         result_scenes.push_back(scene);
-        // cerr << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
+
+        // visualization
+        // cerr << covered / to_cover * 100 << "\%; " << possible_scenes.size() << endl;
+        // visualizer.add_frame(scene, possible_scenes);
     }
+    // {
+    //     auto ofs = ofstream(logger.get_namespaces() + "_vinfo.json");
+    //     ofs << visualizer << endl;
+    // }
     return result_scenes;
 }
 }

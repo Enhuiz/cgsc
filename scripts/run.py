@@ -100,7 +100,7 @@ def main():
 
     config = {
         'delta': [0.02],
-        'aoi_ratio': [0.001],
+        'aoi_ratio': [0.003],
         'n_aois': [1],
         'archive': [15000],
     }

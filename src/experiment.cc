@@ -2,7 +2,9 @@
 
 #include <iostream>
 
+#include "csv.hpp"
 #include "global.h"
+#include "solution.h"
 
 using namespace std;
 
@@ -67,93 +69,34 @@ struct Loader
     }
 };
 
-struct Analyser
+double calculate_discrete_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
 {
-    bool polygon_enabled;
-    bool cell_enabled;
-    bool offcuts_enabled;
-
-    nlohmann::json get_scenes_report(const list<Scene *> scenes) const
-    {
-        nlohmann::json report;
-        for (auto scene : scenes)
-        {
-            report.push_back(get_scene_report(scene));
-        }
-        return report;
-    }
-
-    nlohmann::json get_scene_report(const Scene *scene) const
-    {
-        nlohmann::json ret;
-        if (polygon_enabled)
-        {
-            ret["polygon"] = scene->s;
-        }
-        if (cell_enabled)
-        {
-            ret["cells"] = scene->cell_set;
-        }
-        if (offcuts_enabled)
-        {
-            ret["offcuts"] = get_offcuts_report(scene->offcuts);
-        }
-        ret["price"] = scene->price;
-        return ret;
-    };
-
-    nlohmann::json get_aoi_report(const AOI *aoi) const
-    {
-        nlohmann::json ret;
-        if (polygon_enabled)
-        {
-            ret["polygon"] = aoi->s;
-        }
-        if (cell_enabled)
-        {
-            ret["cells"] = aoi->cell_set;
-        }
-        if (offcuts_enabled)
-        {
-            ret["offcuts"] = get_offcuts_report(aoi->offcuts);
-        }
-        return ret;
-    };
-
-    nlohmann::json get_offcuts_report(const list<Triangle> &offcuts) const
-    {
-        auto report = nlohmann::json();
-
-        for (const auto &offcut : offcuts)
-        {
-            report.push_back(to_string(offcut));
-        }
-        return report;
-    };
-
-    double calculate_discrete_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes) const
-    {
-        int num_covered_cells = accumulate(scenes.begin(), scenes.end(), 0, [](int acc, Scene *scene) {
-            return acc + scene->cell_set.size();
-        });
-        return num_covered_cells * 1.0 / aoi->cell_set.size();
-    };
-
-    double calculate_continuous_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes) const
-    {
-        double area_of_offcuts = accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {
-            return acc + continuous::area(scene);
-        });
-        return area_of_offcuts / continuous::area(aoi);
-    }
+    int num_covered_cells = accumulate(scenes.begin(), scenes.end(), 0, [](int acc, Scene *scene) {
+        return acc + scene->cell_set.size();
+    });
+    return num_covered_cells * 1.0 / aoi->cell_set.size();
 };
+
+double calculate_continuous_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
+{
+    double area_of_offcuts = accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {
+        return acc + continuous::area(scene);
+    });
+    return area_of_offcuts / continuous::area(aoi);
+}
+
+double calculate_total_price(const list<Scene *> &scenes)
+{
+    return accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {
+        return acc + scene->price;
+    });
+}
 
 nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     using namespace discrete;
 
     nlohmann::json report;
-    Analyser analyser{true, true, false};
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
@@ -161,17 +104,14 @@ nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delt
     discretize_scenes(possible_scenes, aoi, delta);
     double t1 = timer.end();
 
-    report["possible_scenes"] = analyser.get_scenes_report(possible_scenes);
-    report["aoi"] = analyser.get_aoi_report(aoi);
-
     timer.begin("t2");
     auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes);
     double t2 = timer.end();
 
-    report["result_scenes"] = analyser.get_scenes_report(result_scenes);
-    report["coverage_ratio"] = analyser.calculate_discrete_coverage_ratio(aoi, result_scenes);
     report["t1"] = t1;
     report["t2"] = t2;
+    report["price"] = calculate_total_price(result_scenes);
+    report["coverage_ratio"] = calculate_discrete_coverage_ratio(aoi, result_scenes);
     report["delta"] = delta; // for run.py
 
     // release memory
@@ -189,7 +129,6 @@ nlohmann::json continuous_query(AOI *aoi, const list<Scene *> &scenes, double de
     using namespace continuous;
 
     nlohmann::json report;
-    Analyser analyser{true, false, true};
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
@@ -197,17 +136,15 @@ nlohmann::json continuous_query(AOI *aoi, const list<Scene *> &scenes, double de
     cut_scenes(possible_scenes, aoi, delta);
     double t1 = timer.end();
 
-    report["aoi"] = analyser.get_aoi_report(aoi);
-    report["possible_scenes"] = analyser.get_scenes_report(possible_scenes);
-
     timer.begin("t2");
     auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
     double t2 = timer.end();
 
-    report["result_scenes"] = analyser.get_scenes_report(result_scenes);
-    report["coverage_ratio"] = analyser.calculate_continuous_coverage_ratio(aoi, result_scenes);
     report["t1"] = t1;
     report["t2"] = t2;
+    report["price"] = calculate_total_price(result_scenes);
+    report["coverage_ratio"] = calculate_continuous_coverage_ratio(aoi, result_scenes);
+    report["delta"] = delta; // for run.py
 
     // release memory
     for (auto scene : scenes)
@@ -233,13 +170,15 @@ nlohmann::json experiment(const string &aois_path, const string &scenes_path, do
     int cnt = 0;
     for (auto &aoi : aois)
     {
-        timer.ns = "discrete" + to_string(cnt);
+        logger.push_namespace("d" + to_string(cnt));
         discrete_reports.push_back(discrete_query(aoi, scenes, delta));
-        timer.ns = "continuous" + to_string(cnt);
+        logger.pop_namespace();
+
+        logger.push_namespace("c" + to_string(cnt));
         continuous_reports.push_back(continuous_query(aoi, scenes, delta));
+        logger.pop_namespace();
         ++cnt;
     }
-    timer.ns = "";
 
     return {{"discrete", discrete_reports}, {"continuous", continuous_reports}};
 }

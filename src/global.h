@@ -8,37 +8,70 @@
 #include <memory>
 #include <sstream>
 #include <iomanip>
+#include <list>
 
 #include "json.hpp"
 
-struct Timer
+class Stopwatch
 {
-    clock_t begin_time;
-    std::string ns; // namespace
-    std::string info;
-    void begin(const std::string &tag);
-    double end();
+public:
+  Stopwatch();
+  void restart();
+  double lap() const;
+
+private:
+  clock_t begin_time;
 };
 
-static Timer timer;
+class Logger
+{
+public:
+  void info(const std::string &s);
+  void debug(const std::string &s);
+
+  void push_namespace(const std::string &ns);
+  void pop_namespace();
+  std::string get_namespaces();
+
+private:
+  std::string wrap(const std::string &s);
+
+private:
+  std::list<std::string> nss;
+  Stopwatch stopwatch;
+};
+
+class Timer
+{
+public:
+  void begin(const std::string &tag);
+  double end();
+
+private:
+  std::string event;
+  Stopwatch stopwatch;
+};
+
+extern Logger logger;
+extern Timer timer;
 
 template <class T>
 typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
 almost_equal(T x, T y, int ulp)
 {
-    // the machine epsilon has to be scaled to the magnitude of the values used
-    // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x - y) < std::numeric_limits<T>::epsilon() * std::abs(x + y) * ulp
-           // unless the result is subnormal
-           || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
+  // the machine epsilon has to be scaled to the magnitude of the values used
+  // and multiplied by the desired precision in ULPs (units in the last place)
+  return std::abs(x - y) < std::numeric_limits<T>::epsilon() * std::abs(x + y) * ulp
+         // unless the result is subnormal
+         || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
 }
 
 template <typename T>
 std::string to_string(const T a_value, const int n = 6)
 {
-    std::ostringstream out;
-    out << std::setprecision(n) << a_value;
-    return out.str();
+  std::ostringstream oss;
+  oss << std::setprecision(n) << a_value;
+  return oss.str();
 }
 
 #endif

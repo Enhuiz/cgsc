@@ -71,8 +71,8 @@ def extract_reports(path):
             if isinstance(v, Number):
                 reports[k] = np.mean([raw_report[k]
                                       for raw_report in raw_reports])
-        reports['price'] = np.mean([np.sum(
-            [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
+        # reports['price'] = np.mean([np.sum(
+        #     [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
         return reports
 
     def add_prefix_to_dict_key(d, prefix):
