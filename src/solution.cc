@@ -223,6 +223,25 @@ struct Cutter
                       offcuts.end());
     }
 
+    void triangulate_non_convex_offcuts(list<Polygon> &offcuts)
+    {
+        for (auto it = offcuts.begin(); it != offcuts.end();)
+        {
+            if (!convex(*it))
+            {
+                // logger.debug("very unlikely to happen");
+                auto triangles = triangulate(*it);
+                remove_tiny_offcuts(triangles);
+                offcuts.splice(offcuts.end(), triangles);
+                it = offcuts.erase(it);
+            } 
+            else 
+            {
+                ++it;
+            }
+        }
+    }
+
     void scene_op_offcut(Scene *scene, const Polygon &offcut, function<list<Polygon>(const Polygon &, const Polygon &)> op)
     {
         list<Polygon> results;
@@ -231,7 +250,8 @@ struct Cutter
             results.splice(results.end(), op(scene_offcut, offcut));
         }
         scene->offcuts = results;
-        remove_tiny_offcuts(scene->offcuts);
+        remove_tiny_offcuts(scene->offcuts); // tiny offcuts tend to be non-convex, remove them first
+        triangulate_non_convex_offcuts(scene->offcuts);
     }
 
     void scene_op_offcuts(Scene *scene, const list<Polygon> &offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)
@@ -264,7 +284,7 @@ void cut_aoi(AOI *aoi, double delta)
     }
     else
     {
-        // aoi->offcuts = triangulate(aoi->poly);
+        aoi->offcuts = triangulate(aoi->poly);
     }
     cutter.remove_tiny_offcuts(aoi->offcuts);
 }
@@ -280,7 +300,7 @@ void cut_scenes(const list<Scene *> &scenes, AOI *aoi, double delta)
         }
         else
         {
-            // scene->offcuts = scene->poly;
+            scene->offcuts = triangulate(scene->poly);
         }
         cutter.scene_intersection_offcuts(scene, aoi->offcuts);
     }

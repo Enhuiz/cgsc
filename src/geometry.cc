@@ -179,7 +179,7 @@ bool convex(const Polygon &poly)
     auto post = next(cur);
     while (post != poly.end())
     {
-        if (outside(*post, *prev, *cur))
+        if (!inside(*post, *prev, *cur))
         {
             return false;
         }
@@ -220,10 +220,7 @@ list<Triangle> triangulate(const Polygon &poly)
     };
 
     list<Vertex> vs;
-    for (const auto &p : poly)
-    {
-        vs.push_back(Vertex{p, CONVEX});
-    }
+
     using Iter = decltype(vs.begin());
 
     auto get_prev = [&vs](const Iter &it) {
@@ -285,6 +282,10 @@ list<Triangle> triangulate(const Polygon &poly)
     };
 
     { // initialize vs
+        for (const auto &p : poly)
+        {
+            vs.push_back(Vertex{p, CONVEX});
+        }
         for (auto it = vs.begin(); it != vs.end(); ++it)
         {
             update_reflex(it);
