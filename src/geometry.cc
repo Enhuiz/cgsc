@@ -24,6 +24,11 @@ bool Vector2::operator==(const Vector2 &other) const
     return x == other.x && y == other.y;
 }
 
+bool Vector2::operator!=(const Vector2 &other) const
+{
+    return x != other.x || y != other.y;
+}
+
 bool Vector2::almost_equal(const Vector2 &other, int ulp) const
 {
     return ::almost_equal(x, other.x, ulp) && ::almost_equal(y, other.y, ulp);
@@ -174,7 +179,7 @@ bool convex(const Polygon &poly)
     auto post = next(cur);
     while (post != poly.end())
     {
-        if (!inside(*post, *prev, *cur))
+        if (outside(*post, *prev, *cur))
         {
             return false;
         }
@@ -369,17 +374,41 @@ Polygon intersection(const Polygon &clippee, const Polygon &clipper)
         auto s1 = input_list.back();
         for (const auto &e1 : input_list)
         {
-            if (inside(e1, s2, e2))
+            if (inside(s1, s2, e2))
             {
-                if (outside(s1, s2, e2))
+                if (inside(e1, s2, e2))
                 {
-                    output_list.push_back(line_line_intersection(s1, e1, s2, e2));
+                    output_list.push_back(e1);
                 }
-                output_list.push_back(e1);
+                else if (onside(e1, s2, e2))
+                {
+                    output_list.push_back(e1);
+                }
+                else // outside(e1)
+                {
+                    auto p = line_line_intersection(s1, e1, s2, e2);
+                    output_list.push_back(p);
+                }
             }
-            else if (outside(e1, s2, e2) && inside(s1, s2, e2))
+            else if (onside(s1, s2, e2))
             {
-                output_list.push_back(line_line_intersection(s1, e1, s2, e2));
+                if (inside(e1, s2, e2))
+                {
+                    if (output_list.back() != s1) // check bouncing
+                    {
+                        output_list.push_back(s1); 
+                    }
+                    output_list.push_back(e1);
+                }
+            }
+            else // outside(s1)
+            {
+                if (inside(e1, s2, e2))
+                {
+                    auto p = line_line_intersection(s1, e1, s2, e2);
+                    output_list.push_back(p);
+                    output_list.push_back(e1);
+                }
             }
             s1 = e1;
         }
@@ -423,7 +452,7 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
             // } else {
             //     cout << "outside" << endl;
             // }
-            // treat onsite as insite
+
             if (inside(s1, s2, e2))
             {
                 if (inside(e1, s2, e2))
@@ -434,7 +463,7 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
                 {
                     output_list.push_back(e1);
                 }
-                else if (outside(e1, s2, e2))
+                else // outside(e1)
                 {
                     auto p = line_line_intersection(s1, e1, s2, e2);
                     output_list.push_back(p);
@@ -446,16 +475,22 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
             {
                 if (inside(e1, s2, e2))
                 {
+                    if (output_list.back() != s1)
+                    {
+                        output_list.push_back(s1); // for bouncing
+                    }
                     output_list.push_back(e1);
                 }
                 else if (onside(e1, s2, e2))
                 {
-                    output_list.push_back(e1);
+                    // do nothing
                 }
-                else if (outside(e1, s2, e2))
+                else // outside(e1)
                 {
-                    output_list.push_back(s1);
-                    offcut.push_back(s1);
+                    if (offcut.back() != s1)
+                    {
+                        offcut.push_back(s1); // for bouncing
+                    }
                     offcut.push_back(e1);
                 }
             }
@@ -470,44 +505,45 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
                 }
                 else if (onside(e1, s2, e2))
                 {
-                    output_list.push_back(e1);
                     offcut.push_back(e1);
                 }
-                else if (outside(e1, s2, e2))
+                else // outside(e1)
                 {
                     offcut.push_back(e1);
                 }
             }
             s1 = e1;
         }
-        if (offcut.size() > 2)
-        {
-            ret.push_back(offcut);
-        }
-        if (area(output_list) < 1e-7)
-        {
-            break;
-        }
+        ret.push_back(offcut);
+        // if (!convex(offcut))
+        // {
+        //     ostringstream oss;
+        //     oss << clippee << endl;
+        //     oss << clipper << endl;
+        //     for (const auto &offcut : ret)
+        //     {
+        //         oss << offcut << endl;
+        //     }
+        //     throw runtime_error("Error: offcut is not convex after difference!\n" + oss.str());
+        // }
         s2 = e2;
     }
-    if (output_list.size() == 0 || area(output_list) < 1e-7) // no intersection
+
+    if (output_list.size() == 0) // no intersection
     {
         ret.clear();
         ret.push_back(clippee);
     }
-    for (const auto& offcut : ret) {
-        if (!convex(offcut))
-        {
-            ostringstream oss;
-            oss << clippee << endl;
-            oss << clipper << endl;
-            for (const auto &offcut : ret)
-            {
-                oss << offcut << endl;
-            }
-            throw runtime_error("Error: offcut is not convex after difference!\n" + oss.str());
+
+    for (const auto &offcut : ret)
+    {
+        if (!convex(offcut) && area(offcut) > 1e-7) {
+            cout << clippee << endl;
+            cout << clipper  << endl;
         }
     }
 
+
+    
     return ret;
 }

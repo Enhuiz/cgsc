@@ -13,6 +13,7 @@ struct Vector2
   Vector2 operator+(const Vector2 &other) const;
   Vector2 operator-(const Vector2 &other) const;
   bool operator==(const Vector2 &other) const;
+  bool operator!=(const Vector2 &other) const;
   bool almost_equal(const Vector2 &other, int ulp) const;
 };
 
