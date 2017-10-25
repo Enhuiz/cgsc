@@ -9,7 +9,7 @@ def main():
     default_delta = 0.01
     default_aoi_ratio = 0.25
     default_archive = 15000
-    default_n_aois = 5
+    default_n_aois = 25
 
     # var delta
     # results.append(run_expt({
@@ -23,7 +23,7 @@ def main():
     results.append(run_expt({
         'delta': [default_delta],
         'n_aois': [default_n_aois],
-        'aoi_ratio': [0.02, 0.05, 0.1, 0.2, 0.5],
+        'aoi_ratio': [0.01, 0.02, 0.05, 0.1, 0.2, 0.5],
         'archive': [default_archive],
     }))
 

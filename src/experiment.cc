@@ -234,7 +234,7 @@ nlohmann::json experiment(const string &aois_path, const string &scenes_path, do
     for (auto &aoi : aois)
     {
         timer.ns = "discrete" + to_string(cnt);
-        discrete_reports.push_back(discrete_query(aoi, scenes, 1000));
+        discrete_reports.push_back(discrete_query(aoi, scenes, delta));
         timer.ns = "continuous" + to_string(cnt);
         continuous_reports.push_back(continuous_query(aoi, scenes, delta));
         ++cnt;

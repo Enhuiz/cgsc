@@ -202,30 +202,6 @@ double area(const Polygon &poly)
     return 0.5 * ret;
 }
 
-// list<Polygon> simplify(const Polygon &poly)
-// {
-//     auto simplified = Polygon();
-//     {
-//         auto s = poly.back();
-//         for (const auto &e : poly)
-//         {
-//             if (!s.almost_equal(e, 1e9))
-//             {
-//                 simplified.push_back(e);
-//             }
-//             s = e;
-//         }
-//     }
-//     if (simplified.size() != 2)
-//     {
-//         cout << poly << endl;
-//         cout << simplified.size() << endl;
-//         throw runtime_error("Error: triangulating nonsimple polygon!\n" + to_string(poly));
-//     }
-//     return triangulate(simplified);
-//     // throw runtime_error("Error: triangulating nonsimple polygon!\n" + to_string(poly));
-// }
-
 list<Triangle> triangulate(const Polygon &poly)
 {
     list<Triangle> ret;
@@ -475,9 +451,9 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
             {
                 if (inside(e1, s2, e2))
                 {
-                    if (output_list.back() != s1)
+                    if (output_list.back() != s1) // check bouncing
                     {
-                        output_list.push_back(s1); // for bouncing
+                        output_list.push_back(s1); 
                     }
                     output_list.push_back(e1);
                 }
@@ -487,9 +463,9 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
                 }
                 else // outside(e1)
                 {
-                    if (offcut.back() != s1)
+                    if (offcut.back() != s1) // check bouncing
                     {
-                        offcut.push_back(s1); // for bouncing
+                        offcut.push_back(s1); 
                     }
                     offcut.push_back(e1);
                 }
@@ -515,35 +491,12 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
             s1 = e1;
         }
         ret.push_back(offcut);
-        // if (!convex(offcut))
-        // {
-        //     ostringstream oss;
-        //     oss << clippee << endl;
-        //     oss << clipper << endl;
-        //     for (const auto &offcut : ret)
-        //     {
-        //         oss << offcut << endl;
-        //     }
-        //     throw runtime_error("Error: offcut is not convex after difference!\n" + oss.str());
-        // }
         s2 = e2;
     }
-
     if (output_list.size() == 0) // no intersection
     {
         ret.clear();
         ret.push_back(clippee);
-    }
-
-    for (const auto &offcut : ret)
-    {
-        if (!convex(offcut) && area(offcut) > 1e-7) {
-            cout << clippee << endl;
-            cout << clipper  << endl;
-        }
-    }
-
-
-    
+    }    
     return ret;
 }

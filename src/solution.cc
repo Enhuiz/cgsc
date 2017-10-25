@@ -192,6 +192,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         covered += scene->cell_set.size();
         result_scenes.push_back(scene);
         remove_scenes_with_empty_cell_set(possible_scenes);
+        // cerr << covered * 100.0 / num_aoi_cells << "%: " << possible_scenes.size() << endl;
     }
     return result_scenes;
 }
@@ -325,7 +326,6 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         possible_scenes.erase(it);
         // add covered area
         covered_area += area(scene);
-        cerr << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {
@@ -333,6 +333,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         }
         remove_scenes_with_no_offcuts(possible_scenes);
         result_scenes.push_back(scene);
+        // cerr << covered_area / aoi_area * 100 << "\%; " << possible_scenes.size() << endl;
     }
     return result_scenes;
 }
