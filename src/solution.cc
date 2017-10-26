@@ -147,7 +147,7 @@ void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
         // find cid in the intersections
         for (const auto &cid : cell_set) // O(m)
         {
-            if (intersects(discretizer.get_cell_polygon(cid), aoi->poly))
+            if (intersects(discretizer.get_cell_polygon(cid), aoi->poly)) // was O(logM), is O(1)
             {
                 scene->cell_set.insert(cid); // O(logm)
             }
@@ -245,7 +245,7 @@ struct Cutter
     void scene_op_offcut(Scene *scene, const Polygon &offcut, function<list<Polygon>(const Polygon &, const Polygon &)> op)
     {
         list<Polygon> results;
-        for (const auto &scene_offcut : scene->offcuts)
+        for (const auto &scene_offcut : scene->offcuts) // m
         {
             results.splice(results.end(), op(scene_offcut, offcut));
         }
@@ -256,18 +256,18 @@ struct Cutter
 
     void scene_op_offcuts(Scene *scene, const list<Polygon> &offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)
     {
-        for (const auto &offcut : offcuts)
+        for (const auto &offcut : offcuts) // m
         {
-            scene_op_offcut(scene, offcut, op);
+            scene_op_offcut(scene, offcut, op); // m
         }
     }
 
-    void scene_difference_offcuts(Scene *scene, const list<Polygon> &offcuts)
+    void scene_difference_offcuts(Scene *scene, const list<Polygon> &offcuts) // mm
     {
         scene_op_offcuts(scene, offcuts, difference);
     }
 
-    void scene_intersection_offcuts(Scene *scene, const list<Polygon> &offcuts)
+    void scene_intersection_offcuts(Scene *scene, const list<Polygon> &offcuts) // mm
     {
         scene_op_offcuts(scene, offcuts, [](const Polygon &a, const Polygon &b) {
             return list<Polygon>{intersection(a, b)};
@@ -336,6 +336,7 @@ void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
                  scenes.end());
 };
 
+// O (n^2 m^2)
 list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     auto visualizer = Visualizer(aoi);
@@ -360,7 +361,7 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         // clip the rest possible scenes
         for (auto possible_scene : possible_scenes) // n
         {
-            cutter.scene_difference_offcuts(possible_scene, scene->offcuts);
+            cutter.scene_difference_offcuts(possible_scene, scene->offcuts); // m * m
         }
         remove_scenes_with_no_offcuts(possible_scenes);
         result_scenes.push_back(scene);
