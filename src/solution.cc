@@ -142,7 +142,7 @@ void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
     auto aoi_bbox = discretizer.bounding_box(aoi->poly, floor_double, ceil_double);
     for (auto scene : scenes) // n
     {
-        auto poly = intersection(aoi_bbox, scene->poly);
+        auto poly = intersection(aoi_bbox, scene->poly); // this indeed speed up the next instruction
         auto cell_set = discretizer.discretize(poly, false);
         // find cid in the intersections
         for (const auto &cid : cell_set) // O(m)
@@ -166,9 +166,11 @@ void remove_scenes_with_empty_cell_set(list<Scene *> &scenes)
 };
 
 // O(n^2 m log m)
+
+// O (n ^ 2 mlogm)
+// O (n k mlogm)
 list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes)
 {
-    auto visualizer = Visualizer(aoi);
     auto possible_scenes = list<Scene *>(scenes.begin(), scenes.end());
     auto result_scenes = list<Scene *>();
     int covered = 0;
@@ -177,32 +179,48 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
     remove_scenes_with_empty_cell_set(possible_scenes);
     while (covered < to_cover && possible_scenes.size() > 0) // n
     {
+        // select current
+        timer.begin("t2.1");
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / a->cell_set.size() < b->price / b->cell_set.size();
         });
-        // remove the selected
+        timer.end();
+
+        // claim the selected
+        timer.begin("t2.2");
         auto scene = *it;
         possible_scenes.erase(it);
-        // remove cells from the left possible scenes
-        for (auto &possible_scene : possible_scenes) // n
-        {
-            for (const auto &cell : scene->cell_set) // m
-            {
-                possible_scene->cell_set.erase(cell); // log m
-            }
-        }
         covered += scene->cell_set.size();
         result_scenes.push_back(scene);
+        timer.end();
+
+        // update rest
+        // remove cells from the left possible scenes
+        timer.begin("t2.3");
+        {
+            const auto& scs = scene->cell_set;
+            for (auto &possible_scene : possible_scenes) // n
+            {
+                if (!intersects(possible_scene->poly, scene->poly)) continue;
+                auto &pcs = possible_scene->cell_set;
+                CellSet tmp;
+                set_difference(pcs.begin(), pcs.end(), scs.begin(), scs.end(), inserter(tmp, tmp.begin())); // max(m, m);
+                pcs = move(tmp);
+                // for (const auto &cell : scene->cell_set) // m
+                // {
+                //     possible_scene->cell_set.erase(cell); // log m
+                // }
+            }
+        }
+        timer.end();
+
+        timer.begin("t2.4");
         remove_scenes_with_empty_cell_set(possible_scenes);
+        timer.end();
 
         // visualization
         // cerr << covered * 100.0 / to_cover << "%: " << possible_scenes.size() << endl;
-        // visualizer.add_frame(scene, possible_scenes);
     }
-    // {
-    //     auto ofs = ofstream(logger.get_namespaces() + "_vinfo.json");
-    //     ofs << visualizer << endl;
-    // }
     return result_scenes;
 }
 }
@@ -234,8 +252,8 @@ struct Cutter
                 remove_tiny_offcuts(triangles);
                 offcuts.splice(offcuts.end(), triangles);
                 it = offcuts.erase(it);
-            } 
-            else 
+            }
+            else
             {
                 ++it;
             }
@@ -251,7 +269,7 @@ struct Cutter
         }
         scene->offcuts = results;
         remove_tiny_offcuts(scene->offcuts); // tiny offcuts tend to be non-convex, remove them first
-        triangulate_non_convex_offcuts(scene->offcuts);
+        // triangulate_non_convex_offcuts(scene->offcuts);
     }
 
     void scene_op_offcuts(Scene *scene, const list<Polygon> &offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)
@@ -337,10 +355,12 @@ void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
 };
 
 // O (n^2 m^2)
+
+// O (n^2)
+// O (n k m^2)
+
 list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
-    auto visualizer = Visualizer(aoi);
-
     auto cutter = Cutter{delta};
     auto possible_scenes = list<Scene *>(scenes.begin(), scenes.end());
     auto result_scenes = list<Scene *>();
@@ -348,32 +368,40 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
     double to_cover = area(aoi);
 
     remove_scenes_with_no_offcuts(possible_scenes);
-    while (covered < to_cover && !almost_equal(to_cover, covered, 10) && possible_scenes.size() > 0) // n
+    while (covered < to_cover && !almost_equal(to_cover, covered, 1e3) && possible_scenes.size() > 0) // n
     {
+        // select current
+        timer.begin("t2.1");
         auto it = min_element(possible_scenes.begin(), possible_scenes.end(), [](const Scene *a, const Scene *b) { // n
             return a->price / area(a) < b->price / area(b);
         });
-        // remove the selected
+        timer.end();
+
+        // claim the selected
+        timer.begin("t2.2");
         auto scene = *it;
         possible_scenes.erase(it);
-        // add covered area
+        result_scenes.push_back(scene);
         covered += area(scene);
-        // clip the rest possible scenes
+        timer.end();
+
+        // update left
+        timer.begin("t2.3");
         for (auto possible_scene : possible_scenes) // n
         {
+            if (!intersects(possible_scene->poly, scene->poly)) continue;
             cutter.scene_difference_offcuts(possible_scene, scene->offcuts); // m * m
         }
+        timer.end();
+
+        // remove empty
+        timer.begin("t2.4");
         remove_scenes_with_no_offcuts(possible_scenes);
-        result_scenes.push_back(scene);
+        timer.end();
 
         // visualization
         // cerr << covered / to_cover * 100 << "\%; " << possible_scenes.size() << endl;
-        // visualizer.add_frame(scene, possible_scenes);
     }
-    // {
-    //     auto ofs = ofstream(logger.get_namespaces() + "_vinfo.json");
-    //     ofs << visualizer << endl;
-    // }
     return result_scenes;
 }
 }

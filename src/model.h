@@ -28,16 +28,5 @@ struct Scene : Model
     double price;
 };
 
-class Visualizer
-{
-  public:
-    Visualizer(AOI *aoi);
-    void add_frame(Scene *selected, const std::list<Scene *> unselected);
-    friend std::ostream &operator<<(std::ostream &os, const Visualizer &visualizer);
-
-  private:
-    nlohmann::json jsn;
-    Stopwatch stopwatch;
-};
 
 #endif
