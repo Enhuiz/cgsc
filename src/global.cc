@@ -67,17 +67,51 @@ string Logger::get_namespaces()
     return ret;
 }
 
-void Timer::begin(const string &event)
+void Timer::begin(const string &tag)
 {
-    this->event = event;
-    logger.info(event + " ...");
-    stopwatch.restart();
+    if (tags.size() == 0) 
+    {
+        logger.info(tag + " ...");
+    }
+    tags.push_back(tag);
+    stopwatches.emplace_back();
 }
 
-double Timer::end()
+void Timer::end()
 {
-    double interval = stopwatch.lap();
-    logger.info(event + " ends after " + to_string(interval) + " s");
-    event = "";
-    return interval;
+    double interval = 0;
+    if (tags.size() > 0)
+    {
+        interval = stopwatches.back().lap();
+        stopwatches.pop_back();
+        auto tag = tags.back();
+        tags.pop_back();
+
+        if (intervals.count(tag))
+        {
+            intervals[tag].push_back(interval);
+        }
+        else
+        {
+            intervals[tag] = {interval};
+        }
+
+        if (tags.size() == 0) {
+            logger.info(tag + " ends after " + to_string(interval) + " s");
+        }
+    }
+}
+
+void Timer::clear()
+{
+    intervals.clear();
+}
+
+void Timer::append_to(nlohmann::json &report)
+{
+    for (const auto &kv : intervals)
+    {
+        const auto &v = kv.second;
+        report[kv.first] = accumulate(v.begin(), v.end(), 0.0) / v.size();
+    }
 }

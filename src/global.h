@@ -2,12 +2,13 @@
 #define CGSC_GLOBAL_H
 
 #include <limits>
+#include <functional>
 #include <string>
 #include <map>
 #include <ctime>
-#include <memory>
 #include <sstream>
 #include <iomanip>
+#include <memory>
 #include <list>
 
 #include "json.hpp"
@@ -38,18 +39,20 @@ private:
 
 private:
   std::list<std::string> nss;
-  Stopwatch stopwatch;
 };
 
 class Timer
 {
 public:
   void begin(const std::string &tag);
-  double end();
+  void end();
+  void clear();
+  void append_to(nlohmann::json& report);
 
 private:
-  std::string event;
-  Stopwatch stopwatch;
+  std::list<std::string> tags;
+  std::list<Stopwatch> stopwatches;
+  std::map<std::string, std::list<double>> intervals; 
 };
 
 extern Logger logger;
@@ -63,7 +66,30 @@ almost_equal(T x, T y, int ulp)
   // and multiplied by the desired precision in ULPs (units in the last place)
   return std::abs(x - y) < std::numeric_limits<T>::epsilon() * std::abs(x + y) * ulp
          // unless the result is subnormal
-         || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
+        //  || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
+        || std::abs(x - y) < std::numeric_limits<T>::min();
+}
+
+namespace functional
+{
+template <typename T, typename Func>
+auto map(const T &iterable, Func &&func) -> std::vector<decltype(func(std::declval<typename T::value_type>()))>
+{
+  // Some convenience type definitions
+  typedef decltype(func(std::declval<typename T::value_type>())) value_type;
+  typedef std::vector<value_type> result_type;
+
+  // Prepares an output vector of the appropriate size
+  result_type res(iterable.size());
+
+  // Let std::transform apply `func` to all elements
+  // (use perfect forwarding for the function object)
+  std::transform(
+      begin(iterable), end(iterable), res.begin(),
+      std::forward<Func>(func));
+
+  return res;
+}
 }
 
 template <typename T>
