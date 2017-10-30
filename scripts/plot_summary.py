@@ -13,8 +13,13 @@ def plot_summary(var_name, reports):
 
     df = pd.DataFrame(reports).sort_values(var_name)
 
-    df = df[df['aoi_ratio'] < 0.5]
-    
+    if var_name == 'aoi_ratio':
+        df['aoi_pct'] = df['aoi_ratio'] * 100
+        del df['aoi_ratio']
+        var_name = 'aoi_pct'
+
+    #df = df[df['aoi_ratio'] < 50]
+
     for y_name in get_y_names(df.columns):
         if y_name not in [var_name, 'delta']:
             continuous_y_name = 'continuous_' + y_name

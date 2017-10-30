@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.path as mpltPath
@@ -31,11 +32,12 @@ def main():
     filepath = lambda s: data_dir(['scenes', 'archives', '{}.csv'.format(s)])
     df.to_csv(filepath('total'), index=None)
 
-    exit()
-    
     df = df.sample(frac=1)  # important, to shuffle the data
-    for i in [1000, 1500, 2000, 2500, 5000, 10000, 15000, 20000, 50000]:
-        df.head(i).to_csv(filepath(str(i)), index=None)
+    for i in [1000, 1500, 2000, 2500, 5000, 10000, 15000, 20000, 50000, 75000, 100000]:
+        if not os.path.isfile(filepath(str(i))):
+            df.head(i).to_csv(filepath(str(i)), index=None)
+        else:
+            print(i, 'existed')
 
 
 if __name__ == '__main__':

@@ -7,17 +7,17 @@ def main():
     results = []
 
     default_delta = 0.01
-    default_aoi_ratio = 0.25
+    default_aoi_ratio = 0.05
     default_archive = 15000
     default_n_aois = 25
 
     # var delta
-    # results.append(run_expt({
-    #     'delta': [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02],
-    #     'n_aois': [default_n_aois],
-    #     'aoi_ratio': [default_aoi_ratio],
-    #     'archive': [default_archive],
-    # }))
+    results.append(run_expt({
+        'delta': [0.005, 0.01, 0.015, 0.02, 0.025],
+        'n_aois': [default_n_aois],
+        'aoi_ratio': [default_aoi_ratio],
+        'archive': [default_archive],
+    }))
 
     # var aoi size
     results.append(run_expt({
@@ -28,12 +28,12 @@ def main():
     }))
 
     # var archive
-    # results.append(run_expt({
-    #     'delta': [default_delta],
-    #     'n_aois': [default_n_aois],
-    #     'aoi_ratio':  [default_aoi_ratio],
-    #     'archive': [5000, 10000, 15000, 20000, 50000]
-    # }))
+    results.append(run_expt({
+        'delta': [default_delta],
+        'n_aois': [default_n_aois],
+        'aoi_ratio':  [default_aoi_ratio],
+        'archive': [10000, 15000, 20000, 50000, 75000, 100000]
+    }))
 
     results_path = data_dir(['experiment', 'results', 'summary.json'])
     json.dump(results, open(results_path, 'w'))

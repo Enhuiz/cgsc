@@ -49,7 +49,7 @@ def plot_basic_polygons(ax, report):
 
     # plot_polygons(ax, result_scenes, 'green', alpha=0.7)
     # plot_polygons(ax, possible_scenes, 'green', alpha=0.2)
-    plot_polygons(ax, [aoi], 'grey', 0.5)
+    plot_polygons(ax, [aoi], 'grey', 0.1)
 
 def plot_discrete_query(ax, report):
     def parse_cell(cid): 
@@ -63,14 +63,14 @@ def plot_discrete_query(ax, report):
 
     plot_basic_polygons(ax, report)
 
-    aoi_cells = [parse_cell(cell) for cell in report['aoi']['cells']]
-    possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cells'] or []]
-    result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cells'] or []]
+    aoi_cells = [parse_cell(cell) for cell in report['aoi']['cell_set']]
+    possible_cells = [parse_cell(cell) for scene in report['possible_scenes'] or [] for cell in scene['cell_set'] or []]
+    result_cells = [parse_cell(cell) for scene in report['result_scenes'] or [] for cell in scene['cell_set'] or []]
 
     plot_polygons(ax, aoi_cells, 'none')
     # plot_polygons(ax, generate_cells(aoi, 0.05, True), 'grey', 1)
-    plot_polygons(ax, result_cells, 'blue', alpha=0.7)
     plot_polygons(ax, possible_cells, 'blue', alpha=0.2)
+    # plot_polygons(ax, result_cells, 'blue', alpha=0.7)
 
 
 def plot_continuous_query(ax, report):
@@ -82,7 +82,7 @@ def plot_continuous_query(ax, report):
 
     print(len(result_offcuts))
     plot_polygons(ax, possible_offcuts, 'blue', alpha=1)
-    plot_polygons(ax, result_offcuts, ['red'], alpha=0.7)
+    plot_polygons(ax, result_offcuts, 'red', alpha=0.7)
     plot_polygons(ax, aoi_offcuts, 'none')
 
 def show(plot):
