@@ -39,6 +39,35 @@ double cross(const Vector2 &a, const Vector2 &b)
     return a.x * b.y - a.y * b.x;
 }
 
+double dot(const Vector2 &a, const Vector2 &b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+double sqr_magnitude(const Vector2 &a)
+{
+    return dot(a, a);
+}
+
+double magnitude(const Vector2 &a)
+{
+    return sqrt(sqr_magnitude(a));
+}
+
+double distance(const Point &a, const Point &b)
+{
+    return magnitude(a - b);
+}
+
+double angle(const Point &a, const Point &b, const Point &c)
+{
+    auto u = a - b;
+    auto v = c - b;
+    auto x = dot(u, v) / magnitude(u) / magnitude(v);
+    x = max(min(x, 1.0), -1.0); // for precision's sake
+    return acos(x) / acos(-1) * 180;
+}
+
 string to_string(const Vector2 &v)
 {
     return "[" + to_string(v.x, 20) + ", " + to_string(v.y, 20) + "]";
@@ -93,7 +122,8 @@ bool onside(const Point &p, const Point &a, const Point &b)
 {
     auto u = b - a;
     auto v = p - a;
-    return almost_equal(u.x * v.y, u.y * v.x, 1);
+    return abs(cross(u, v)) < 1e-9;
+    // return almost_equal(u.x * v.y, u.y * v.x, 1e3);
 }
 
 bool inside(const Point &p, const Point &a, const Point &b) // inside a line means on the left side of on it
@@ -181,6 +211,7 @@ bool convex(const Polygon &poly)
     {
         if (!inside(*post, *prev, *cur))
         {
+            logger.debug(to_string(angle(*prev, *cur, *post)));
             return false;
         }
         prev = cur;
@@ -323,15 +354,15 @@ list<Triangle> triangulate(const Polygon &poly)
 
 Point line_line_intersection(const Point &a, const Point &b, const Point &c, const Point &d)
 {
-    double denominator = cross(a, c) + cross(b, d) + cross(c, b) + cross(d, a);
-    if (almost_equal(denominator, 0.0, 1))
+    auto x_diff = Vector2{a.x - b.x, c.x - d.x};
+    auto y_diff = Vector2{a.y - b.y, c.y - d.y};
+    double det = cross(x_diff, y_diff);
+    if (almost_equal(det, 0.0, 1e3))
     {
-        throw runtime_error("Error: denominator = 0 in line_line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
+        throw runtime_error("Error: divisor = 0 in line_line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
     }
-    double numerator_part1 = cross(a, b);
-    double numerator_part2 = cross(c, d);
-    Point e = {(numerator_part1 * (c.x - d.x) - numerator_part2 * (a.x - b.x)) / denominator,
-               (numerator_part1 * (c.y - d.y) - numerator_part2 * (a.y - b.y)) / denominator};
+    auto crosses = Point{cross(a, b), cross(c, d)};
+    auto e = Point{cross(crosses, x_diff) / det, cross(crosses, y_diff) / det};
     return e;
 }
 
@@ -373,7 +404,7 @@ Polygon intersection(const Polygon &clippee, const Polygon &clipper)
                 {
                     if (output_list.back() != s1) // check bouncing
                     {
-                        output_list.push_back(s1); 
+                        output_list.push_back(s1);
                     }
                     output_list.push_back(e1);
                 }
@@ -454,7 +485,7 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
                 {
                     if (output_list.back() != s1) // check bouncing
                     {
-                        output_list.push_back(s1); 
+                        output_list.push_back(s1);
                     }
                     output_list.push_back(e1);
                 }
@@ -466,7 +497,7 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
                 {
                     if (offcut.back() != s1) // check bouncing
                     {
-                        offcut.push_back(s1); 
+                        offcut.push_back(s1);
                     }
                     offcut.push_back(e1);
                 }
@@ -498,6 +529,6 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
     {
         ret.clear();
         ret.push_back(clippee);
-    }    
+    }
     return ret;
 }
