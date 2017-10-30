@@ -85,6 +85,18 @@ double calculate_continuous_coverage_ratio(const AOI *aoi, const list<Scene *> &
     return area_of_offcuts / continuous::area(aoi);
 }
 
+double calculate_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
+{
+    if (aoi->cell_set.size() > 0)
+    {
+        return calculate_discrete_coverage_ratio(aoi, scenes);
+    }
+    else if (aoi->offcuts.size() > 0)
+    {
+        return calculate_continuous_coverage_ratio(aoi, scenes);
+    }
+}
+
 double calculate_total_price(const list<Scene *> &scenes)
 {
     return accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {
@@ -92,27 +104,63 @@ double calculate_total_price(const list<Scene *> &scenes)
     });
 }
 
+nlohmann::json to_json(const list<Polygon> &polys)
+{
+    auto ret = nlohmann::json();
+    for (const auto &poly : polys)
+    {
+        ret.push_back(to_string(poly));
+    }
+    return ret;
+}
+
+nlohmann::json generate_report(AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &result_scenes)
+{
+    nlohmann::json report;
+
+    report["price"] = calculate_total_price(result_scenes);
+    report["number_of_possible_scenes"] = possible_scenes.size();
+    report["number_of_result_scenes"] = result_scenes.size();
+    report["coverage_ratio"] = calculate_coverage_ratio(aoi, result_scenes);
+
+    return report;
+
+    auto polygon_to_json = [](const Model *model) { return model->s; };
+    auto cell_set_to_json = [](const Model *model) { return nlohmann::json(model->cell_set); };
+    auto offcuts_to_json = [](const Model *model) { return to_json(model->offcuts); };
+    auto model_to_json = [polygon_to_json, cell_set_to_json, offcuts_to_json](const Model *model) {
+        nlohmann::json report;
+        report["polygon"] = polygon_to_json(model);
+        report["cell_set"] = cell_set_to_json(model);
+        report["offcuts"] = offcuts_to_json(model);
+        return report;
+    };
+
+    report["aoi"] = model_to_json(aoi);
+    report["possible_scenes"] = functional::map(possible_scenes, model_to_json);
+    report["result_scenes"] = functional::map(result_scenes, model_to_json);
+
+    return report;
+}
+
 nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     using namespace discrete;
-
-    nlohmann::json report;
+    timer.clear();
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
     discretize_aoi(aoi, delta);
     discretize_scenes(possible_scenes, aoi, delta);
-    double t1 = timer.end();
+    timer.end();
 
     timer.begin("t2");
     auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes);
-    double t2 = timer.end();
+    timer.end();
 
-    report["t1"] = t1;
-    report["t2"] = t2;
-    report["price"] = calculate_total_price(result_scenes);
-    report["coverage_ratio"] = calculate_discrete_coverage_ratio(aoi, result_scenes);
-    report["delta"] = delta; // for run.py
+    auto report = generate_report(aoi, possible_scenes, result_scenes);
+    report["delta"] = delta;
+    timer.append_to(report);
 
     // release memory
     for (auto scene : scenes)
@@ -120,31 +168,26 @@ nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delt
         scene->cell_set.clear();
     }
     aoi->cell_set.clear();
-
     return report;
 }
 
 nlohmann::json continuous_query(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     using namespace continuous;
-
-    nlohmann::json report;
+    timer.clear();
 
     timer.begin("t1");
     auto possible_scenes = select_possible_scenes(aoi, scenes);
     cut_aoi(aoi, delta);
     cut_scenes(possible_scenes, aoi, delta);
-    double t1 = timer.end();
+    timer.end();
 
     timer.begin("t2");
     auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
-    double t2 = timer.end();
+    timer.end();
 
-    report["t1"] = t1;
-    report["t2"] = t2;
-    report["price"] = calculate_total_price(result_scenes);
-    report["coverage_ratio"] = calculate_continuous_coverage_ratio(aoi, result_scenes);
-    report["delta"] = delta; // for run.py
+    auto report = generate_report(aoi, possible_scenes, result_scenes);
+    timer.append_to(report);
 
     // release memory
     for (auto scene : scenes)
@@ -170,11 +213,11 @@ nlohmann::json experiment(const string &aois_path, const string &scenes_path, do
     int cnt = 0;
     for (auto &aoi : aois)
     {
-        logger.push_namespace("d" + to_string(cnt));
+        logger.push_namespace(to_string(cnt) + "d");
         discrete_reports.push_back(discrete_query(aoi, scenes, delta));
         logger.pop_namespace();
 
-        logger.push_namespace("c" + to_string(cnt));
+        logger.push_namespace(to_string(cnt) + "c");
         continuous_reports.push_back(continuous_query(aoi, scenes, delta));
         logger.pop_namespace();
         ++cnt;
