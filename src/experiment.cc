@@ -69,34 +69,6 @@ struct Loader
     }
 };
 
-double calculate_discrete_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
-{
-    int num_covered_cells = accumulate(scenes.begin(), scenes.end(), 0, [](int acc, Scene *scene) {
-        return acc + scene->cell_set.size();
-    });
-    return num_covered_cells * 1.0 / aoi->cell_set.size();
-};
-
-double calculate_continuous_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
-{
-    double area_of_offcuts = accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {
-        return acc + continuous::area(scene);
-    });
-    return area_of_offcuts / continuous::area(aoi);
-}
-
-double calculate_coverage_ratio(const AOI *aoi, const list<Scene *> &scenes)
-{
-    if (aoi->cell_set.size() > 0)
-    {
-        return calculate_discrete_coverage_ratio(aoi, scenes);
-    }
-    else if (aoi->offcuts.size() > 0)
-    {
-        return calculate_continuous_coverage_ratio(aoi, scenes);
-    }
-}
-
 double calculate_total_price(const list<Scene *> &scenes)
 {
     return accumulate(scenes.begin(), scenes.end(), 0.0, [](double acc, Scene *scene) {

@@ -198,10 +198,11 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         // remove cells from the left possible scenes
         timer.begin("t2.3");
         {
-            const auto& scs = scene->cell_set;
+            const auto &scs = scene->cell_set;
             for (auto &possible_scene : possible_scenes) // n
             {
-                if (!intersects(possible_scene->poly, scene->poly)) continue;
+                if (!intersects(possible_scene->poly, scene->poly))
+                    continue;
                 auto &pcs = possible_scene->cell_set;
                 CellSet tmp;
                 set_difference(pcs.begin(), pcs.end(), scs.begin(), scs.end(), inserter(tmp, tmp.begin())); // max(m, m);
@@ -227,6 +228,26 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
 
 namespace continuous
 {
+
+double area(const list<Polygon> &offcuts)
+{
+    double ret = 0;
+    for (const auto &offcut : offcuts)
+    {
+        ret += area(offcut);
+    }
+    return ret;
+};
+
+double area(const Scene *scene)
+{
+    return area(scene->offcuts);
+};
+
+double area(const AOI *aoi)
+{
+    return area(aoi->offcuts);
+};
 
 struct Cutter
 {
@@ -276,7 +297,19 @@ struct Cutter
     {
         for (const auto &offcut : offcuts) // m
         {
-            scene_op_offcut(scene, offcut, op); // m
+            try
+            {
+                scene_op_offcut(scene, offcut, op); // m
+            } 
+            catch (const runtime_error &e)
+            {
+                logger.debug(to_string(area(offcut)));
+                logger.error(e.what());
+            }
+            catch (...)
+            {
+                logger.error("unknown error caught");
+            }
         }
     }
 
@@ -324,26 +357,6 @@ void cut_scenes(const list<Scene *> &scenes, AOI *aoi, double delta)
     }
 }
 
-double area(const list<Polygon> &offcuts)
-{
-    double ret = 0;
-    for (const auto &offcut : offcuts)
-    {
-        ret += area(offcut);
-    }
-    return ret;
-};
-
-double area(const Scene *scene)
-{
-    return area(scene->offcuts);
-};
-
-double area(const AOI *aoi)
-{
-    return area(aoi->offcuts);
-};
-
 void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
 {
     scenes.erase(remove_if(scenes.begin(),
@@ -389,7 +402,8 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
         timer.begin("t2.3");
         for (auto possible_scene : possible_scenes) // n
         {
-            if (!intersects(possible_scene->poly, scene->poly)) continue;
+            if (!intersects(possible_scene->poly, scene->poly))
+                continue;
             cutter.scene_difference_offcuts(possible_scene, scene->offcuts); // m * m
         }
         timer.end();
@@ -405,3 +419,22 @@ list<Scene *> select_approx_optimal_scenes(AOI *aoi, const list<Scene *> &scenes
     return result_scenes;
 }
 }
+
+double calculate_coverage_ratio(AOI *aoi, const list<Scene *> &scenes)
+{
+    continuous::Cutter cutter{0};
+    double covered = 0;
+    continuous::cut_aoi(aoi, 0);
+    for (auto i = scenes.begin(); i != scenes.end(); ++i)
+    {
+        continuous::cut_scenes(scenes, aoi, 0);
+    }
+    for (auto i = scenes.begin(); i != scenes.end(); ++i)
+    {
+        covered += continuous::area(*i);
+        for (auto j = next(i); j != scenes.end(); ++j)
+        {
+            cutter.scene_difference_offcuts(*j, (*i)->offcuts);
+        }
+        return covered / continuous::area(aoi);
+    }
