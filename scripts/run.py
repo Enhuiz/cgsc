@@ -82,7 +82,7 @@ def plot_continuous_query(ax, report):
 
     print(len(result_offcuts))
     plot_polygons(ax, possible_offcuts, 'blue', alpha=1)
-    plot_polygons(ax, result_offcuts, 'red', alpha=0.7)
+    plot_polygons(ax, result_offcuts, ['red', 'yellow', 'green', 'purple', 'k'], alpha=0.7)
     plot_polygons(ax, aoi_offcuts, 'none')
 
 def show(plot):
@@ -100,7 +100,7 @@ def main():
 
     config = {
         'delta': [0.02],
-        'aoi_ratio': [0.003],
+        'aoi_ratio': [0.05],
         'n_aois': [1],
         'archive': [15000],
     }
@@ -110,7 +110,7 @@ def main():
     query_result_path = query_dir(['{}.json'.format(get_tag({k: v[0] for k, v in config.items()}))])
     reports = json.load(open(query_result_path, 'r'))
 
-    show(lambda ax: plot_discrete_query(ax, reports['discrete'][0]))
+    # show(lambda ax: plot_discrete_query(ax, reports['discrete'][0]))
     show(lambda ax: plot_continuous_query(ax, reports['continuous'][0]))
 
 

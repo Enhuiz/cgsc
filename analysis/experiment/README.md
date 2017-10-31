@@ -126,7 +126,7 @@ Number of scenes grow linearly as the ratio increases. t1 cost O(nmlogm) time, w
 
 However, in Exp4, it didn't grow linearly. The reason is, in fact, the previous algorithm cost O(nmlogM) time, where M is the number of cell in the aoi. Even though m did not change with the aoi ratio too much, M changes rapidly. This leads to non-linearly increase of time.
 
-# Exp5 (26/10/2017)
+# Exp6 (26/10/2017)
 ## Notes
 1. Fix t1 algorithm, make it linearly increase with aoi-ratio
 2. Add continuous solver, which shows better performance.
@@ -147,3 +147,78 @@ However, in Exp4, it didn't grow linearly. The reason is, in fact, the previous 
 t1 - aoi ratio figure shows t1 of discrete algorithm linearly increases with aoi ratio now.
 
 The results above shows the continuous solver is faster than the discrete solver, and gives lower price.
+
+
+# Exp7 (30/10/2017)
+## Notes
+1. Modify intersection of cell set, use set_intersection, which make discrete t2 faster
+
+## Results
+|Term |Value |
+|:-|:-|
+|aoi ratio| 1%, 2%, 5%, 10%, 20% |
+|delta| 0.01 |
+|number of aoi|25|
+|size of archive| 15000 |
+|t2 - aoi ratio|![](7/t2-aoi_pct.png)|
+
+## Comments
+This improve discrete t2 about 2x faster
+
+
+# Exp8 (30/10/2017)
+## Notes
+1. check whether the origin polygon intersects before calculate the difference
+
+## Results
+|Term |Value |
+|:-|:-|
+|aoi ratio| 1%, 2%, 5%, 10%, 20% |
+|delta| 0.01 |
+|number of aoi|25|
+|size of archive| 15000 |
+|t2 - aoi ratio|![](8/t2-aoi_pct.png)|
+
+## Comments
+This make discrete t2 about 10x faster and continuous t2 about 5x faster.
+
+# Exp9 (31/10/2017)
+## Notes
+1. an overall run based on Exp8
+
+## Results
+
+|Term |Value |
+|:-|:-|
+|aoi ratio| 5%|
+|delta| 0.005, 0.01, 0.015, 0.02, 0.025|
+|number of aoi|25|
+|size of archive| 15000 |
+|t1 - aoi ratio|![](9/t1-delta.png)|
+|t2 - aoi ratio|![](9/t2-delta.png)|
+|price - aoi ratio|![](9/price-delta.png)|
+
+---
+
+|Term |Value |
+|:-|:-|
+|aoi ratio| 1%, 2%, 5%, 10%, 20% |
+|delta| 0.01 |
+|number of aoi|25|
+|size of archive| 15000 |
+|t1 - aoi ratio|![](9/t1-aoi_pct.png)|
+|t2 - aoi ratio|![](9/t2-aoi_pct.png)|
+|price - aoi ratio|![](9/price-aoi_pct.png)|
+
+---
+
+|Term |Value |
+|:-|:-|
+|aoi ratio| 5%|
+|delta| 0.01 |
+|number of aoi|25|
+|size of archive| 10000, 15000, 20000, 50000, 75000, 100000 |
+|t1 - aoi ratio|![](9/t1-archive.png)|
+|t2 - aoi ratio|![](9/t2-archive.png)|
+|price - aoi ratio|![](9/price-archive.png)|
+
