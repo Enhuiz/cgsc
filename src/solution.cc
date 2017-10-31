@@ -269,7 +269,7 @@ struct Cutter
         }
         scene->offcuts = results;
         remove_tiny_offcuts(scene->offcuts); // tiny offcuts tend to be non-convex, remove them first
-        // triangulate_non_convex_offcuts(scene->offcuts);
+        // triangulate_non_convex_offcuts(scene->offcuts);  // after update line intersection algorithm, there is no non_convex anymore
     }
 
     void scene_op_offcuts(Scene *scene, const list<Polygon> &offcuts, function<list<Polygon>(const Polygon &, const Polygon &)> op)

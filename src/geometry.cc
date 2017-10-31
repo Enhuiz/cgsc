@@ -361,8 +361,8 @@ Point line_line_intersection(const Point &a, const Point &b, const Point &c, con
     {
         throw runtime_error("Error: divisor = 0 in line_line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
     }
-    auto crosses = Point{cross(a, b), cross(c, d)};
-    auto e = Point{cross(crosses, x_diff) / det, cross(crosses, y_diff) / det};
+    auto cr = Point{cross(a, b), cross(c, d)};
+    auto e = Point{cross(cr, x_diff) / det, cross(cr, y_diff) / det};
     return e;
 }
 
@@ -522,7 +522,10 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
             }
             s1 = e1;
         }
-        ret.push_back(offcut);
+        if (offcut.size() > 0)
+        {
+            ret.push_back(offcut);
+        }
         s2 = e2;
     }
     if (output_list.size() == 0) // no intersection
