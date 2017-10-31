@@ -35,6 +35,11 @@ void Logger::debug(const string &s)
     cout << "\033[33m" << wrap(s) << "\033[0m" << endl;
 }
 
+void Logger::error(const string &s)
+{
+    cout << "\033[31m" << wrap(s) << "\033[0m" << endl;
+}
+
 string Logger::wrap(const string &s)
 {
     return "[" + get_namespaces() + "] " + s;
