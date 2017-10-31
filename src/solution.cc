@@ -300,7 +300,7 @@ struct Cutter
             try
             {
                 scene_op_offcut(scene, offcut, op); // m
-            } 
+            }
             catch (const runtime_error &e)
             {
                 logger.debug(to_string(area(offcut)));
@@ -436,5 +436,6 @@ double calculate_coverage_ratio(AOI *aoi, const list<Scene *> &scenes)
         {
             cutter.scene_difference_offcuts(*j, (*i)->offcuts);
         }
-        return covered / continuous::area(aoi);
     }
+    return covered / continuous::area(aoi);
+}
