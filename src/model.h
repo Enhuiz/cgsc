@@ -2,6 +2,7 @@
 #define CGSC_MODEL_H
 
 #include <functional>
+#include <unordered_set>
 
 #include "json.hpp"
 
@@ -9,7 +10,7 @@
 #include "global.h"
 
 using CID = unsigned long long;
-using CellSet = std::set<CID>;
+using CellSet = std::unordered_set<CID>;
 
 struct Model
 {
@@ -28,5 +29,18 @@ struct Scene : Model
     double price;
 };
 
+namespace discrete
+{
+void discretize_aoi(AOI *aoi, double delta);
+void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta);
+}
+
+namespace continuous
+{
+void cut_aoi(AOI *aoi);
+void cut_scenes(const std::list<Scene *> &scenes, AOI *aoi);
+double area(const std::list<Polygon> &offcuts);
+double calculate_coverage_ratio(AOI *aoi, const std::list<Scene *> &scenes);
+}
 
 #endif

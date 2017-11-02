@@ -9,18 +9,17 @@ std::list<Scene *> select_possible_scenes(AOI *aoi, const std::list<Scene *> &sc
 
 namespace discrete
 {
-void discretize_aoi(AOI *aoi, double delta);
-void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta);
-std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, const std::list<Scene *> &scenes);
+std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
 }
 
 namespace continuous
 {
-void cut_aoi(AOI *aoi, double delta);
-void cut_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta);
-std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, const std::list<Scene *> &scenes, double delta);
+std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
 }
 
-double calculate_coverage_ratio(AOI *aoi, const std::list<Scene *> &scenes);
+namespace brute_force
+{
+std::list<Scene *> select_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
+}
 
 #endif

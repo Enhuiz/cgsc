@@ -76,121 +76,106 @@ double calculate_total_price(const list<Scene *> &scenes)
     });
 }
 
-nlohmann::json to_json(const list<Polygon> &polys)
-{
-    auto ret = nlohmann::json();
-    for (const auto &poly : polys)
-    {
-        ret.push_back(to_string(poly));
-    }
-    return ret;
-}
+// nlohmann::json to_json(const list<Polygon> &polys)
+// {
+//     auto ret = nlohmann::json();
+//     for (const auto &poly : polys)
+//     {
+//         ret.push_back(to_string(poly));
+//     }
+//     return ret;
+// }
 
-nlohmann::json generate_report(AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &result_scenes)
-{
-    nlohmann::json report;
+// nlohmann::json generate_report(AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
+// {
+//     nlohmann::json report;
 
-    report["price"] = calculate_total_price(result_scenes);
+
+//     auto polygon_to_json = [](const Model *model) { return model->s; };
+//     auto cell_set_to_json = [](const Model *model) { return nlohmann::json(model->cell_set); };
+//     auto offcuts_to_json = [](const Model *model) { return to_json(model->offcuts); };
+//     auto model_to_json = [polygon_to_json, cell_set_to_json, offcuts_to_json](const Model *model) {
+//         nlohmann::json report;
+//         report["polygon"] = polygon_to_json(model);
+//         report["cell_set"] = cell_set_to_json(model);
+//         report["offcuts"] = offcuts_to_json(model);
+//         return report;
+//     };
+
+//     report["aoi"] = model_to_json(aoi);
+//     report["possible_scenes"] = functional::map(possible_scenes, model_to_json);
+//     report["selected_scenes"] = functional::map(selected_scenes, model_to_json);
+
+//     return report;
+// }
+
+void append_results_to_report(nlohmann::json &report, AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
+{
+    report["price"] = calculate_total_price(selected_scenes);
     report["number_of_possible_scenes"] = possible_scenes.size();
-    report["number_of_result_scenes"] = result_scenes.size();
-    report["coverage_ratio"] = calculate_coverage_ratio(aoi, result_scenes);
-
-    return report;
-
-    auto polygon_to_json = [](const Model *model) { return model->s; };
-    auto cell_set_to_json = [](const Model *model) { return nlohmann::json(model->cell_set); };
-    auto offcuts_to_json = [](const Model *model) { return to_json(model->offcuts); };
-    auto model_to_json = [polygon_to_json, cell_set_to_json, offcuts_to_json](const Model *model) {
-        nlohmann::json report;
-        report["polygon"] = polygon_to_json(model);
-        report["cell_set"] = cell_set_to_json(model);
-        report["offcuts"] = offcuts_to_json(model);
-        return report;
-    };
-
-    report["aoi"] = model_to_json(aoi);
-    report["possible_scenes"] = functional::map(possible_scenes, model_to_json);
-    report["result_scenes"] = functional::map(result_scenes, model_to_json);
-
-    return report;
+    report["number_of_selected_scenes"] = selected_scenes.size();
+    report["coverage_ratio"] = continuous::calculate_coverage_ratio(aoi, selected_scenes);
 }
 
 nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     using namespace discrete;
-    timer.clear();
 
-    timer.begin("t1");
+    g_report.clear();
+    Stopwatch sw;
+
+    sw.restart();
     auto possible_scenes = select_possible_scenes(aoi, scenes);
-    discretize_aoi(aoi, delta);
-    discretize_scenes(possible_scenes, aoi, delta);
-    timer.end();
+    g_report["t_find_possible_scenes"] = sw.lap();
 
-    timer.begin("t2");
-    auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes);
-    timer.end();
+    auto selected_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
 
-    auto report = generate_report(aoi, possible_scenes, result_scenes);
-    report["delta"] = delta;
-    timer.append_to(report);
+    append_results_to_report(g_report, aoi, possible_scenes, selected_scenes);
 
-    // release memory
-    for (auto scene : scenes)
-    {
-        scene->cell_set.clear();
-    }
-    aoi->cell_set.clear();
-    return report;
+    return g_report;
 }
 
 nlohmann::json continuous_query(AOI *aoi, const list<Scene *> &scenes, double delta)
 {
     using namespace continuous;
-    timer.clear();
 
-    timer.begin("t1");
+    g_report.clear();
+    Stopwatch sw;
+
+    sw.restart();
     auto possible_scenes = select_possible_scenes(aoi, scenes);
-    cut_aoi(aoi, delta);
-    cut_scenes(possible_scenes, aoi, delta);
-    timer.end();
+    g_report["t_find_possible_scenes"] = sw.lap();
 
-    timer.begin("t2");
-    auto result_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
-    timer.end();
+    auto selected_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
 
-    auto report = generate_report(aoi, possible_scenes, result_scenes);
-    timer.append_to(report);
+    append_results_to_report(g_report, aoi, possible_scenes, selected_scenes);
 
-    // release memory
-    for (auto scene : scenes)
-    {
-        scene->offcuts.clear();
-    }
-    aoi->offcuts.clear();
-
-    return report;
+    return g_report;
 }
 
 nlohmann::json experiment(const string &aois_path, const string &scenes_path, double delta)
 {
     auto discrete_reports = nlohmann::json();
     auto continuous_reports = nlohmann::json();
-
-    timer.begin("loading");
+    
     const auto loader = Loader(aois_path, scenes_path);
     const auto aois = loader.get_aois();
     const auto scenes = loader.get_scenes();
-    timer.end();
-
+    
+    Stopwatch sw;    
     int cnt = 0;
     for (auto &aoi : aois)
     {
         logger.push_namespace(to_string(cnt) + "d");
+        sw.restart();
         discrete_reports.push_back(discrete_query(aoi, scenes, delta));
+        logger << "end after " << sw.lap() << " s" << endl;
         logger.pop_namespace();
 
         logger.push_namespace(to_string(cnt) + "c");
+        sw.restart();
         continuous_reports.push_back(continuous_query(aoi, scenes, delta));
+        logger << "end after " << sw.lap() << " s" << endl;
         logger.pop_namespace();
         ++cnt;
     }
