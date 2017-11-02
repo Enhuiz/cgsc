@@ -2,7 +2,6 @@
 #define CGSC_GEOMETRY_H
 
 #include <list>
-#include <set>
 #include <string>
 #include <functional>
 
@@ -25,8 +24,8 @@ using Triangle = Polygon;
 
 std::string to_string(const Vector2 &v);
 std::string to_string(const Polygon &poly);
-std::ostream& operator<<(std::ostream &os, const Vector2 &v);
-std::ostream& operator<<(std::ostream &os, const Polygon &poly);
+std::ostream &operator<<(std::ostream &os, const Vector2 &v);
+std::ostream &operator<<(std::ostream &os, const Polygon &poly);
 
 std::list<Point> parse_polygon(const std::string &s);
 double area(const Polygon &poly);
@@ -37,11 +36,13 @@ bool outside(const Point &p, const Polygon &poly); // only for convex
 bool crosses(const Polygon &a, const Polygon &b);
 bool disjoint(const Polygon &a, const Polygon &b);
 bool intersects(const Polygon &a, const Polygon &b);
-bool convex(const Polygon& poly);
-// Following 3 functions only support non-closed polygon representation (i.e. first point != last point)
-std::list<Triangle> triangulate(const Polygon &poly);  // to support concave
-// Following 2 functions only support convex clipper
-Polygon intersection(const Polygon &clippee, const Polygon &clipper);
+bool convex(const Polygon &poly);
+// Following functions only support non-closed polygon representation (i.e. first point != last point)
+std::list<Triangle> triangulate(const Polygon &poly); // to support concave
+// Following functions only support convex clipper
+std::list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> difference(const Polygon &clippee, const Polygon &clipper);
+std::list<Polygon> intersection(std::list<Polygon> clippees, const std::list<Polygon> &clipper);
+std::list<Polygon> difference(std::list<Polygon> clippees, const std::list<Polygon> &clipper);
 
 #endif

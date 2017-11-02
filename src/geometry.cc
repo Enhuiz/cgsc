@@ -366,11 +366,12 @@ Point line_line_intersection(const Point &a, const Point &b, const Point &c, con
     return e;
 }
 
-Polygon intersection(const Polygon &clippee, const Polygon &clipper)
+list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
 {
     if (!convex(clipper))
     {
-        throw runtime_error("Error: clipper is non-convex in intersection!\n" + to_string(clipper));
+        logger.error("Intersection Error: clipper is non-convex!\n" + to_string(clipper) + "\narea: " + to_string(area(clipper)));
+        return {clippee};
     }
 
     auto output_list = clippee;
@@ -422,14 +423,36 @@ Polygon intersection(const Polygon &clippee, const Polygon &clipper)
         }
         s2 = e2;
     }
-    return output_list;
+    if (output_list.size() > 0)
+    {
+        return {output_list};
+    }
+    else
+    {
+        return {};
+    }
+}
+
+list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers)
+{
+    for (const auto &clipper : clippers)
+    {
+        list<Polygon> result;
+        for (auto &clippee : clippees)
+        {
+            result.splice(result.end(), intersection(clippee, clipper));
+        }
+        clippees = move(result);
+    }
+    return clippees;
 }
 
 list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
 {
     if (!convex(clipper))
     {
-        throw runtime_error("Error: clipper is non-convex in difference!\n" + to_string(clipper));
+        logger.error("Difference Error: clipper is non-convex!\n" + to_string(clipper) + "\narea: " + to_string(area(clipper)));
+        return {clippee};
     }
 
     list<Polygon> ret;
@@ -535,3 +558,18 @@ list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
     }
     return ret;
 }
+
+list<Polygon> difference(list<Polygon> clippees, const list<Polygon> &clippers)
+{
+    for (const auto &clipper : clippers)
+    {
+        list<Polygon> result;
+        for (auto &clippee : clippees)
+        {
+            result.splice(result.end(), difference(clippee, clipper));
+        }
+        clippees = move(result);
+    }
+    return clippees;
+}
+
