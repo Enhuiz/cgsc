@@ -24,40 +24,39 @@ private:
   clock_t begin_time;
 };
 
-class Logger
+class Logger: public std::ostream
 {
+class Buffer : public std::stringbuf
+{
+  std::ostream& output; 
+  const Logger& logger;
 public:
-  void info(const std::string &s);
-  void debug(const std::string &s);
-  void error(const std::string &s);
+  Buffer(std::ostream& os, const Logger& logger);
+  virtual int sync();
+};
+
+public:
+  Logger(std::ostream& os);
+
+  void info(const std::string &s) const;
+  void debug(const std::string &s) const;
+  void error(const std::string &s) const;
 
   void push_namespace(const std::string &ns);
   void pop_namespace();
-  std::string get_namespaces();
+  std::string get_namespaces() const;
 
 private:
-  std::string wrap(const std::string &s);
+  std::string wrap(const std::string &s) const;
 
 private:
   std::list<std::string> nss;
-};
-
-class Timer
-{
-public:
-  void begin(const std::string &tag);
-  void end();
-  void clear();
-  void append_to(nlohmann::json& report);
-
-private:
-  std::list<std::string> tags;
-  std::list<Stopwatch> stopwatches;
-  std::map<std::string, std::list<double>> intervals; 
+  std::ostringstream oss;
+  Buffer buffer;
 };
 
 extern Logger logger;
-extern Timer timer;
+extern nlohmann::json g_report;
 
 template <class T>
 typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
@@ -67,8 +66,8 @@ almost_equal(T x, T y, int ulp)
   // and multiplied by the desired precision in ULPs (units in the last place)
   return std::abs(x - y) < std::numeric_limits<T>::epsilon() * std::abs(x + y) * ulp
          // unless the result is subnormal
-        //  || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
-        || std::abs(x - y) < std::numeric_limits<T>::min();
+         //  || std::abs(x - y) < 1e-7; // std::numeric_limits<T>::min();
+         || std::abs(x - y) < std::numeric_limits<T>::min();
 }
 
 namespace functional
@@ -91,6 +90,23 @@ auto map(const T &iterable, Func &&func) -> std::vector<decltype(func(std::declv
 
   return res;
 }
+}
+
+template <template <class, class> class Container>
+double sum(const Container<double, std::allocator<double>> &vs)
+{
+  double ret = 0;
+  for (auto v : vs)
+  {
+    ret += v;
+  }
+  return ret;
+}
+
+template <template <class, class> class Container>
+double mean(const Container<double, std::allocator<double>> &vs)
+{
+  return sum(vs) / vs.size();
 }
 
 template <typename T>
