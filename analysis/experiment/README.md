@@ -222,3 +222,17 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |t2 - aoi ratio|![](9/t2-archive.png)|
 |price - aoi ratio|![](9/price-archive.png)|
 
+# Exp10 (3/11/2017)
+## Notes
+1. add iteration monitor
+
+## Results
+
+|Term |Value |
+|:-|:-|
+|aoi ratio| 20%|
+|delta| 0.01|
+|number of aoi|1|
+|size of archive| 15000 |
+|price - coverage ratio|![](10/price-coverage_ratio_dot.png)|
+|time - coverage ratio|![](10/time-coverage_ratio_dot.png)|

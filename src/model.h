@@ -41,6 +41,7 @@ void cut_aoi(AOI *aoi);
 void cut_scenes(const std::list<Scene *> &scenes, AOI *aoi);
 double area(const std::list<Polygon> &offcuts);
 double calculate_coverage_ratio(AOI *aoi, const std::list<Scene *> &scenes);
+nlohmann::json to_json(const std::list<Polygon> &polys);
 }
 
 #endif

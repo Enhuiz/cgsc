@@ -196,4 +196,15 @@ double calculate_coverage_ratio(AOI *aoi, const list<Scene *> &scenes)
     }
     return covered / area(aoi->poly);
 }
+
+nlohmann::json to_json(const list<Polygon> &polys)
+{
+    auto ret = nlohmann::json();
+    for (const auto &poly : polys)
+    {
+        ret.push_back(to_string(poly));
+    }
+    return ret;
+}
+
 }
