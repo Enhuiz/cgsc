@@ -447,116 +447,116 @@ list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers
     return clippees;
 }
 
-list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
+tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
 {
     if (!convex(clipper))
     {
         logger.error("Difference Error: clipper is non-convex!\n" + to_string(clipper) + "\narea: " + to_string(area(clipper)));
-        return {clippee};
+        return make_tuple(list<Polygon>{}, list<Polygon>{clippee});
     }
 
-    list<Polygon> ret;
-    auto output_list = clippee;
-    auto s2 = clipper.back();
-    for (const auto &e2 : clipper)
+    auto inners = list<Polygon>();
+    auto outers = list<Polygon>();
+    
     {
-        auto input_list = output_list;
-        output_list.clear();
-        auto offcut = list<Point>();
-        auto s1 = input_list.back();
-        // cout << endl;
-        for (const auto &e1 : input_list)
+        auto inner = clippee;
+        auto s2 = clipper.back();
+        for (const auto &e2 : clipper)
         {
-            // if (inside(s1, s2, e2)) {
-            //     cout << "inside" << endl;
-            // } else if (onside(s1, s2, e2))
-            // {
-            //     cout << "onside" << endl;
-            // } else {
-            //     cout << "outside" << endl;
-            // }
-            // if (inside(e1, s2, e2)) {
-            //     cout << "inside" << endl;
-            // } else if (onside(s1, s2, e2))
-            // {
-            //     cout << "onside" << endl;
-            // } else {
-            //     cout << "outside" << endl;
-            // }
+            auto prev_inner = inner;
+            inner.clear();
+            auto outer = list<Point>();
+            auto s1 = prev_inner.back();
+            for (const auto &e1 : prev_inner)
+            {
+                if (inside(s1, s2, e2))
+                {
+                    if (inside(e1, s2, e2))
+                    {
+                        inner.push_back(e1);
+                    }
+                    else if (onside(e1, s2, e2))
+                    {
+                        inner.push_back(e1);
+                    }
+                    else // outside(e1)
+                    {
+                        auto p = line_line_intersection(s1, e1, s2, e2);
+                        inner.push_back(p);
+                        outer.push_back(p);
+                        outer.push_back(e1);
+                    }
+                }
+                else if (onside(s1, s2, e2))
+                {
+                    if (inside(e1, s2, e2))
+                    {
+                        if (inner.back() != s1) // check bouncing
+                        {
+                            inner.push_back(s1);
+                        }
+                        inner.push_back(e1);
+                    }
+                    else if (onside(e1, s2, e2))
+                    {
+                        // do nothing
+                    }
+                    else // outside(e1)
+                    {
+                        if (outer.back() != s1) // check bouncing
+                        {
+                            outer.push_back(s1);
+                        }
+                        outer.push_back(e1);
+                    }
+                }
+                else // outside(s1)
+                {
+                    if (inside(e1, s2, e2))
+                    {
+                        auto p = line_line_intersection(s1, e1, s2, e2);
+                        inner.push_back(p);
+                        inner.push_back(e1);
+                        outer.push_back(p);
+                    }
+                    else if (onside(e1, s2, e2))
+                    {
+                        outer.push_back(e1);
+                    }
+                    else // outside(e1)
+                    {
+                        outer.push_back(e1);
+                    }
+                }
+                s1 = e1;
+            }
+            if (outer.size() > 0)
+            {
+                outers.push_back(outer);
+            }
+            s2 = e2;
+        }
 
-            if (inside(s1, s2, e2))
-            {
-                if (inside(e1, s2, e2))
-                {
-                    output_list.push_back(e1);
-                }
-                else if (onside(e1, s2, e2))
-                {
-                    output_list.push_back(e1);
-                }
-                else // outside(e1)
-                {
-                    auto p = line_line_intersection(s1, e1, s2, e2);
-                    output_list.push_back(p);
-                    offcut.push_back(p);
-                    offcut.push_back(e1);
-                }
-            }
-            else if (onside(s1, s2, e2))
-            {
-                if (inside(e1, s2, e2))
-                {
-                    if (output_list.back() != s1) // check bouncing
-                    {
-                        output_list.push_back(s1);
-                    }
-                    output_list.push_back(e1);
-                }
-                else if (onside(e1, s2, e2))
-                {
-                    // do nothing
-                }
-                else // outside(e1)
-                {
-                    if (offcut.back() != s1) // check bouncing
-                    {
-                        offcut.push_back(s1);
-                    }
-                    offcut.push_back(e1);
-                }
-            }
-            else // outside(s1)
-            {
-                if (inside(e1, s2, e2))
-                {
-                    auto p = line_line_intersection(s1, e1, s2, e2);
-                    output_list.push_back(p);
-                    output_list.push_back(e1);
-                    offcut.push_back(p);
-                }
-                else if (onside(e1, s2, e2))
-                {
-                    offcut.push_back(e1);
-                }
-                else // outside(e1)
-                {
-                    offcut.push_back(e1);
-                }
-            }
-            s1 = e1;
-        }
-        if (offcut.size() > 0)
+        if (inner.size() > 0)
         {
-            ret.push_back(offcut);
+            inners.push_back(inner);
         }
-        s2 = e2;
+        else // no intersection, restore the cut clippee
+        {
+            outers.clear();
+            outers.push_back(clippee);
+        }
     }
-    if (output_list.size() == 0) // no intersection
-    {
-        ret.clear();
-        ret.push_back(clippee);
-    }
-    return ret;
+
+    return make_tuple(inners, outers);
+}
+
+list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
+{
+    auto inners = list<Polygon>();
+    auto outers = list<Polygon>();
+    tie(inners, outers) = clip(clippee, clipper);
+    return outers;
 }
 
 list<Polygon> difference(list<Polygon> clippees, const list<Polygon> &clippers)
@@ -572,4 +572,3 @@ list<Polygon> difference(list<Polygon> clippees, const list<Polygon> &clippers)
     }
     return clippees;
 }
-
