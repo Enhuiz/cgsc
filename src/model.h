@@ -20,27 +20,31 @@ struct Model
     std::list<Polygon> offcuts;
 };
 
-struct AOI : Model
+struct ROI : Model
 {
 };
 
 struct Scene : Model
 {
     double price;
+    double valid_area; // price / area of region inside the ROI
 };
 
 namespace discrete
 {
-void discretize_aoi(AOI *aoi, double delta);
-void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta);
+void discretize_roi(ROI *roi, double delta);
+void discretize_scenes(const std::list<Scene *> &scenes, ROI *roi, double delta);
+void remove_scenes_with_empty_cell_set(std::list<Scene *> &scenes);
 }
 
 namespace continuous
 {
-void cut_aoi(AOI *aoi);
-void cut_scenes(const std::list<Scene *> &scenes, AOI *aoi);
+void cut_roi(ROI *roi);
+void cut_scenes(const std::list<Scene *> &scenes, ROI *roi);
 double area(const std::list<Polygon> &offcuts);
-double calculate_coverage_ratio(AOI *aoi, const std::list<Scene *> &scenes);
+double calculate_coverage_ratio(ROI *roi, const std::list<Scene *> &scenes);
+void remove_tiny_offcuts(std::list<Polygon> &offcuts, double delta);
+void remove_scenes_with_no_offcuts(std::list<Scene *> &scenes);
 nlohmann::json to_json(const std::list<Polygon> &polys);
 }
 

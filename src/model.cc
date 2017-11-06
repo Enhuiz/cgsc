@@ -108,27 +108,27 @@ struct Discretizer
     }
 };
 
-void discretize_aoi(AOI *aoi, double delta)
+void discretize_roi(ROI *roi, double delta)
 {
     Discretizer discretizer{delta};
-    aoi->cell_set = discretizer.discretize(aoi->poly, true);
+    roi->cell_set = discretizer.discretize(roi->poly, true);
 }
 
 // O(n m log m)
-void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
+void discretize_scenes(const std::list<Scene *> &scenes, ROI *roi, double delta)
 {
     Discretizer discretizer{delta};
-    auto aoi_bbox = discretizer.bounding_box(aoi->poly, floor_double, ceil_double);
+    auto roi_bbox = discretizer.bounding_box(roi->poly, floor_double, ceil_double);
     for (auto scene : scenes) // n
     {
-        auto polys = intersection(aoi_bbox, scene->poly); // this indeed speed up the next instruction
+        auto polys = intersection(roi_bbox, scene->poly); // this indeed speed up the next instruction
         for (const auto &poly : polys)
         {
             auto cell_set = discretizer.discretize(poly, false);
             // find cid in the intersections
             for (auto cid : cell_set) // O(m)
             {
-                if (intersects(discretizer.get_cell_polygon(cid), aoi->poly)) // was O(logM), is O(1)
+                if (intersects(discretizer.get_cell_polygon(cid), roi->poly)) // was O(logM), is O(1)
                 {
                     scene->cell_set.insert(cid); // O(logm)
                 }
@@ -136,10 +136,41 @@ void discretize_scenes(const std::list<Scene *> &scenes, AOI *aoi, double delta)
         }
     }
 }
+
+void remove_scenes_with_empty_cell_set(list<Scene *> &scenes)
+{
+    scenes.erase(remove_if(scenes.begin(),
+                           scenes.end(),
+                           [](const Scene *scene) {
+                               return scene->cell_set.size() == 0;
+                           }),
+                 scenes.end());
+};
 }
 
 namespace continuous
 {
+
+void remove_tiny_offcuts(list<Polygon> &offcuts, double delta)
+{
+    offcuts.erase(remove_if(offcuts.begin(),
+                            offcuts.end(),
+                            [delta](const Polygon &offcut) {
+                                return area(offcut) < delta * delta;
+                            }),
+                  offcuts.end());
+}
+
+void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
+{
+    scenes.erase(remove_if(scenes.begin(),
+                           scenes.end(),
+                           [](const Scene *scene) {
+                               return scene->offcuts.size() == 0;
+                           }),
+                 scenes.end());
+};
+
 double area(const list<Polygon> &offcuts)
 {
     double ret = 0;
@@ -150,19 +181,19 @@ double area(const list<Polygon> &offcuts)
     return ret;
 };
 
-void cut_aoi(AOI *aoi)
+void cut_roi(ROI *roi)
 {
-    if (convex(aoi->poly))
+    if (convex(roi->poly))
     {
-        aoi->offcuts = list<Polygon>{aoi->poly};
+        roi->offcuts = list<Polygon>{roi->poly};
     }
     else
     {
-        aoi->offcuts = triangulate(aoi->poly);
+        roi->offcuts = triangulate(roi->poly);
     }
 }
 
-void cut_scenes(const list<Scene *> &scenes, AOI *aoi)
+void cut_scenes(const list<Scene *> &scenes, ROI *roi)
 {
     for (auto scene : scenes)
     {
@@ -174,17 +205,18 @@ void cut_scenes(const list<Scene *> &scenes, AOI *aoi)
         {
             scene->offcuts = triangulate(scene->poly);
         }
-        scene->offcuts = intersection(scene->offcuts, aoi->offcuts);
+        scene->offcuts = intersection(scene->offcuts, roi->offcuts);
+        scene->valid_area = area(scene->offcuts);
     }
 }
 
-double calculate_coverage_ratio(AOI *aoi, const list<Scene *> &scenes)
+double calculate_coverage_ratio(ROI *roi, const list<Scene *> &scenes)
 {
     double covered = 0;
-    cut_aoi(aoi);
+    cut_roi(roi);
     for (auto i = scenes.begin(); i != scenes.end(); ++i)
     {
-        cut_scenes(scenes, aoi);
+        cut_scenes(scenes, roi);
     }
     for (auto i = scenes.begin(); i != scenes.end(); ++i)
     {
@@ -194,7 +226,7 @@ double calculate_coverage_ratio(AOI *aoi, const list<Scene *> &scenes)
             (*j)->offcuts = difference((*j)->offcuts, (*i)->offcuts);
         }
     }
-    return covered / area(aoi->poly);
+    return covered / area(roi->poly);
 }
 
 nlohmann::json to_json(const list<Polygon> &polys)
