@@ -11,25 +11,25 @@ using namespace std;
 struct Loader
 {
 
-    std::list<std::unique_ptr<AOI>> aois;
+    std::list<std::unique_ptr<ROI>> rois;
     std::list<std::unique_ptr<Scene>> scenes;
 
-    Loader(const string &aois_path, const string &scenes_path)
+    Loader(const string &rois_path, const string &scenes_path)
     {
-        { // load aoi
-            io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(aois_path);
+        { // load roi
+            io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(rois_path);
             in.read_header(io::ignore_extra_column, "Polygon");
             string poly_s;
             while (in.read_row(poly_s))
             {
-                auto aoi = unique_ptr<AOI>(new AOI);
-                aoi->s = poly_s;
-                aoi->poly = parse_polygon(poly_s);
-                if (aoi->poly.front() == aoi->poly.back())
+                auto roi = unique_ptr<ROI>(new ROI);
+                roi->s = poly_s;
+                roi->poly = parse_polygon(poly_s);
+                if (roi->poly.front() == roi->poly.back())
                 { // use non-closed representation
-                    aoi->poly.pop_back();
+                    roi->poly.pop_back();
                 }
-                aois.push_back(move(aoi));
+                rois.push_back(move(roi));
             }
         }
         { // load scenes
@@ -60,10 +60,10 @@ struct Loader
         return ret;
     }
 
-    list<AOI *> get_aois() const
+    list<ROI *> get_rois() const
     {
-        list<AOI *> ret;
-        for (const auto &ptr : aois)
+        list<ROI *> ret;
+        for (const auto &ptr : rois)
             ret.push_back(ptr.get());
         return ret;
     }
@@ -76,20 +76,9 @@ double calculate_total_price(const list<Scene *> &scenes)
     });
 }
 
-// nlohmann::json to_json(const list<Polygon> &polys)
-// {
-//     auto ret = nlohmann::json();
-//     for (const auto &poly : polys)
-//     {
-//         ret.push_back(to_string(poly));
-//     }
-//     return ret;
-// }
-
-// nlohmann::json generate_report(AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
+// nlohmann::json generate_report(ROI *roi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
 // {
 //     nlohmann::json report;
-
 
 //     auto polygon_to_json = [](const Model *model) { return model->s; };
 //     auto cell_set_to_json = [](const Model *model) { return nlohmann::json(model->cell_set); };
@@ -102,83 +91,67 @@ double calculate_total_price(const list<Scene *> &scenes)
 //         return report;
 //     };
 
-//     report["aoi"] = model_to_json(aoi);
+//     report["roi"] = model_to_json(roi);
 //     report["possible_scenes"] = functional::map(possible_scenes, model_to_json);
 //     report["selected_scenes"] = functional::map(selected_scenes, model_to_json);
 
 //     return report;
 // }
 
-void append_results_to_report(nlohmann::json &report, AOI *aoi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
+void append_results_to_report(nlohmann::json &report, ROI *roi, const list<Scene *> &possible_scenes, const list<Scene *> &selected_scenes)
 {
     report["price"] = calculate_total_price(selected_scenes);
     report["number_of_possible_scenes"] = possible_scenes.size();
     report["number_of_selected_scenes"] = selected_scenes.size();
-    report["coverage_ratio"] = continuous::calculate_coverage_ratio(aoi, selected_scenes);
+    report["coverage_ratio"] = continuous::calculate_coverage_ratio(roi, selected_scenes);
 }
 
-nlohmann::json discrete_query(AOI *aoi, const list<Scene *> &scenes, double delta)
+using Optimizer = function<list<Scene *>(ROI *, list<Scene *>, double)>;
+
+nlohmann::json query(ROI *roi, const list<Scene *> &scenes, double delta, Optimizer optimize)
 {
-    using namespace discrete;
-
     g_report.clear();
-    Stopwatch sw;
+    // Stopwatch sw;
+    // sw.restart();
+    auto possible_scenes = select_possible_scenes(roi, scenes);
+    // g_report["t_find_possible_scenes"] = sw.lap();
 
-    sw.restart();
-    auto possible_scenes = select_possible_scenes(aoi, scenes);
-    g_report["t_find_possible_scenes"] = sw.lap();
+    auto selected_scenes = optimize(roi, possible_scenes, delta);
 
-    auto selected_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
-
-    append_results_to_report(g_report, aoi, possible_scenes, selected_scenes);
+    append_results_to_report(g_report, roi, possible_scenes, selected_scenes);
 
     return g_report;
 }
 
-nlohmann::json continuous_query(AOI *aoi, const list<Scene *> &scenes, double delta)
+nlohmann::json experiment(const string &rois_path, const string &scenes_path, double delta)
 {
-    using namespace continuous;
-
-    g_report.clear();
-    Stopwatch sw;
-
-    sw.restart();
-    auto possible_scenes = select_possible_scenes(aoi, scenes);
-    g_report["t_find_possible_scenes"] = sw.lap();
-
-    auto selected_scenes = select_approx_optimal_scenes(aoi, possible_scenes, delta);
-
-    append_results_to_report(g_report, aoi, possible_scenes, selected_scenes);
-
-    return g_report;
-}
-
-nlohmann::json experiment(const string &aois_path, const string &scenes_path, double delta)
-{
-    auto discrete_reports = nlohmann::json();
-    auto continuous_reports = nlohmann::json();
-    
-    const auto loader = Loader(aois_path, scenes_path);
-    const auto aois = loader.get_aois();
+    const auto loader = Loader(rois_path, scenes_path);
+    const auto rois = loader.get_rois();
     const auto scenes = loader.get_scenes();
-    
-    Stopwatch sw;    
-    int cnt = 0;
-    for (auto &aoi : aois)
-    {
-        logger.push_namespace(to_string(cnt) + "d");
-        sw.restart();
-        discrete_reports.push_back(discrete_query(aoi, scenes, delta));
-        logger << "end after " << sw.lap() << " s" << endl;
-        logger.pop_namespace();
 
-        logger.push_namespace(to_string(cnt) + "c");
+    auto reports = nlohmann::json();
+
+    auto execute = [&reports, &scenes, delta](const string &tag, ROI *roi, Optimizer optimizer) {
+        Stopwatch sw;
+        logger.push_namespace(tag);
         sw.restart();
-        continuous_reports.push_back(continuous_query(aoi, scenes, delta));
+        reports[tag].push_back(query(roi, scenes, delta, optimizer));
         logger << "end after " << sw.lap() << " s" << endl;
         logger.pop_namespace();
-        ++cnt;
+    };
+
+    {
+        int i = 0;
+        for (auto roi: rois)
+        {
+            logger.push_namespace(to_string(i));
+            execute("dg", roi, discrete::greedy::optimize);
+            execute("cg", roi, continuous::greedy::optimize);
+            execute("cb", roi, continuous::branch_and_bound::optimize);
+            logger.pop_namespace();
+            ++i;
+        }
     }
 
-    return {{"discrete", discrete_reports}, {"continuous", continuous_reports}};
+    return reports;
 }

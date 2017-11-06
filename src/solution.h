@@ -5,21 +5,26 @@
 
 #include "model.h"
 
-std::list<Scene *> select_possible_scenes(AOI *aoi, const std::list<Scene *> &scenes);
+std::list<Scene *> select_possible_scenes(ROI *roi, const std::list<Scene *> &scenes);
 
 namespace discrete
 {
-std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
+namespace greedy
+{
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+}
 }
 
 namespace continuous
 {
-std::list<Scene *> select_approx_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
-}
-
-namespace brute_force
+namespace greedy
 {
-std::list<Scene *> select_optimal_scenes(AOI *aoi, std::list<Scene *> possible_scenes, double delta);
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+}
+namespace branch_and_bound
+{
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+}
 }
 
 #endif
