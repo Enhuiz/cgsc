@@ -40,9 +40,9 @@ def plot_model(ax, model, colors=['none', 'none', 'none'], alphas=[0.5, 0.5, 0.5
     plt.ylim(46.1, 46.7)
 
 
-def draw_frame(aoi, selected, unselected):
+def draw_frame(roi, selected, unselected):
     fig, ax = plt.subplots(figsize=(10, 10))
-    plot_model(ax, aoi, alphas=[1, 1, 0])
+    plot_model(ax, roi, alphas=[1, 1, 0])
     plot_model(ax, selected[-1], colors=['green'] * 3, alphas=[0.5, 1, 1])
     for s in selected[:-1]:
         plot_model(ax, s, ['green'] * 3, alphas=[0.0, 0.3, 0.3])
@@ -55,7 +55,7 @@ def draw_frame(aoi, selected, unselected):
     return im
 
 def visualize(vinfo, tag):
-    aoi = vinfo['aoi']
+    roi = vinfo['roi']
     selected = []
     unselected = []
     sorted_vinfo = sorted(vinfo['frames'].items(), key=lambda kv: float(kv[0]))
@@ -64,7 +64,7 @@ def visualize(vinfo, tag):
     for timestamp, frame in sorted_vinfo:
         selected.append(frame['selected'])
         unselected = frame['unselected'] or []
-        frames.append(draw_frame(aoi, selected, unselected))
+        frames.append(draw_frame(roi, selected, unselected))
         frame_no += 1
         print(frame_no, 'frame')
     writeGif(data_dir(['visualize', '{}.gif'.format(tag)]), frames, duration=0.7, dither=0)

@@ -12,22 +12,22 @@ from .path import fig_dir, data_dir, bin_dir
 from .plot import plot_polygons, plot_directly
 
 
-def prepare_aoi_arg(config):
+def prepare_roi_arg(config):
     '''
     side effect:
-        1. create aoi files
+        1. create roi files
     '''
-    n_aois, aoi_ratio = config['n_aois'], config['aoi_ratio']
+    n_rois, roi_ratio = config['n_rois'], config['roi_ratio']
 
-    tag = '{}-{}-rect'.format(n_aois, aoi_ratio)
-    path = data_dir(['experiment', 'generated_aois', '{}.csv'.format(tag)])
+    tag = '{}-{}-rect'.format(n_rois, roi_ratio)
+    path = data_dir(['experiment', 'generated_rois', '{}.csv'.format(tag)])
 
     if not os.path.exists(path):
-        aois = gen_axis_aligned_rectangle(n_aois, aoi_ratio)
-        df = pd.DataFrame([str([list(v) for v in aoi]) for aoi in aois])
+        rois = gen_axis_aligned_rectangle(n_rois, roi_ratio)
+        df = pd.DataFrame([str([list(v) for v in roi]) for roi in rois])
         df.columns = ['Polygon']
         df.to_csv(path, index=None)
-        # plot_directly(plot_polygons, aois)
+        # plot_directly(plot_polygons, rois)
 
     return path
 
@@ -45,10 +45,10 @@ def prepare_delta_arg(config):
 
 def get_tag(config):
     delta = config['delta']
-    aoi_ratio = config['aoi_ratio']
-    n_aois = config['n_aois']
+    roi_ratio = config['roi_ratio']
+    n_rois = config['n_rois']
     archive = config['archive']
-    tag = '{}-{}-{}-{}'.format(delta, n_aois, aoi_ratio, archive)
+    tag = '{}-{}-{}-{}'.format(delta, n_rois, roi_ratio, archive)
 
     return tag
 
@@ -65,6 +65,7 @@ def prepare_output_arg(config):
 
 def extract_reports(path):
     def extract_reports_helper(raw_reports):
+        if not raw_reports: return {}
         from numbers import Number
         reports = {}
         for k, v in raw_reports[0].items():
@@ -92,17 +93,17 @@ def extract_reports(path):
 def execute(config):
     '''
     side effect:
-        1. create aoi files
+        1. create roi files
         2. create query results files
     '''
-    aoi_arg = prepare_aoi_arg(config)
+    roi_arg = prepare_roi_arg(config)
     archive_arg = prepare_archive_arg(config)
     delta_arg = prepare_delta_arg(config)
     output_arg = prepare_output_arg(config)
     bin_arg = bin_dir(['main'])
 
     os.system('{} -a {} -s {} -d {} -o {}'.format(bin_arg,
-                                                  aoi_arg,
+                                                  roi_arg,
                                                   archive_arg,
                                                   delta_arg,
                                                   output_arg))
@@ -113,7 +114,7 @@ def execute(config):
 def run_expt(configs):
     '''
     side effect: 
-        1. create aoi files
+        1. create roi files
         2. create query result files
         3. create a summary file
         4. create figs (optional)

@@ -3479,7 +3479,7 @@ for query in map(lambda s: s.split(), filter(lambda s: len(s) > 0, result.strip(
     obj['delta'] = next(deltas)
     obj['s'] = series[0]
     obj['s after intersection'] = series[1]
-    obj['aoi'] = series[2]
+    obj['roi'] = series[2]
     objs.append(obj)
 
 

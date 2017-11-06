@@ -9,21 +9,23 @@ def plot_summary(var_name, reports):
         plt.savefig(fig_dir(['experiment', '{}.png'.format(tag)]))
 
     def get_y_names(l):
-        return set([re.sub('continuous_|discrete_', '', s) for s in l])
+        return set('_'.join(s.split('_')[1:]) for s in l if s != var_name)
+
+    def get_prefixes(l):
+        return set(s.split('_')[0] + '_' for s in l if s != var_name)
 
     df = pd.DataFrame(reports).sort_values(var_name)
 
-    if var_name == 'aoi_ratio':
-        df['aoi_pct'] = df['aoi_ratio'] * 100
-        del df['aoi_ratio']
-        var_name = 'aoi_pct'
-        df = df[df['aoi_pct'] < 50]
+    if var_name == 'roi_ratio':
+        df['roi_pct'] = df['roi_ratio'] * 100
+        del df['roi_ratio']
+        var_name = 'roi_pct'
+        df = df[df['roi_pct'] < 50]
 
     for y_name in get_y_names(df.columns):
         if y_name not in [var_name, 'delta']:
-            continuous_y_name = 'continuous_' + y_name
-            discrete_y_name = 'discrete_' + y_name
-            df[[var_name,  discrete_y_name, continuous_y_name]].plot(x=var_name, rot=0, marker='x')
+            prefixes = get_prefixes(df.columns)
+            df[[var_name,  *[prefix + y_name for prefix in prefixes]]].plot(x=var_name, rot=0, marker='x')
             savefig('{}-{}'.format(y_name, var_name))
     # df.plot.bar(x=var_name, y=y_name, rot=0)
     # savefig('{}-{}'.format('t', var_name))
