@@ -42,6 +42,10 @@ def prepare_delta_arg(config):
     delta = config['delta']
     return delta
 
+def prepare_target_coverage_ratio_arg(config):
+    target_coverage_ratio = config['target_coverage_ratio']
+    return target_coverage_ratio
+
 
 def get_tag(config):
     delta = config['delta']
@@ -65,7 +69,8 @@ def prepare_output_arg(config):
 
 def extract_reports(path):
     def extract_reports_helper(raw_reports):
-        if not raw_reports: return {}
+        raw_reports = [raw_report for raw_report in raw_reports if raw_report is not None]
+        if len(raw_reports) == 0: return {}
         from numbers import Number
         reports = {}
         for k, v in raw_reports[0].items():
@@ -100,13 +105,15 @@ def execute(config):
     archive_arg = prepare_archive_arg(config)
     delta_arg = prepare_delta_arg(config)
     output_arg = prepare_output_arg(config)
+    target_coverage_ratio_arg = prepare_target_coverage_ratio_arg(config)
     bin_arg = bin_dir(['main'])
 
-    os.system('{} -a {} -s {} -d {} -o {}'.format(bin_arg,
+    os.system('{} -r {} -s {} -d {} -o {} -t {}'.format(bin_arg,
                                                   roi_arg,
                                                   archive_arg,
                                                   delta_arg,
-                                                  output_arg))
+                                                  output_arg,
+                                                  target_coverage_ratio_arg))
 
     return extract_reports(output_arg)
 

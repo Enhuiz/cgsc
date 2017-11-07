@@ -28,7 +28,7 @@ namespace discrete
 namespace greedy
 {
 
-list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
+list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
 {
     Stopwatch sw;
 
@@ -40,10 +40,10 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
     g_report["t1"] = sw.lap();
 
     sw.restart();
+    int covered = 0;
+    int to_cover = roi->cell_set.size() * target_coverage_ratio;
     auto selected_scenes = list<Scene *>();
     {
-        int covered = 0;
-        int to_cover = roi->cell_set.size();
         remove_scenes_with_empty_cell_set(possible_scenes);
         while (covered < to_cover && possible_scenes.size() > 0) // n
         {
@@ -104,6 +104,9 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
     }
     g_report["t2"] = sw.lap();
 
+    if (covered < to_cover)
+        return {};
+
     return selected_scenes;
 }
 }
@@ -113,7 +116,7 @@ namespace continuous
 {
 namespace greedy
 {
-list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
+list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
 {
     Stopwatch sw;
 
@@ -137,12 +140,11 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
     };
 
     sw.restart();
+    double covered = 0;
+    double to_cover = area(roi->offcuts) * target_coverage_ratio;
     auto selected_scenes = list<Scene *>();
     {
-        double covered = 0;
-        double to_cover = area(roi->offcuts);
-        double price = 0;
-
+        // double price = 0;
         while (covered < to_cover && !almost_equal(to_cover, covered, 1e3) && possible_scenes.size() > 0) // n
         {
             // select current
@@ -197,6 +199,9 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
     }
     g_report["t2"] = sw.lap();
 
+    if (covered < to_cover)
+        return {};
+    
     return selected_scenes;
 }
 }
@@ -228,12 +233,11 @@ State optimistic_estimate(State state, ROI *roi, list<Scene *> possible_scenes)
         return a->price / a->valid_area < b->price / b->valid_area;
     });
 
-    for (const auto &offcut : roi->offcuts)
-    {
-        auto pieces = list<Polygon>{offcut}; // roi pieces
+    auto update_optimistic = [&state, &possible_scenes](const Polygon& offcut) {
+        auto pieces = list<Polygon>{offcut};
         for (auto possible_scene : possible_scenes)
         {
-            for (const auto scene_offcut : possible_scene->offcuts)
+            for (const auto& scene_offcut : possible_scene->offcuts)
             {
                 for (auto it = pieces.begin(); it != pieces.end();)
                 {
@@ -260,13 +264,20 @@ State optimistic_estimate(State state, ROI *roi, list<Scene *> possible_scenes)
                         ++it;
                     }
                 }
+                if (pieces.size() == 0) return;
             }
         }
+    };
+
+    for (const auto &offcut : roi->offcuts)
+    {
+        update_optimistic(offcut);        
     }
+
     return state;
 }
 
-list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
+list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
 {
     Stopwatch sw;
 
@@ -288,33 +299,53 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
     auto optimal_state = State{numeric_limits<double>::max(), 0, list<Scene *>()};
     sw.restart();
     {
-        double target_area = 0.95 * area(roi->poly);
+        double roi_area = area(roi->poly);
+        double to_cover = roi_area * target_coverage_ratio;
 
         const function<void(const State &, list<Scene *>)> helper =
-            [&helper, roi, target_area, delta, &optimal_state](const State &prev_state, list<Scene *> possible_scenes) {
-                remove_scenes_disjoint_with(possible_scenes, roi->offcuts);
-
-                auto optimistic_state = optimistic_estimate(prev_state, roi, possible_scenes);
-                if (optimistic_state.covered < target_area || optimistic_state.price >= optimal_state.price)
+            [&helper, roi, delta, to_cover, &optimal_state, roi_area](const State &prev_state, list<Scene *> possible_scenes) {
+                if (prev_state.covered >= to_cover && prev_state.price < optimal_state.price)
                 {
+                    optimal_state = prev_state;
+                    logger << "optimal" << endl;
+                    logger << "price: " << optimal_state.price << endl;
+                    logger << "covered: " <<  optimal_state.covered / roi_area << endl;
+                    logger << "scenes " << optimal_state.selected.size() << endl;
                     return;
                 }
+
+                remove_scenes_disjoint_with(possible_scenes, roi->offcuts);
+                auto optimistic_state = optimistic_estimate(prev_state, roi, possible_scenes);
+                if (optimistic_state.price >= optimal_state.price)
+                {
+                    return;
+                } 
 
                 if (possible_scenes.size() == 0)
                 {
-                    optimal_state = prev_state;
-                    logger << optimal_state.price << endl;
-                    logger << optimal_state.covered / target_area * 0.95 << endl;
+                    if (optimistic_state.covered >= to_cover)
+                    {
+                        optimal_state = prev_state;
+                        logger << "tail optimal" << endl;
+                        logger << "price: " << optimal_state.price << endl;
+                        logger << "covered: " <<  optimal_state.covered / roi_area << endl;
+                        logger << "scenes " << optimal_state.selected.size() << endl;
+                    }
                     return;
                 }
 
-                auto current_scene = possible_scenes.front();
-                possible_scenes.pop_front();
-
-                { // skip current scene
-                    const auto &state = prev_state;
-                    helper(state, possible_scenes);
-                }
+                auto it = possible_scenes.begin();
+                // { // randomly select one
+                //     default_random_engine gen;
+                //     uniform_int_distribution<> dis(0, possible_scenes.size() - 1);
+                //     int n = dis(gen);
+                //     while (n--) 
+                //     {
+                //         ++it;
+                //     }
+                // }
+                auto current_scene = *it; 
+                possible_scenes.erase(it);
 
                 { // select current scene
                     auto state = prev_state;
@@ -326,6 +357,11 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double delta)
                     state.selected.push_back(current_scene);
                     helper(state, possible_scenes);
                     roi->offcuts = prev_offcuts;
+                }
+
+                { // skip current scene
+                    const auto &state = prev_state;
+                    helper(state, possible_scenes);
                 }
             };
         helper(State{0, 0, list<Scene *>()}, possible_scenes);

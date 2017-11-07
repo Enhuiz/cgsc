@@ -11,7 +11,7 @@ namespace discrete
 {
 namespace greedy
 {
-std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
 }
 }
 
@@ -19,11 +19,11 @@ namespace continuous
 {
 namespace greedy
 {
-std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
 }
 namespace branch_and_bound
 {
-std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double delta);
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
 }
 }
 

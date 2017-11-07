@@ -106,9 +106,9 @@ void append_results_to_report(nlohmann::json &report, ROI *roi, const list<Scene
     report["coverage_ratio"] = continuous::calculate_coverage_ratio(roi, selected_scenes);
 }
 
-using Optimizer = function<list<Scene *>(ROI *, list<Scene *>, double)>;
+using Optimizer = function<list<Scene *>(ROI *, list<Scene *>, double, double)>;
 
-nlohmann::json query(ROI *roi, const list<Scene *> &scenes, double delta, Optimizer optimize)
+nlohmann::json query(ROI *roi, const list<Scene *> &scenes, double target_coverage_ratio, double delta, Optimizer optimize)
 {
     g_report.clear();
     // Stopwatch sw;
@@ -116,14 +116,22 @@ nlohmann::json query(ROI *roi, const list<Scene *> &scenes, double delta, Optimi
     auto possible_scenes = select_possible_scenes(roi, scenes);
     // g_report["t_find_possible_scenes"] = sw.lap();
 
-    auto selected_scenes = optimize(roi, possible_scenes, delta);
+    auto selected_scenes = optimize(roi, possible_scenes, target_coverage_ratio, delta);
+
+    if (selected_scenes.size() == 0) // no result satisfy the target coverage ratio
+        return {};
 
     append_results_to_report(g_report, roi, possible_scenes, selected_scenes);
+
+    logger << "[optimal]" << endl;
+    logger << "price: " << g_report["price"] << endl;
+    logger << "covered: " << g_report["coverage_ratio"] << endl;
+    logger << "scenes: " << g_report["number_of_selected_scenes"] << endl;
 
     return g_report;
 }
 
-nlohmann::json experiment(const string &rois_path, const string &scenes_path, double delta)
+nlohmann::json experiment(const string &rois_path, const string &scenes_path, double target_coverage_ratio, double delta)
 {
     const auto loader = Loader(rois_path, scenes_path);
     const auto rois = loader.get_rois();
@@ -131,11 +139,11 @@ nlohmann::json experiment(const string &rois_path, const string &scenes_path, do
 
     auto reports = nlohmann::json();
 
-    auto execute = [&reports, &scenes, delta](const string &tag, ROI *roi, Optimizer optimizer) {
+    auto execute = [&reports, &scenes, delta, target_coverage_ratio](const string &tag, ROI *roi, Optimizer optimizer) {
         Stopwatch sw;
         logger.push_namespace(tag);
         sw.restart();
-        reports[tag].push_back(query(roi, scenes, delta, optimizer));
+        reports[tag].push_back(query(roi, scenes, target_coverage_ratio, delta, optimizer));
         logger << "end after " << sw.lap() << " s" << endl;
         logger.pop_namespace();
     };
