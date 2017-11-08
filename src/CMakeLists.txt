@@ -1,6 +1,7 @@
 file(GLOB main_SRC
 "*.h"
 "*.cc"
+"*.hpp"
 )
 
 add_executable(main ${main_SRC})
