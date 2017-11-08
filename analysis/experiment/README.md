@@ -247,7 +247,6 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |:-|:-|
 |roi ratio| 0.02%, 0.04%, 0.06%, 0.08%, 0.1%, 0.12%|
 |delta| 0.01|
-|number of roi|0.9|
 |target coverage ratio| 0.9|
 |number of roi|20|
 |size of archive| 15000 |
@@ -264,7 +263,6 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |:-|:-|
 |roi ratio| 0.02%, 0.04%, 0.06%, 0.08%, 0.1%, 0.12%|
 |delta| 0.01|
-|number of roi|0.9|
 |target coverage ratio| 0.9|
 |number of roi|20|
 |size of archive| 15000 |
