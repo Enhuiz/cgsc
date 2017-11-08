@@ -201,20 +201,13 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
 
     if (covered < to_cover)
         return {};
-    
+
     return selected_scenes;
 }
 }
 
 namespace branch_and_bound
 {
-struct State
-{
-    double price;
-    double covered;
-    list<Scene *> selected;
-};
-
 void remove_scenes_disjoint_with(list<Scene *> &scenes, const list<Polygon> &polys)
 {
     scenes.erase(remove_if(scenes.begin(),
@@ -227,17 +220,26 @@ void remove_scenes_disjoint_with(list<Scene *> &scenes, const list<Polygon> &pol
                  scenes.end());
 }
 
+namespace DFS
+{
+struct State
+{
+    double price;
+    double covered;
+    list<Scene *> selected;
+};
+
 State optimistic_estimate(State state, ROI *roi, list<Scene *> possible_scenes)
 {
     possible_scenes.sort([](Scene *a, Scene *b) {
         return a->price / a->valid_area < b->price / b->valid_area;
     });
 
-    auto update_optimistic = [&state, &possible_scenes](const Polygon& offcut) {
+    auto update_optimistic = [&state, &possible_scenes](const Polygon &offcut) {
         auto pieces = list<Polygon>{offcut};
         for (auto possible_scene : possible_scenes)
         {
-            for (const auto& scene_offcut : possible_scene->offcuts)
+            for (const auto &scene_offcut : possible_scene->offcuts)
             {
                 for (auto it = pieces.begin(); it != pieces.end();)
                 {
@@ -264,14 +266,15 @@ State optimistic_estimate(State state, ROI *roi, list<Scene *> possible_scenes)
                         ++it;
                     }
                 }
-                if (pieces.size() == 0) return;
+                if (pieces.size() == 0)
+                    return;
             }
         }
     };
 
     for (const auto &offcut : roi->offcuts)
     {
-        update_optimistic(offcut);        
+        update_optimistic(offcut);
     }
 
     return state;
@@ -280,9 +283,20 @@ State optimistic_estimate(State state, ROI *roi, list<Scene *> possible_scenes)
 list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
 {
     Stopwatch sw;
-
+    
     sw.restart();
+    double roi_area = area(roi->poly);
+    double to_cover = roi_area * target_coverage_ratio;
+    auto optimal_state = State{};
     {
+        { // initialize optimal state
+            auto selected = greedy::optimize(roi, possible_scenes, target_coverage_ratio, delta);
+            optimal_state.price = accumulate(selected.begin(), selected.end(), 0.0, [](double acc, Scene *scene) {
+                return acc + scene->price;
+            });
+            optimal_state.covered = to_cover;
+            optimal_state.selected = move(selected);
+        }
         continuous::cut_roi(roi);
         continuous::remove_tiny_offcuts(roi->offcuts, delta);
         continuous::cut_scenes(possible_scenes, roi);
@@ -295,8 +309,7 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
     g_report["t1"] = sw.lap();
 
     logger.debug(to_string(possible_scenes.size()));
-
-    auto optimal_state = State{numeric_limits<double>::max(), 0, list<Scene *>()};
+    
     sw.restart();
     {
         double roi_area = area(roi->poly);
@@ -307,9 +320,9 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
                 if (prev_state.covered >= to_cover && prev_state.price < optimal_state.price)
                 {
                     optimal_state = prev_state;
-                    logger << "optimal" << endl;
+                    logger << "[better solution]" << endl;
                     logger << "price: " << optimal_state.price << endl;
-                    logger << "covered: " <<  optimal_state.covered / roi_area << endl;
+                    logger << "covered: " << optimal_state.covered / roi_area << endl;
                     logger << "scenes " << optimal_state.selected.size() << endl;
                     return;
                 }
@@ -319,16 +332,16 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
                 if (optimistic_state.price >= optimal_state.price)
                 {
                     return;
-                } 
+                }
 
                 if (possible_scenes.size() == 0)
                 {
                     if (optimistic_state.covered >= to_cover)
                     {
                         optimal_state = prev_state;
-                        logger << "tail optimal" << endl;
+                        logger << "[tail better solution]" << endl;
                         logger << "price: " << optimal_state.price << endl;
-                        logger << "covered: " <<  optimal_state.covered / roi_area << endl;
+                        logger << "covered: " << optimal_state.covered / roi_area << endl;
                         logger << "scenes " << optimal_state.selected.size() << endl;
                     }
                     return;
@@ -339,12 +352,12 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
                 //     default_random_engine gen;
                 //     uniform_int_distribution<> dis(0, possible_scenes.size() - 1);
                 //     int n = dis(gen);
-                //     while (n--) 
+                //     while (n--)
                 //     {
                 //         ++it;
                 //     }
                 // }
-                auto current_scene = *it; 
+                auto current_scene = *it;
                 possible_scenes.erase(it);
 
                 { // select current scene
@@ -369,6 +382,191 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
     g_report["t2"] = sw.lap();
 
     return optimal_state.selected;
+}
+}
+
+namespace BFS
+{
+struct State
+{
+    double price;   // the price of selected scenes
+    double covered; // only if the covered is satisfied can the state be accepted as an optimal state
+
+    double price_lower_bound;   // if the lower bound higher than the optimal, kill it
+    // double covered_upper_bound; // if upper bound no good than target then kill it
+
+    list<Scene *> selected;
+    list<Scene *> possible;
+    list<Polygon> offcuts;
+
+    list<shared_ptr<State>> branch(double delta)
+    {
+        
+        list<shared_ptr<State>> ret;
+        
+        { // discard
+            auto state = shared_ptr<State>(new State(*this));
+            state->possible.pop_front();
+            ret.push_back(state);
+        }
+        
+        { // adopt
+            auto state = shared_ptr<State>(new State(*this));
+            auto current_scene = possible.front();
+            state->possible.pop_front();
+            state->selected.push_back(current_scene);
+            state->offcuts = difference(offcuts, current_scene->offcuts);
+            state->covered += continuous::area(offcuts) - continuous::area(state->offcuts);
+            continuous::remove_tiny_offcuts(state->offcuts, delta);
+            state->price += current_scene->price;
+            ret.push_back(state);
+        }
+
+        return ret;
+    }
+
+    void print()
+    {
+        logger << "-----------state----------" << endl;
+        logger << "price: " << price << endl;
+        logger << "covered: " << covered << endl;
+        logger << "price_lower_bound: " << price_lower_bound << endl;
+        logger << "offcuts.size(): " << offcuts.size() << endl;
+        logger << "possible.size(): " << possible.size() << endl;
+        logger << "-----------end----------" << endl;
+    }
+
+    void bound(double to_cover)
+    {
+        auto prev_possible = possible;
+        auto prev_offcuts = offcuts;
+        remove_scenes_disjoint_with(possible, offcuts); // a prune
+        possible.sort([](Scene *a, Scene *b) { // unit price from lower to higher
+            return a->price / a->valid_area < b->price / b->valid_area;
+        });
+        price_lower_bound = price;
+        double covered_upper_bound = covered;
+        // take the lowest unit price, try to eliminate the roi offcuts, until all the possible run out or offcuts have been covered
+        for (auto possible_scene : possible)
+        {
+            for (const auto &scene_offcut : possible_scene->offcuts)
+            {
+                for (auto it = offcuts.begin(); it != offcuts.end(); )
+                {
+                    const auto &offcut = *it;
+                    auto inners = list<Polygon>();
+                    auto outers = list<Polygon>();
+                    tie(inners, outers) = clip(offcut, scene_offcut);
+                    if (inners.size() > 0) // intersects
+                    {
+                        for (const auto &inner : inners)
+                        {
+                            double inner_area = area(inner);
+                            covered_upper_bound += inner_area;
+                            price_lower_bound += possible_scene->price / possible_scene->valid_area * inner_area;
+                        }
+                        for (const auto &outer : outers)
+                        {
+                            offcuts.push_back(outer);
+                        }
+                        it = offcuts.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+            }
+        }
+
+        if (covered_upper_bound < to_cover) // the optimistic value is not able to covered the whole scene
+        {
+            price_lower_bound = numeric_limits<double>::max(); 
+        }
+
+        possible = prev_possible;
+        offcuts = prev_offcuts;
+    }
+};
+
+list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
+{
+    Stopwatch sw;
+
+    sw.restart();
+    double roi_area = area(roi->poly);
+    double to_cover = roi_area * target_coverage_ratio;
+    auto optimal_state = shared_ptr<State>(new State{});
+    {
+        { // initialize optimal state
+            auto selected = greedy::optimize(roi, possible_scenes, target_coverage_ratio, delta);
+            optimal_state->price = accumulate(selected.begin(), selected.end(), 0.0, [](double acc, Scene *scene) {
+                return acc + scene->price;
+            });
+            optimal_state->covered = to_cover;
+            optimal_state->selected = move(selected);
+        }
+        { // initialize roi, possible scenes
+            continuous::cut_roi(roi);
+            continuous::remove_tiny_offcuts(roi->offcuts, delta);
+            continuous::cut_scenes(possible_scenes, roi);
+            for (auto possible_scene : possible_scenes)
+            {
+                continuous::remove_tiny_offcuts(possible_scene->offcuts, delta);
+            }
+            continuous::remove_scenes_with_no_offcuts(possible_scenes);
+        }
+    }
+    g_report["t1"] = sw.lap();
+
+    logger.debug(to_string(possible_scenes.size()));
+
+    sw.restart();
+    {
+        auto initial_state = shared_ptr<State>(new State{});
+        {
+            initial_state->price = 0;
+            initial_state->covered = 0;
+            initial_state->possible = possible_scenes;
+            initial_state->offcuts = roi->offcuts;
+        }
+
+        auto states = list<shared_ptr<State>>{initial_state};
+        while (states.size() > 0)
+        {
+            auto state = states.front();
+            states.pop_front();
+            state->bound(to_cover);
+
+            // logger << endl;
+            // logger << states.size() << endl;
+            // logger << "optimal price: " << optimal_state->price << endl;
+            // state->print();
+
+            if (state->covered > to_cover)
+            {
+                if (state->price < optimal_state->price) // lower price, great
+                {
+                    optimal_state = state;
+                    logger << "better solution" << endl;
+                    logger << "price: " << optimal_state->price << endl;
+                    logger << "covered: " << optimal_state->covered / roi_area << endl;
+                    logger << "scenes " << optimal_state->selected.size() << endl;
+                }
+                else
+                {
+                    // no lower price, keeping branching (add more scenes) makes no better, just kill it.
+                }
+            } 
+            else if (state->price_lower_bound < optimal_state->price && state->possible.size() > 0)
+            {
+                states.splice(states.end(), state->branch(delta));
+            }
+        }
+    }
+    g_report["t2"] = sw.lap();
+    return optimal_state->selected;
+}
 }
 }
 }

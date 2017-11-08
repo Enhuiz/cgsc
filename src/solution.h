@@ -23,7 +23,14 @@ std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double
 }
 namespace branch_and_bound
 {
+namespace DFS
+{
 std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
+}
+namespace BFS
+{
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
+}
 }
 }
 

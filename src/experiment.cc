@@ -155,7 +155,7 @@ nlohmann::json experiment(const string &rois_path, const string &scenes_path, do
             logger.push_namespace(to_string(i));
             execute("dg", roi, discrete::greedy::optimize);
             execute("cg", roi, continuous::greedy::optimize);
-            execute("cb", roi, continuous::branch_and_bound::optimize);
+            execute("cb", roi, continuous::branch_and_bound::DFS::optimize);
             logger.pop_namespace();
             ++i;
         }
