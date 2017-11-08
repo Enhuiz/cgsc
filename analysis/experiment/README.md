@@ -253,3 +253,19 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |price - roi percentage|![](11/price-roi_pct.png)|
 |number of scenes- roi percentage|![](11/number_of_selected_scenes-roi_pct.png)|
 |t2 - roi percentage|![](11/t2-roi_pct.png)|
+
+# Exp11 (8/11/2017)
+## Notes
+1. add branch and bound method
+
+## Results
+|Term |Value |
+|:-|:-|
+|roi ratio| 0.02%, 0.04%, 0.06%, 0.08%, 0.1%, 0.12%|
+|delta| 0.01|
+|number of roi|0.9|
+|target coverage ratio| 0.9|
+|size of archive| 15000 |
+|price - roi percentage|![](12/price-roi_pct.png)|
+|number of scenes- roi percentage|![](12/number_of_selected_scenes-roi_pct.png)|
+|t2 - roi percentage|![](12/t2-roi_pct.png)|
