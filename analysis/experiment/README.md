@@ -173,7 +173,7 @@ This improve discrete t2 about 2x faster
 ## Results
 |Term |Value |
 |:-|:-|
-|roi ratio| 1%, 2%, 5%, 10%, 20% |
+|roi ratio| 1%, 2%, 5%, 10%, 20%, 50% |
 |delta| 0.01 |
 |number of roi|25|
 |size of archive| 15000 |
@@ -182,7 +182,7 @@ This improve discrete t2 about 2x faster
 ## Comments
 This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 
-# Exp9 (31/10/2017)
+<!-- # Exp9 (31/10/2017)
 ## Notes
 1. an overall run based on Exp8
 
@@ -220,7 +220,7 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |size of archive| 10000, 15000, 20000, 50000, 75000, 100000 |
 |t1 - archive|![](9/t1-archive.png)|
 |t2 - archive|![](9/t2-archive.png)|
-|price - archive|![](9/price-archive.png)|
+|price - archive|![](9/price-archive.png)| -->
 
 # Exp10 (3/11/2017)
 ## Notes
@@ -238,9 +238,9 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |time - coverage ratio|![](10/time-coverage_ratio_dot.png)|
 
 
-# Exp10 (8/11/2017)
+# Exp11 (8/11/2017)
 ## Notes
-1. add branch and bound method
+1. add branch and bound method (DFS)
 
 ## Results
 |Term |Value |
@@ -254,9 +254,9 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |number of scenes- roi percentage|![](11/number_of_selected_scenes-roi_pct.png)|
 |t2 - roi percentage|![](11/t2-roi_pct.png)|
 
-# Exp11 (8/11/2017)
+# Exp12 (8/11/2017)
 ## Notes
-1. add branch and bound method
+1. add branch and bound method (BFS)
 
 ## Results
 |Term |Value |
