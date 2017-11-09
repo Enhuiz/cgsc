@@ -1,4 +1,4 @@
-# Exp1 (5/10/2017)
+<!-- # Exp1 (5/10/2017)
 
 ## Notes
 1. Still use boost::geometry. 
@@ -23,8 +23,6 @@
 |number of roi|50|
 |size of archive| 15000|
 |t - roi size|![](1/t-roi_size.png)|
-
-<!-- ## Comment -->
 
 
 # Exp2 (12/10/2017)
@@ -163,7 +161,7 @@ The results above shows the continuous solver is faster than the discrete solver
 |t2 - roi ratio|![](7/t2-roi_pct.png)|
 
 ## Comments
-This improve discrete t2 about 2x faster
+This improve discrete t2 about 2x faster -->
 
 
 # Exp8 (30/10/2017)
@@ -177,6 +175,7 @@ This improve discrete t2 about 2x faster
 |delta| 0.01 |
 |number of roi|25|
 |size of archive| 15000 |
+|price - roi ratio|![](8/price-roi_pct.png)|
 |t2 - roi ratio|![](8/t2-roi_pct.png)|
 
 ## Comments
@@ -237,7 +236,7 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |price - coverage ratio|![](10/price-coverage_ratio_dot.png)|
 |time - coverage ratio|![](10/time-coverage_ratio_dot.png)|
 
-
+<!-- 
 # Exp11 (8/11/2017)
 ## Notes
 1. add branch and bound method (DFS)
@@ -252,7 +251,7 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |size of archive| 15000 |
 |price - roi percentage|![](11/price-roi_pct.png)|
 |number of scenes- roi percentage|![](11/number_of_selected_scenes-roi_pct.png)|
-|t2 - roi percentage|![](11/t2-roi_pct.png)|
+|t2 - roi percentage|![](11/t2-roi_pct.png)| -->
 
 # Exp12 (8/11/2017)
 ## Notes
