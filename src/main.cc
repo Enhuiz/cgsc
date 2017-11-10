@@ -1,6 +1,7 @@
 #include <boost/program_options.hpp>
 
 #include "experiment.h"
+#include "global.h"
 
 #include <iostream>
 #include <fstream>
@@ -30,8 +31,14 @@ int main(int argc, char *argv[])
     if (vm.count("delta") && vm.count("roi-path") && vm.count("scenes-path") && vm.count("output-path") && vm.count("target-coverage"))
     {
         auto report = experiment(vm["roi-path"].as<string>(), vm["scenes-path"].as<string>(), vm["target-coverage"].as<double>(), vm["delta"].as<double>());
-        ofstream ofs(vm["output-path"].as<string>());
-        ofs << report << endl;
+        {
+            ofstream ofs(vm["output-path"].as<string>());
+            ofs << report << endl;
+        }
+        {
+            ofstream ofs("../data/visualize/bnb/vinfo.json");
+            ofs << debug_report << endl;
+        }
     }
     else
     {

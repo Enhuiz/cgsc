@@ -9,6 +9,7 @@ using namespace std;
 
 Logger logger(cout);
 nlohmann::json g_report;
+nlohmann::json debug_report;
 
 Stopwatch::Stopwatch()
 {

@@ -57,6 +57,7 @@ private:
 
 extern Logger logger;
 extern nlohmann::json g_report;
+extern nlohmann::json debug_report;
 
 template <class T>
 typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
