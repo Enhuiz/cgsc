@@ -118,4 +118,6 @@ std::string to_string(const T a_value, const int n = 6)
   return oss.str();
 }
 
+std::list<std::string> split(std::string s, const std::string& delimiter);
+
 #endif
