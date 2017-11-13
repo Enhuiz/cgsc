@@ -389,11 +389,9 @@ namespace BFS
 {
 struct State
 {
-    double price;   // the price of selected scenes
-    double covered; // only if the covered is satisfied can the state be accepted as an optimal state
-
+    double price;             // the price of selected scenes
+    double uncovered;         // only if the covered is satisfied can the state be accepted as an optimal state
     double price_lower_bound; // if the lower bound higher than the optimal, kill it
-    // double covered_upper_bound; // if upper bound no good than target then kill it
 
     list<Scene *> selected;
     list<Scene *> possible;
@@ -413,18 +411,20 @@ struct State
             auto state = shared_ptr<State>(new State(*this));
             auto current_scene = possible.front();
             state->possible.pop_front();
-            // price
-            state->price += current_scene->price;
             // offcuts & covered
             state->offcuts = difference(offcuts, current_scene->offcuts);
-            state->covered += continuous::area(offcuts) - continuous::area(state->offcuts);
-            continuous::remove_tiny_offcuts(state->offcuts, delta);
-            // selected scenes
-            state->selected.push_back(current_scene);
-            // possible scenes
-            remove_scenes_disjoint_with(state->possible, state->offcuts); // a prune
-            // ret
-            ret.push_back(state);
+            double prev_uncovered = state->uncovered;
+            state->uncovered = continuous::area(state->offcuts);
+            if (state->uncovered < prev_uncovered)
+            {
+                continuous::remove_tiny_offcuts(state->offcuts, delta);
+                // price
+                state->price += current_scene->price;
+                // selected scenes
+                state->selected.push_back(current_scene);
+                // ret
+                ret.push_back(state);
+            }
         }
 
         return ret;
@@ -433,30 +433,32 @@ struct State
     void print(double roi_area)
     {
         logger << "price: " << price << endl;
-        logger << "covered: " << covered / roi_area << endl;
+        logger << "covered: " << 1 - uncovered / roi_area << endl;
         logger << "price_lower_bound: " << price_lower_bound << endl;
         logger << "offcuts.size(): " << offcuts.size() << endl;
         logger << "possible.size(): " << possible.size() << endl;
         logger << "selected.size(): " << selected.size() << endl;
     }
 
-    void bound(double to_cover)
+    void bound_(double acceptable_uncovered)
     {
         possible.sort([](Scene *a, Scene *b) { // unit price from lower to higher
             return a->price / a->valid_area < b->price / b->valid_area;
         });
         // initialize the bounds
         price_lower_bound = price;
-        to_cover -= covered;
+        double to_cover = uncovered - acceptable_uncovered;
         // take the lowest unit price, try to eliminate the roi offcuts, until all the possible run out or offcuts have been covered
         // save the offcuts
         auto prev_offcuts = offcuts;
         for (auto possible_scene : possible)
         {
-            if (to_cover <= 0) break;
+            if (to_cover <= 0)
+                break;
             for (const auto &scene_offcut : possible_scene->offcuts)
             {
-                if (to_cover <= 0) break;
+                if (to_cover <= 0)
+                    break;
                 for (auto it = offcuts.begin(); it != offcuts.end();)
                 {
                     const auto &offcut = *it;
@@ -499,6 +501,11 @@ struct State
         // restore the offcuts
         offcuts = prev_offcuts;
     }
+
+    void bound(double acceptable_uncovered)
+    {
+        price_lower_bound = price;
+    }
 };
 
 list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
@@ -507,15 +514,18 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
 
     sw.restart();
     double roi_area = area(roi->poly);
-    double to_cover = roi_area * target_coverage_ratio;
+    double acceptable_uncovered = roi_area * (1 - target_coverage_ratio);
     auto optimal_state = shared_ptr<State>(new State{});
     {
         { // initialize optimal state
             auto selected = greedy::optimize(roi, possible_scenes, target_coverage_ratio, delta);
-            optimal_state->price = accumulate(selected.begin(), selected.end(), 0.0, [](double acc, Scene *scene) {
-                return acc + scene->price;
-            });
-            optimal_state->covered = to_cover;
+            optimal_state->price = accumulate(selected.begin(),
+                                              selected.end(),
+                                              0.0,
+                                              [](double acc, Scene *scene) {
+                                                  return acc + scene->price;
+                                              });
+            optimal_state->uncovered = acceptable_uncovered;
             optimal_state->selected = move(selected);
             // optimal_state->price = numeric_limits<double>::max();
         }
@@ -539,11 +549,11 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
         auto initial_state = shared_ptr<State>(new State{});
         {
             initial_state->price = 0;
-            initial_state->covered = 0;
+            initial_state->uncovered = roi_area;
             initial_state->possible = possible_scenes;
             initial_state->offcuts = roi->offcuts;
         }
-        initial_state->bound(to_cover);
+        initial_state->bound(acceptable_uncovered);
 
         // auto states = list<shared_ptr<State>>{initial_state};
         auto comp = [](const shared_ptr<State> &a, const shared_ptr<State> &b) {
@@ -551,27 +561,27 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
         };
         auto states = priority_queue<shared_ptr<State>, vector<shared_ptr<State>>, decltype(comp)>(comp);
         states.push(initial_state);
+
+        auto debug_ts = list<double>();
+        auto debug_nodes = list<double>();
+        auto debug_plbs = list<double>();
+        auto debug_pubs = list<double>();
+
         while (states.size() > 0)
         {
             auto state = states.top();
             states.pop();
 
             logger << states.size() << endl;
-            debug_report.push_back({
-                {"price", state->price},
-                {"coverage_ratio", state->covered / roi_area},
-                {"price_lower_bound", state->price_lower_bound},
-                {"selected.size()", state->selected.size()},
-                {"possible.size()", state->possible.size()},
-                {"number_of_states", states.size()},
-                {"price_upper_bound", optimal_state->price},
-                {"t", sw.lap()},
-            });
+            debug_ts.push_back(sw.lap());
+            debug_nodes.push_back(states.size());
+            debug_plbs.push_back(state->price_lower_bound);
+            debug_pubs.push_back(optimal_state->price);
 
-            if (sw.lap() > 400)
+            if (sw.lap() > 200)
                 break;
 
-            if (state->covered > to_cover)
+            if (state->uncovered < acceptable_uncovered)
             {
                 if (state->price < optimal_state->price) // lower price, great
                 {
@@ -579,14 +589,14 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
                     logger << "better solution" << endl;
                     optimal_state->print(roi_area);
                 }
-                // else, no lower price, keeping branching (add more scenes) does no better, just kill it.
+                // else, no lower price, keeping branching (add more scenes) will be no better, just kill it.
             }
             else if (state->possible.size() > 0)
             {
                 auto new_states = state->branch(delta);
                 for (auto new_state : new_states)
                 {
-                    new_state->bound(to_cover);
+                    new_state->bound(acceptable_uncovered);
                     // if (new_state->price_lower_bound < state->price_lower_bound - 1)
                     // {
                     //     state->print(roi_area);
@@ -600,6 +610,20 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
                 }
             }
         }
+        debug_report.push_back({
+            // {"price", state->price},
+            // {"coverage_ratio", state->covered / roi_area},
+            // {"price_lower_bound", state->price_lower_bound},
+            // {"selected.size()", state->selected.size()},
+            // {"possible.size()", state->possible.size()},
+            // {"number of nodes", states.size()},
+            // {"price_upper_bound", optimal_state->price},
+            // {"t", sw.lap()},
+            {"t", debug_ts},
+            {"number of nodes", debug_nodes},
+            {"price_lower_bound", debug_plbs},
+            {"price_upper_bound", debug_pubs},
+        });
     }
     g_report["t2"] = sw.lap();
     return optimal_state->selected;
