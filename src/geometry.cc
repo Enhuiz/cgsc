@@ -435,16 +435,15 @@ list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
 
 list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers)
 {
+    list<Polygon> result;
     for (const auto &clipper : clippers)
     {
-        list<Polygon> result;
         for (auto &clippee : clippees)
         {
             result.splice(result.end(), intersection(clippee, clipper));
         }
-        clippees = move(result);
     }
-    return clippees;
+    return result;
 }
 
 tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
