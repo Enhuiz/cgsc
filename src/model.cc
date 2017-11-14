@@ -206,7 +206,6 @@ void cut_scenes(const list<Scene *> &scenes, ROI *roi)
             scene->offcuts = triangulate(scene->poly);
         }
         scene->offcuts = intersection(scene->offcuts, roi->offcuts);
-        scene->valid_area = area(scene->offcuts);
     }
 }
 

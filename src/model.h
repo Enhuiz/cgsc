@@ -27,7 +27,7 @@ struct ROI : Model
 struct Scene : Model
 {
     double price;
-    double valid_area; // price / area of region inside the ROI
+    double unit_price;
 };
 
 namespace discrete
