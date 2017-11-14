@@ -4,6 +4,7 @@ from utils.path import data_dir, fig_dir
 import matplotlib.pyplot as plt
 import matplotlib 
 import os
+import re
 
 vinfo_path = data_dir(['visualize', 'bnb'])
 fig_path = fig_dir(['bnb_visual'])
@@ -14,7 +15,8 @@ d = {}
 
 for dirpath, dirnames, filenames in os.walk(vinfo_path):
     for filename in filenames:
-        btype, delta, n_roi, roi_ratio, archive_size  = filename.split('-')
+        btype, s = re.match("(\[.+\])(.+)", filename).groups()
+        roi_ratio = s.strip().split('-')[2]
         if roi_ratio not in d:
             d[roi_ratio] = {}
         for k, v in json.load(open(os.path.join(dirpath, filename), 'r'))[0].items():
@@ -31,7 +33,8 @@ for roi_ratio, subd in d.items():
         filepath = os.path.join(dirpath, '{}.png'.format(k))
         fig, ax = plt.subplots(figsize=(15, 10))
         for btype, v in subsubd.items():
-            df = pd.DataFrame({'t': subd['t'][btype], btype + '_' + k: subsubd[btype]})
+            df = pd.DataFrame({'t': subd['t'][btype], btype + ' ' + k: subsubd[btype]})
             df = df.set_index('t')
+            df = df.iloc[::max(1, len(df)//10000), :]
             df.plot(figsize=(15,10), ax=ax)
         plt.savefig(filepath)
