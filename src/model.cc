@@ -2,6 +2,7 @@
 
 #include <set>
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -264,11 +265,10 @@ vector<double> transform(ROI *roi, list<Scene *> &scenes, double delta)
 
         cells.splice(cells.end(), new_inner_cells);
         cells.splice(cells.end(), new_outer_cells);
-        ++i;
     }
 
     auto cell_map = map<list<int>, list<Cell>>();
-
+ 
     for (const auto& cell: cells)
     {
         if (cell_map.count(cell.owners) == 0)
@@ -280,32 +280,27 @@ vector<double> transform(ROI *roi, list<Scene *> &scenes, double delta)
 
     auto area_table = vector<double>();
     {
-        int i = 0;
-        double debug_total_area = 0;
+        int cell_index = 0;
         area_table.resize(cells.size());
         for (const auto& kv: cell_map)
         {
             // update roi
-            roi->cell_set.insert(i);
+            roi->cell_set.insert(cell_index);
 
             // update cell
             for (auto owner : kv.first)
             {
-                auto scene = indexed_scenes[owner];
-                scene->cell_set.insert(i);
+                auto scene = cell_indexed_scenes[owner];
+                scene->cell_set.insert(cell_index);
             }
 
             // update area table
-            area_table[i] = func::sum(kv.second, [](const Cell &cell) {
+            area_table[cell_index] = func::sum(kv.second, [](const Cell &cell) {
                 return area(cell.poly);
             });
-            debug_total_area += area_table[i];
             //
-            ++i;
+            ++cell_index;
         }
-        logger << "debug " << debug_total_area << endl;
-        logger << "roi " << area(roi->poly) << endl;
-        logger << "ratio " << debug_total_area / area(roi->poly) << endl;
     }
 
     return area_table;
