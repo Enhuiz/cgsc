@@ -40,10 +40,10 @@ bool convex(const Polygon &poly);
 // Following functions only support non-closed polygon representation (i.e. first point != last point)
 std::list<Triangle> triangulate(const Polygon &poly); // to support concave
 // Following functions only support convex clipper
-std::list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper);
 std::tuple<std::list<Polygon>, std::list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper);
-std::list<Polygon> difference(const Polygon &clippee, const Polygon &clipper);
+std::list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> intersection(std::list<Polygon> clippees, const std::list<Polygon> &clipper);
+std::list<Polygon> difference(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> difference(std::list<Polygon> clippees, const std::list<Polygon> &clipper);
 
 #endif
