@@ -30,22 +30,27 @@ struct Scene : Model
     double unit_price;
 };
 
+void remove_scenes_with_no_cells(std::list<Scene *> &scenes);
+void remove_scenes_with_no_offcuts(std::list<Scene *> &scenes);
+void remove_tiny_offcuts(std::list<Polygon> &offcuts, double delta);
+double area(const std::list<Polygon> &offcuts);
+double area(const CellSet &cell_set, const std::vector<double> &area_table);
+double calculate_coverage_ratio(ROI *roi, const std::list<Scene *> &scenes);
+nlohmann::json to_json(const std::list<Polygon> &polys);
+
 namespace discrete
 {
-void discretize_roi(ROI *roi, double delta);
-void discretize_scenes(const std::list<Scene *> &scenes, ROI *roi, double delta);
-void remove_scenes_with_empty_cell_set(std::list<Scene *> &scenes);
+void transform(ROI *roi, std::list<Scene *> &scenes, double delta);
 }
 
 namespace continuous
 {
-void cut_roi(ROI *roi);
-void cut_scenes(const std::list<Scene *> &scenes, ROI *roi);
-double area(const std::list<Polygon> &offcuts);
-double calculate_coverage_ratio(ROI *roi, const std::list<Scene *> &scenes);
-void remove_tiny_offcuts(std::list<Polygon> &offcuts, double delta);
-void remove_scenes_with_no_offcuts(std::list<Scene *> &scenes);
-nlohmann::json to_json(const std::list<Polygon> &polys);
+void transform(ROI *roi, std::list<Scene *> &scenes, double delta);
 }
+
+namespace semantical
+{
+std::vector<double> transform(ROI *roi, std::list<Scene *> &scenes, double delta);
+};
 
 #endif
