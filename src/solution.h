@@ -34,4 +34,11 @@ std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double
 }
 }
 
+namespace semantical
+{
+namespace greedy
+{
+std::list<Scene *> optimize(ROI *roi, std::list<Scene *> possible_scenes, double target_coverage_ratio, double delta);
+}
+}
 #endif
