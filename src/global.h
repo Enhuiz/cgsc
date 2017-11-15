@@ -24,19 +24,20 @@ private:
   clock_t begin_time;
 };
 
-class Logger: public std::ostream
+class Logger : public std::ostream
 {
-class Buffer : public std::stringbuf
-{
-  std::ostream& output; 
-  const Logger& logger;
-public:
-  Buffer(std::ostream& os, const Logger& logger);
-  virtual int sync();
-};
+  class Buffer : public std::stringbuf
+  {
+    std::ostream &output;
+    const Logger &logger;
+
+  public:
+    Buffer(std::ostream &os, const Logger &logger);
+    virtual int sync();
+  };
 
 public:
-  Logger(std::ostream& os);
+  Logger(std::ostream &os);
 
   void info(const std::string &s) const;
   void debug(const std::string &s) const;
@@ -71,43 +72,92 @@ almost_equal(T x, T y, int ulp)
          || std::abs(x - y) < std::numeric_limits<T>::min();
 }
 
-namespace functional
+namespace func
 {
-template <typename T, typename Func>
-auto map(const T &iterable, Func &&func) -> std::vector<decltype(func(std::declval<typename T::value_type>()))>
+template <class T,
+          template <class = T, class = std::allocator<T>> class Container,
+          class Func>
+auto map(const Container<T> &iterable, Func &&func)
+    -> Container<decltype(func(std::declval<T>())),
+                 std::allocator<decltype(func(std::declval<T>()))>>
 {
   // Some convenience type definitions
-  typedef decltype(func(std::declval<typename T::value_type>())) value_type;
-  typedef std::vector<value_type> result_type;
+  using value_type = decltype(func(std::declval<T>()));
+  using result_type = Container<value_type, std::allocator<value_type>>;
 
   // Prepares an output vector of the appropriate size
-  result_type res(iterable.size());
+  result_type res;
 
-  // Let std::transform apply `func` to all elements
-  // (use perfect forwarding for the function object)
-  std::transform(
-      begin(iterable), end(iterable), res.begin(),
-      std::forward<Func>(func));
-
+  for (const auto &v : iterable)
+  {
+    res.push_back(func(v));
+  }
   return res;
 }
-}
 
-template <template <class, class> class Container>
-double sum(const Container<double, std::allocator<double>> &vs)
+template <typename T, typename Func>
+auto filter(const T &iterable, Func &&func) -> T
 {
-  double ret = 0;
-  for (auto v : vs)
+  T ret;
+  for (const auto &v : iterable)
   {
-    ret += v;
+    if (func(v))
+    {
+      ret.push_back(v);
+    }
   }
   return ret;
 }
 
-template <template <class, class> class Container>
-double mean(const Container<double, std::allocator<double>> &vs)
+template <typename T>
+inline auto identify(T v) -> T
 {
-  return sum(vs) / vs.size();
+  return v;
+}
+
+template <typename T, typename Func>
+auto sum(const T &iterable, Func &&func = identify) -> double
+{
+  double ret = 0;
+  for (const auto &v : iterable)
+  {
+    ret += func(v);
+  }
+  return ret;
+}
+
+template <typename T, typename Func>
+auto min(const T &iterable, Func &&func = identify) -> typename T::value_type
+{
+  using value_type = typename T::value_type;
+  return std::min_element(iterable.begin(),
+                          iterable.end(),
+                          [&func](const value_type &a, const value_type &b) {
+                            return func(a) < func(b);
+                          });
+}
+
+template <typename T, typename Func>
+auto max(const T &iterable, Func &&func = identify) -> typename T::value_type
+{
+  using value_type = typename T::value_type;
+  return std::max_element(iterable.begin(),
+                          iterable.end(),
+                          [&func](const value_type &a, const value_type &b) {
+                            return func(a) < func(b);
+                          });
+}
+
+template <typename T, typename Func>
+auto mean(const T &iterable, Func &&func = identify) -> double
+{
+  double ret = 0;
+  for (const auto &v : iterable)
+  {
+    ret += func(v);
+  }
+  return ret / iterable.size();
+}
 }
 
 template <typename T>
@@ -118,6 +168,6 @@ std::string to_string(const T a_value, const int n = 6)
   return oss.str();
 }
 
-std::list<std::string> split(std::string s, const std::string& delimiter);
+std::list<std::string> split(std::string s, const std::string &delimiter);
 
 #endif
