@@ -212,8 +212,6 @@ void remove_scenes_disjoint_with(list<Scene *> &scenes, const list<Polygon> &pol
                  scenes.end());
 }
 
-namespace BFS
-{
 struct Node
 {
     double price;             // the cost of selected scenes
@@ -580,7 +578,6 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
 }
 }
 }
-}
 
 namespace semantical
 {
@@ -592,7 +589,7 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
 
     sw.restart();
     auto area_table = transform(roi, possible_scenes, delta);
-    auto area = [&area_table](const Scene* scene) {
+    auto area = [&area_table](const Scene *scene) {
         return ::area(scene->cell_set, area_table);
     };
     g_report["t1"] = sw.lap();
@@ -665,10 +662,211 @@ list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_co
     g_report["t2"] = sw.lap();
 
     if (covered < to_cover)
+    {
+        logger << "covered is not enough: " << covered
+               << " / " << to_cover << " "
+               << possible_scenes.size() << endl;
         return {};
+    }
 
     return selected_scenes;
 }
-
 }
+
+namespace branch_and_bound
+{
+vector<double> area_table;
+double delta;
+double acceptable_uncovered;
+
+void remove_scenes_disjoint_with(list<Scene *> &scenes, const CellSet &cell_set)
+{
+    scenes.erase(remove_if(scenes.begin(),
+                           scenes.end(),
+                           [&cell_set](const Scene *scene) {
+                               return none_of(scene->cell_set.begin(),
+                                              scene->cell_set.end(),
+                                              [&cell_set](const CID &cid) {
+                                                  return cell_set.count(cid) > 0;
+                                              });
+                           }),
+                 scenes.end());
+}
+
+struct Node
+{
+    double price;             // the cost of selected scenes
+    double uncovered;         // only if the covered is satisfied can the node be accepted as an optimal node
+    double price_lower_bound; // if the lower bound higher than the optimal, kill it
+
+    list<Scene *> selected;
+    list<Scene *> possible;
+    CellSet cell_set;
+
+    list<shared_ptr<Node>> branch()
+    {
+        list<shared_ptr<Node>> ret;
+
+        { // discard
+            auto node = shared_ptr<Node>(new Node(*this));
+            node->possible.pop_front();
+            ret.push_back(node);
+        }
+
+        { // adopt
+            auto node = shared_ptr<Node>(new Node(*this));
+            auto current_scene = possible.front();
+            node->possible.pop_front();
+            // cell_set & uncovered
+            for (auto cid : current_scene->cell_set)
+            {
+                node->cell_set.erase(cid);
+                node->uncovered -= area_table[cid];
+            }
+            // selected scenes
+            node->selected.push_back(current_scene);
+            // cost
+            node->price += current_scene->price;
+            // remove
+            remove_scenes_disjoint_with(node->possible, node->cell_set);
+            ret.push_back(node);
+        }
+
+        return ret;
+    }
+
+    void print(double roi_area)
+    {
+        logger << "price: " << price << endl;
+        logger << "covered: " << 1 - uncovered / roi_area << endl;
+        logger << "price_lower_bound: " << price_lower_bound << endl;
+        logger << "cell_set.size(): " << cell_set.size() << endl;
+        logger << "possible.size(): " << possible.size() << endl;
+        logger << "selected.size(): " << selected.size() << endl;
+    }
+
+    inline void bound()
+    {
+        price_lower_bound = price;
+    }
+};
+
+list<Scene *> optimize(ROI *roi, list<Scene *> possible_scenes, double target_coverage_ratio, double delta)
+{
+    Stopwatch sw;
+
+    sw.restart();
+    branch_and_bound::delta = delta;
+    double roi_area = area(roi->poly);
+    branch_and_bound::acceptable_uncovered = roi_area * (1 - target_coverage_ratio);
+
+    auto optimal_node = shared_ptr<Node>(new Node{});
+    {
+        { // initialize optimal node
+            auto selected = greedy::optimize(roi, possible_scenes, target_coverage_ratio, delta);
+            optimal_node->price = func::sum(selected, [](Scene *scene) { return scene->price; });
+            optimal_node->uncovered = acceptable_uncovered;
+            optimal_node->selected = move(selected);
+            // optimal_node->price = numeric_limits<double>::max();
+        }
+        branch_and_bound::area_table = transform(roi, possible_scenes, delta);
+    }
+    g_report["t1"] = sw.lap();
+
+    logger.debug(to_string(possible_scenes.size()));
+
+    sw.restart();
+    {
+        auto initial_node = shared_ptr<Node>(new Node{});
+        {
+            initial_node->price = 0;
+            initial_node->uncovered = roi_area;
+            initial_node->cell_set = roi->cell_set;
+            initial_node->possible = possible_scenes;
+            for (auto scene : initial_node->possible)
+            {
+                scene->unit_price = scene->price / area(scene->cell_set, area_table);
+            }
+            initial_node->possible.sort([](Scene *a, Scene *b) { // unit price from lower to higher
+                return a->unit_price < b->unit_price;
+            });
+        }
+
+        initial_node->bound();
+
+        auto comp = [](const shared_ptr<Node> &a, const shared_ptr<Node> &b) {
+            return a->price_lower_bound > b->price_lower_bound; // to make it a min heap
+        };
+        auto nodes = priority_queue<shared_ptr<Node>, vector<shared_ptr<Node>>, decltype(comp)>(comp);
+        nodes.push(initial_node);
+
+        auto debug_ts = list<double>();
+        auto debug_nodes = list<double>();
+        auto debug_plbs = list<double>();
+        auto debug_pubs = list<double>();
+
+        while (nodes.size() > 0)
+        {
+            auto node = nodes.top();
+            nodes.pop();
+
+            logger << nodes.size() << endl;
+            debug_ts.push_back(sw.lap());
+            debug_nodes.push_back(nodes.size());
+            debug_plbs.push_back(node->price_lower_bound);
+            debug_pubs.push_back(optimal_node->price);
+
+            if (sw.lap() > 200)
+                break;
+
+            if (node->uncovered < acceptable_uncovered)
+            {
+                if (node->price < optimal_node->price) // lower price, great
+                {
+                    optimal_node = node;
+                    logger << "better solution" << endl;
+                    optimal_node->print(roi_area);
+                }
+                // else, no lower price, keeping branching (add more scenes) will be no better, just kill it.
+            }
+            else if (node->possible.size() > 0)
+            {
+                // Stopwatch test;
+                auto new_nodes = node->branch();
+                // // logger << "test branch" << test.lap() << endl;
+                for (auto new_node : new_nodes)
+                {
+                    // test.restart();
+                    new_node->bound();
+                    // logger << "test bound" << test.lap() << endl;
+                    // if (new_node->price_lower_bound < node->price_lower_bound - 1)
+                    // {
+                    //     node->print(roi_area);
+                    //     new_node->print(roi_area);
+                    //     throw "";
+                    // }
+                    if (new_node->price_lower_bound < optimal_node->price)
+                    {
+                        nodes.push(new_node);
+                    }
+                }
+            }
+        }
+
+        debug_report.push_back({
+            // {"price", node->price},
+            // {"coverage_ratio", node->covered / roi_area},
+            // {"selected.size()", node->selected.size()},
+            // {"possible.size()", node->possible.size()},
+            {"t", debug_ts},
+            {"number of nodes", debug_nodes},
+            {"price lower bound", debug_plbs},
+            {"price upper bound", debug_pubs},
+        });
+    }
+    g_report["t2"] = sw.lap();
+    return optimal_node->selected;
+}
+}
+
 }
