@@ -211,7 +211,8 @@ bool convex(const Polygon &poly)
     {
         if (!inside(*post, *prev, *cur))
         {
-            logger.debug(to_string(angle(*prev, *cur, *post)));
+            // not convex
+            // logger.debug(to_string(angle(*prev, *cur, *post)));
             return false;
         }
         prev = cur;
@@ -370,7 +371,13 @@ list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
 {
     if (!convex(clipper))
     {
-        logger.error("Intersection Error: clipper is non-convex!\n" + to_string(clipper) + "\narea: " + to_string(area(clipper)));
+        double clipper_area = area(clipper);
+        if (clipper_area > 1e-5) // a huge loss
+        {
+            logger.error("Intersection Error: clipper is non-convex!\n" +
+                         to_string(clipper) +
+                         "\narea: " + to_string(clipper_area));
+        }
         return {};
     }
 
@@ -450,7 +457,13 @@ tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &
 {
     if (!convex(clipper))
     {
-        logger.error("Clip Error: clipper is non-convex!\n" + to_string(clipper) + "\narea loss: " + to_string(area(clipper)));
+        double clipper_area = area(clipper);
+        if (clipper_area > 1e-5) // a huge loss
+        {
+            logger.error("Clip Error: clipper is non-convex!\n" +
+                         to_string(clipper) +
+                         "\narea: " + to_string(clipper_area));
+        }
         return make_tuple(list<Polygon>{}, list<Polygon>{clippee});
     }
 
