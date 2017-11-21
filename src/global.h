@@ -19,9 +19,12 @@ public:
   Stopwatch();
   void restart();
   double lap() const;
+  void pause();
+  void continue_();
 
 private:
   clock_t begin_time;
+  double accumulation;
 };
 
 class Logger : public std::ostream
@@ -127,7 +130,7 @@ auto sum(const T &iterable, Func &&func = identify) -> double
 }
 
 template <typename T, typename Func>
-auto min(const T &iterable, Func &&func = identify) -> typename T::value_type
+auto min(const T &iterable, Func &&func = identify) -> typename T::const_iterator
 {
   using value_type = typename T::value_type;
   return std::min_element(iterable.begin(),
@@ -138,7 +141,7 @@ auto min(const T &iterable, Func &&func = identify) -> typename T::value_type
 }
 
 template <typename T, typename Func>
-auto max(const T &iterable, Func &&func = identify) -> typename T::value_type
+auto max(const T &iterable, Func &&func = identify) -> typename T::const_iterator
 {
   using value_type = typename T::value_type;
   return std::max_element(iterable.begin(),
@@ -166,6 +169,14 @@ std::string to_string(const T a_value, const int n = 6)
   std::ostringstream oss;
   oss << std::setprecision(n) << a_value;
   return oss.str();
+}
+
+template <class Func>
+double timeit(const Func &func)
+{
+  Stopwatch sw;
+  func();
+  return sw.lap();
 }
 
 std::list<std::string> split(std::string s, const std::string &delimiter);

@@ -18,12 +18,25 @@ Stopwatch::Stopwatch()
 
 void Stopwatch::restart()
 {
+    accumulation = 0;
+    begin_time = clock();
+}
+
+void Stopwatch::pause()
+{
+    auto now = clock();
+    accumulation += (now - begin_time) * 1.0 / CLOCKS_PER_SEC;
+    begin_time = now; // make lap still work after pause before continue
+}
+
+void Stopwatch::continue_()
+{
     begin_time = clock();
 }
 
 double Stopwatch::lap() const
 {
-    return (clock() - begin_time) * 1.0 / CLOCKS_PER_SEC;
+    return accumulation + (clock() - begin_time) * 1.0 / CLOCKS_PER_SEC;
 }
 
 Logger::Buffer::Buffer(ostream &os, const Logger &logger) : output(os), logger(logger)
@@ -89,7 +102,7 @@ string Logger::get_namespaces() const
     return ret;
 }
 
-list<string> split(string s, const string& delimiter)
+list<string> split(string s, const string &delimiter)
 {
     auto ret = list<string>();
     int pos = 0;
