@@ -9,48 +9,66 @@
 #include "geometry.h"
 #include "global.h"
 
-using CID = unsigned long long;
-using CellSet = std::unordered_set<CID>;
-
-struct Model
+struct Entity
 {
     std::string s;
     Polygon poly;
-    CellSet cell_set;
-    std::list<Polygon> offcuts;
-};
-
-struct ROI : Model
-{
-};
-
-struct Scene : Model
-{
     double price;
-    double unit_price;
 };
 
-void remove_scenes_with_no_cells(std::list<Scene *> &scenes);
-void remove_scenes_with_no_offcuts(std::list<Scene *> &scenes);
-void remove_tiny_offcuts(std::list<Polygon> &offcuts, double delta);
-double area(const std::list<Polygon> &offcuts);
-double area(const CellSet &cell_set, const std::vector<double> &area_table);
-double calculate_coverage_ratio(ROI *roi, const std::list<Scene *> &scenes);
-nlohmann::json to_json(const std::list<Polygon> &polys);
-
-namespace discrete
+struct Element
 {
-void transform(ROI *roi, std::list<Scene *> &scenes, double delta);
+    int index;
+    double value;
+};
+bool operator==(const Element &a, const Element &b);
+
+namespace std
+{
+template <>
+struct hash<Element>
+{
+    using argument_type = Element;
+    using result_type = std::size_t;
+    result_type operator()(argument_type const &e) const noexcept
+    {
+        return std::hash<int>{}(e.index);
+    }
+};
 }
 
-namespace continuous
+struct Range
 {
-void transform(ROI *roi, std::list<Scene *> &scenes, double delta);
-}
+    Entity *entity;
+    std::unordered_set<Element> elements;
 
-namespace semantical
+    double value() const;
+    double cost() const;
+};
+
+struct Transformer
 {
-std::vector<double> transform(ROI *roi, std::list<Scene *> &scenes, double delta);
+    nlohmann::json report;
+    std::unique_ptr<Range> universe;
+    std::list<std::unique_ptr<Range>> ranges;
+};
+
+struct Discrete : Transformer
+{
+    Discrete(Entity *roi,
+             std::list<Entity *> records,
+             double delta);
+
+    static std::string tag() { return "discrete"; }
+};
+
+struct Continuous : Transformer
+{
+    Continuous(Entity *roi,
+               std::list<Entity *> records,
+               double delta);
+
+    static std::string tag() { return "continuous"; }
 };
 
 #endif
