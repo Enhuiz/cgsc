@@ -268,3 +268,15 @@ This make discrete t2 about 10x faster and continuous t2 about 5x faster.
 |price - roi percentage|![](12/price-roi_pct.png)|
 |number of scenes- roi percentage|![](12/number_of_selected_scenes-roi_pct.png)|
 |t2 - roi percentage|![](12/t2-roi_pct.png)|
+
+# Exp13 (21/11/2017)
+## Notes
+1. Transformation Experiment 
+
+## Results
+|Term |Value |
+|:-|:-|
+|size of archive| 15000 |
+|density-number of possible records|![](13/d-nop.png)|
+|number of cells - number of possible records |![](13/noc-nop.png)|
+|time - number of possible records|![](13/t-nop.png)|
