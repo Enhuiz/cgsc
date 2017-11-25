@@ -11,9 +11,8 @@ using namespace nlohmann;
 
 struct Loader
 {
-
-    std::list<std::unique_ptr<Entity>> rois;
-    std::list<std::unique_ptr<Entity>> scenes;
+    std::list<Entity> rois;
+    std::list<Entity> scenes;
 
     Loader(const string &rois_path, const string &scenes_path)
     {
@@ -23,12 +22,12 @@ struct Loader
             string poly_s;
             while (in.read_row(poly_s))
             {
-                auto roi = unique_ptr<Entity>(new Entity);
-                roi->s = poly_s;
-                roi->poly = parse_polygon(poly_s);
-                if (roi->poly.front() == roi->poly.back())
+                auto roi = Entity();
+                roi.s = poly_s;
+                roi.poly = parse_polygon(poly_s);
+                if (roi.poly.front() == roi.poly.back())
                 { // use non-closed representation
-                    roi->poly.pop_back();
+                    roi.poly.pop_back();
                 }
                 rois.push_back(move(roi));
             }
@@ -40,31 +39,27 @@ struct Loader
             double price;
             while (in.read_row(poly_s, price))
             {
-                auto scene = unique_ptr<Entity>(new Entity);
-                scene->s = poly_s;
-                scene->poly = parse_polygon(poly_s);
-                if (scene->poly.front() == scene->poly.back())
+                auto scene = Entity();
+                scene.s = poly_s;
+                scene.poly = parse_polygon(poly_s);
+                if (scene.poly.front() == scene.poly.back())
                 {
-                    scene->poly.pop_back();
+                    scene.poly.pop_back();
                 }
-                scene->price = price;
+                scene.price = price;
                 scenes.push_back(move(scene));
             }
         }
     }
 
-    list<Entity *> get_scenes() const
+    const list<Entity> &get_rois() const
     {
-        return func::map(scenes, [](const unique_ptr<Entity> &p) {
-            return p.get();
-        });
+        return rois;
     }
 
-    list<Entity *> get_rois() const
+    const list<Entity> &get_scenes() const
     {
-        return func::map(rois, [](const unique_ptr<Entity> &p) {
-            return p.get();
-        });
+        return scenes;
     }
 };
 
@@ -101,12 +96,12 @@ struct Loader
 
 struct Executor
 {
-    const list<Entity *> &scenes;
+    const list<Entity> &scenes;
     double target_coverage;
     double delta;
     json report;
 
-    Executor(const list<Entity *> &scenes,
+    Executor(const list<Entity> &scenes,
              double target_coverage,
              double delta) : scenes(scenes),
                              target_coverage(target_coverage),
@@ -115,13 +110,13 @@ struct Executor
     }
 
     template <class... Solvers>
-    void query(Entity *roi)
+    void query(const Entity &roi)
     {
         int _[] = {0, (query_impl<Solvers>(roi), 0)...};
     }
 
     template <class Solver>
-    void query_impl(Entity *roi)
+    void query_impl(const Entity &roi)
     {
         auto tag = Solver::tag();
         logger.push_namespace(tag);
@@ -138,23 +133,19 @@ struct Executor
 json experiment(const string &rois_path, const string &scenes_path, double target_coverage, double delta)
 {
     const auto loader = Loader(rois_path, scenes_path);
-    const auto rois = loader.get_rois();
-    const auto scenes = loader.get_scenes();
+    const auto &rois = loader.get_rois();
+    const auto &scenes = loader.get_scenes();
 
     auto executor = Executor(scenes, target_coverage, delta);
-
     {
         int i = 0;
         for (auto roi : rois)
         {
             logger.push_namespace(to_string(i));
             executor.query<
-                Solver<Continuous, Optimizer>>(roi);
-            // execute("dg", roi, discrete::greedy::optimize);
-            // execute("cg", roi, continuous::greedy::optimize);
-            // execute("sg", roi, semantical::greedy::optimize);
-            // execute("cb", roi, continuous::branch_and_bound::optimize);
-            // execute("sb", roi, semantical::branch_and_bound::optimize);
+                // Solver<Geometric, old::Bnb>
+                Solver<Continuous, Bnb>
+                >(roi);
             logger.pop_namespace();
             ++i;
         }

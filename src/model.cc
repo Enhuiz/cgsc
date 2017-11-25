@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <set>
 
 using namespace std;
 
@@ -10,14 +11,15 @@ bool operator==(const Element &a, const Element &b)
     return a.index == b.index;
 }
 
-double Range::cost() const
+void Range::update_cost()
 {
-    return entity->price;
+    if (entity != nullptr)
+        cost = entity->price;
 }
 
-double Range::value() const
+void Range::update_value()
 {
-    return func::sum(elements, [](const Element &e) {
+    value = func::sum(elements, [](const Element &e) {
         return e.value;
     });
 }
@@ -126,43 +128,61 @@ struct Discretizer
     }
 };
 
-Discrete::Discrete(Entity *roi, std::list<Entity *> records, double delta)
+Transformer::Transformer(const Entity &roi,
+            const list<Entity> &records,
+            double delta)
+{
+    universe.entity = &roi;
+    ranges = func::map(records, [](const Entity &record) {
+        auto range = Range();
+        range.entity = &record;
+        range.update_cost();
+        return range;
+    });
+}
+
+Geometric::Geometric(const Entity &roi, const list<Entity> &records, double delta)
+    : Transformer(roi, records, delta)
+{
+    universe.value = area(universe.entity->poly);
+    for (auto &range : ranges)
+    {
+        range.value = func::sum(intersection(range.entity->poly, universe.entity->poly), area);
+    }
+}
+
+Discrete::Discrete(const Entity &roi, const list<Entity> &records, double delta)
+    : Transformer(roi, records, delta)
 {
     Discretizer discretizer{delta};
 
     { // initialize universe
-        universe = unique_ptr<Range>(new Range{});
-        auto eids = discretizer.discretize(roi->poly, true);
-        universe->entity = roi;
-        universe->elements.clear();
+        auto eids = discretizer.discretize(roi.poly, true);
+        universe.elements.clear();
         for (auto eid : eids)
         {
-            universe->elements.insert(Element{eid, 1});
+            universe.elements.insert(Element{eid, 1});
         }
+        universe.update_value();
     }
 
-    { // initialize sets
-        auto roi_bounding_box = discretizer.bounding_box(roi->poly, floor_double, ceil_double);
-        for (auto record : records)
+    { // initialize ranges
+        auto roi_bounding_box = discretizer.bounding_box(roi.poly, floor_double, ceil_double);
+        for (auto &range : ranges)
         {
-            auto polys = intersection(record->poly, roi_bounding_box);
-            auto range = unique_ptr<Range>(new Range());
+            auto polys = intersection(range.entity->poly, roi_bounding_box);
             for (const auto &poly : polys)
             {
                 auto eids = discretizer.discretize(poly, false);
                 for (auto eid : eids)
                 {
-                    if (intersects(discretizer.get_cell_polygon(eid), roi->poly))
+                    if (intersects(discretizer.get_cell_polygon(eid), roi.poly))
                     {
-                        range->elements.insert(Element{eid, 1});
+                        range.elements.insert(Element{eid, 1});
                     }
                 }
             }
-            if (range->elements.size() > 0)
-            {
-                range->entity = record;
-                ranges.push_back(move(range));
-            }
+            range.update_value();
         }
     }
 }
@@ -173,19 +193,14 @@ struct Cell
     list<Range *> owners;
 };
 
-Continuous::Continuous(Entity *roi, std::list<Entity *> records, double delta)
+Continuous::Continuous(const Entity &roi, const list<Entity> &records, double delta)
+    : Transformer(roi, records, delta)
 {
-    ranges = func::map(records, [](Entity *record) {
-        auto ret = unique_ptr<Range>(new Range());
-        ret->entity = record;
-        return ret;
-    });
-
     auto cells = list<Cell>();
 
-    for (const auto &range : ranges)
+    for (auto &range : ranges)
     {
-        auto range_polys = intersection(range->entity->poly, roi->poly);
+        auto range_polys = intersection(range.entity->poly, roi.poly);
         auto new_inner_cells = list<Cell>();
         auto new_outer_cells = list<Cell>();
         for (const auto &range_poly : range_polys)
@@ -203,7 +218,7 @@ Continuous::Continuous(Entity *roi, std::list<Entity *> records, double delta)
                     {
                         new_outer_cells.push_back(Cell{outer, prev_owners});
                     }
-                    prev_owners.push_back(range.get());
+                    prev_owners.push_back(&range);
                     for (auto inner : inners)
                     {
                         new_inner_cells.push_back(Cell{inner, prev_owners});
@@ -223,7 +238,7 @@ Continuous::Continuous(Entity *roi, std::list<Entity *> records, double delta)
 
         for (const auto &range_poly : range_polys)
         {
-            new_outer_cells.push_back(Cell{range_poly, {range.get()}});
+            new_outer_cells.push_back(Cell{range_poly, {&range}});
         }
 
         cells.splice(cells.end(), new_inner_cells);
@@ -231,47 +246,56 @@ Continuous::Continuous(Entity *roi, std::list<Entity *> records, double delta)
     }
 
     auto area_map = map<list<Range *>, double>();
-    auto debug_counter = map<list<Range *>, double>();
-
+    // auto notations = list<list<Range *>>();
     for (const auto &cell : cells)
     {
         if (area_map.count(cell.owners) == 0)
         {
             area_map[cell.owners] = 0;
-            debug_counter[cell.owners] = 0;
         }
         area_map[cell.owners] += area(cell.poly);
-        debug_counter[cell.owners] += 1;
+        // notations.push_back(cell.owners);
     }
 
-    cout << func::mean(debug_counter, [](const decltype(debug_counter)::value_type & kv){
-        return kv.second;
-    }) << endl;
+    // notations.sort();
+    // notations.unique();
 
-    // this is to verify whether the cell covers the whole area 
+    // report["histogram"] = func::map(notations, [](const list<Range *> &owners) {
+    //     return owners.size();
+    // });
+
+    // this is to verify whether the cell covers the whole area
     // double debug_area = 0;
 
-    universe = unique_ptr<Range>(new Range());
     {
         int cell_index = 0; // index for cell
         for (const auto &kv : area_map)
         {
             // update universe
-            universe->elements.insert(Element{cell_index, kv.second});
+            universe.elements.insert(Element{cell_index, kv.second});
 
             // update ranges
-            for (auto owner : kv.first)
+            for (auto range : kv.first)
             {
-                owner->elements.insert(Element{cell_index, kv.second});
+                range->elements.insert(Element{cell_index, kv.second});
             }
 
             ++cell_index;
 
             // debug_area += kv.second;
         }
+        double uncovered_area = area(roi.poly) - func::sum(universe.elements,
+                                                           [](const Element &e) {
+                                                               return e.value;
+                                                           });
+        universe.elements.insert(Element{cell_index, uncovered_area});
     }
-
-    // cout << debug_area << " " << area(roi->poly) << " " <<  debug_area / area(roi->poly) << endl;
+    universe.update_value();
+    for (auto &range : ranges)
+    {
+        range.update_value();
+    }
+    // cout << debug_area << " " << area(roi.poly) << " " <<  debug_area / area(roi.poly) << endl;
 }
 
 // void remove_scenes_with_no_cells(list<Scene *> &scenes)
@@ -341,7 +365,7 @@ Continuous::Continuous(Entity *roi, std::list<Entity *> records, double delta)
 //             (*j)->offcuts = difference((*j)->offcuts, (*i)->offcuts);
 //         }
 //     }
-//     return covered / area(roi->poly);
+//     return covered / area(roi.poly);
 // }
 
 // double area(const CellRange &cell_set)

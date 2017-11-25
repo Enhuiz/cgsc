@@ -39,24 +39,38 @@ struct hash<Element>
 
 struct Range
 {
-    Entity *entity;
+    const Entity *entity;
     std::unordered_set<Element> elements;
-
-    double value() const;
-    double cost() const;
+    double value;
+    double cost;
+    void update_value();
+    void update_cost();
 };
 
 struct Transformer
 {
     nlohmann::json report;
-    std::unique_ptr<Range> universe;
-    std::list<std::unique_ptr<Range>> ranges;
+    Range universe;
+    std::list<Range> ranges;
+
+    Transformer(const Entity &roi,
+                const std::list<Entity> &records,
+                double delta);
+};
+
+struct Geometric : Transformer
+{
+    Geometric(const Entity &roi,
+             const std::list<Entity> &records,
+             double delta);
+
+    static std::string tag() { return "geometric"; }
 };
 
 struct Discrete : Transformer
 {
-    Discrete(Entity *roi,
-             std::list<Entity *> records,
+    Discrete(const Entity &roi,
+             const std::list<Entity> &records,
              double delta);
 
     static std::string tag() { return "discrete"; }
@@ -64,8 +78,8 @@ struct Discrete : Transformer
 
 struct Continuous : Transformer
 {
-    Continuous(Entity *roi,
-               std::list<Entity *> records,
+    Continuous(const Entity &roi,
+               const std::list<Entity> &records,
                double delta);
 
     static std::string tag() { return "continuous"; }

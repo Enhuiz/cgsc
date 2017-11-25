@@ -3,18 +3,19 @@
 
 #include <list>
 #include <iostream>
+#include <cstdlib>
 
 #include "model.h"
 
-double calculate_density(Entity *roi, const std::list<Entity *>& entities);
+double calculate_density(const Entity &roi, const std::list<Entity> &entities);
 
 template <class Transformer, class Optimizer>
 struct Solver
 {
     nlohmann::json report;
 
-    Solver(Entity *roi,
-           std::list<Entity *> records,
+    Solver(const Entity &roi,
+           const std::list<Entity> &records,
            double target_coverage,
            double delta)
     {
@@ -27,34 +28,34 @@ struct Solver
         {
             // select possible records
             sw.restart();
-            records = func::filter(records, [roi](Entity *record) {
-                return intersects(record->poly, roi->poly);
+            auto possible_records = func::filter(records, [&roi](const Entity &record) {
+                return intersects(record.poly, roi.poly);
             });
             sw.pause();
-            report["d"] = calculate_density(roi, records);
-            report["nop"] = records.size();
+            report["d"] = calculate_density(roi, possible_records);
+            report["nop"] = possible_records.size();
+            std::cout << possible_records.size() << std::endl;
 
             sw.continue_();
             transformer = std::unique_ptr<Transformer>(
                 new Transformer(roi,
-                                records,
+                                possible_records,
                                 delta));
 
+            report["histogram"] = transformer->report["histogram"];
             report["t"] = sw.lap();
-            report["noc"] = transformer->universe->elements.size();
+            report["noc"] = transformer->universe.elements.size();
             std::cout << report << std::endl;
             logger << "t1 ends after " << sw.lap() << " s" << std::endl;
 
             if (Optimizer::tag() != "none")
             {
                 sw.restart();
-                optimizer = std::unique_ptr<Optimizer>(new Optimizer(transformer->universe.get(),
-                                                                     func::map(transformer->ranges,
-                                                                               [](const std::unique_ptr<Range> &p) {
-                                                                                   return p.get();
-                                                                               }),
+                optimizer = std::unique_ptr<Optimizer>(new Optimizer(transformer->universe,
+                                                                     transformer->ranges,
                                                                      target_coverage));
                 logger << "t2 ends after " << sw.lap() << " s" << std::endl;
+                report["optimizer"] = optimizer->report;
             }
         }
     }
@@ -67,23 +68,32 @@ struct Solver
 
 struct Optimizer
 {
+    std::list<std::list<Range>::const_iterator> subranges;
     nlohmann::json report;
-    std::list<Entity *> results;
     Optimizer(){};
-    Optimizer(Range *universe, std::list<Range *> ranges, double target_coverage){};
+    Optimizer(const Range &universe, const std::list<Range> &ranges, double target_coverage){};
     static std::string tag() { return "none"; };
 };
 
 struct Greedy : Optimizer
 {
-    Greedy(Range *universe, std::list<Range *> ranges, double target_coverage);
+    Greedy(const Range &universe, const std::list<Range> &ranges, double target_coverage);
     static std::string tag() { return "greedy"; };
 };
 
 struct Bnb : Optimizer
 {
-    Bnb(Range *universe, std::list<Range *> ranges, double target_coverage);
+    Bnb(const Range &universe, const std::list<Range> &ranges, double target_coverage);
     static std::string tag() { return "bnb"; }
 };
+
+namespace old
+{
+struct Bnb : Optimizer
+{
+    Bnb(const Range &universe, const std::list<Range> &ranges, double target_coverage);
+    static std::string tag() { return "old_bnb"; }
+};
+}
 
 #endif
