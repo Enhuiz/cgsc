@@ -77,6 +77,8 @@ def extract_reports(path):
             if isinstance(v, Number):
                 reports[k] = np.mean([raw_report[k]
                                       for raw_report in raw_reports])
+            else:
+                reports[k] = v
         # reports['price'] = np.mean([np.sum(
         #     [scene['price'] for scene in raw_report['result_scenes'] or []]) for raw_report in raw_reports])
         return reports
