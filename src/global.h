@@ -2,12 +2,14 @@
 #define CGSC_GLOBAL_H
 
 #include <limits>
+#include <type_traits>
 #include <functional>
 #include <string>
 #include <map>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <memory>
 #include <list>
 
@@ -113,13 +115,13 @@ auto filter(const T &iterable, Func &&func) -> T
 }
 
 template <typename T>
-inline auto identify(T v) -> T
+inline auto identity(T v) -> T
 {
   return v;
 }
 
 template <typename T, typename Func>
-auto sum(const T &iterable, Func &&func = identify) -> double
+auto sum(const T &iterable, Func &&func = identity) -> double
 {
   double ret = 0;
   for (const auto &v : iterable)
@@ -130,7 +132,7 @@ auto sum(const T &iterable, Func &&func = identify) -> double
 }
 
 template <typename T, typename Func>
-auto min(const T &iterable, Func &&func = identify) -> typename T::const_iterator
+auto min_element(const T &iterable, Func &&func = identity) -> typename T::const_iterator
 {
   using value_type = typename T::value_type;
   return std::min_element(iterable.begin(),
@@ -141,7 +143,7 @@ auto min(const T &iterable, Func &&func = identify) -> typename T::const_iterato
 }
 
 template <typename T, typename Func>
-auto max(const T &iterable, Func &&func = identify) -> typename T::const_iterator
+auto max_element(const T &iterable, Func &&func = identity) -> typename T::const_iterator
 {
   using value_type = typename T::value_type;
   return std::max_element(iterable.begin(),
@@ -152,7 +154,49 @@ auto max(const T &iterable, Func &&func = identify) -> typename T::const_iterato
 }
 
 template <typename T, typename Func>
-auto mean(const T &iterable, Func &&func = identify) -> double
+auto min(const T &iterable, Func &&func = identity) -> decltype(func(std::declval<typename T::value_type>()))
+{
+  using result_type = decltype(func(std::declval<typename T::value_type>()));
+  if (iterable.size() == 0)
+  {
+    logger.error("min for nothing!");
+    std::abort();
+  }
+  result_type ret = func(*iterable.begin());
+  for (auto x : iterable)
+  {
+    auto v = func(x);
+    if (v < ret)
+    {
+      ret = v;
+    }
+  }
+  return ret;
+}
+
+template <typename T, typename Func>
+auto max(const T &iterable, Func &&func = identity) -> decltype(func(std::declval<typename T::value_type>()))
+{
+  using result_type = decltype(func(std::declval<typename T::value_type>()));
+  if (iterable.size() == 0)
+  {
+    logger.error("max for nothing!");
+    std::abort();
+  }
+  result_type ret = func(*iterable.begin());
+  for (auto x : iterable)
+  {
+    auto v = func(x);
+    if (v < ret)
+    {
+      ret = v;
+    }
+  }
+  return ret;
+}
+
+template <typename T, typename Func>
+auto mean(const T &iterable, Func &&func = identity) -> double
 {
   double ret = 0;
   for (const auto &v : iterable)
@@ -172,11 +216,12 @@ std::string to_string(const T a_value, const int n = 6)
 }
 
 template <class Func>
-double timeit(const Func &func)
+auto timeit(const std::string &tag, const Func &func) -> decltype(func())
 {
   Stopwatch sw;
-  func();
-  return sw.lap();
+  auto ret = func();
+  logger << "timeit " << tag << ": " << sw.lap() << " s" << std::endl;
+  return ret;
 }
 
 std::list<std::string> split(std::string s, const std::string &delimiter);
