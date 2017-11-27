@@ -260,8 +260,6 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
                 }
             }
         }
-        cells.splice(cells.end(), new_inner_cells);
-        cells.splice(cells.end(), new_outer_cells);
 
         // the following difference does this things:
 
@@ -290,8 +288,11 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
 
         for (const auto &range_poly : range_polys)
         {
-            cells.push_back(Cell{range_poly, {&range}});
+            new_outer_cells.push_back(Cell{range_poly, {&range}});
         }
+
+        cells.splice(cells.end(), new_inner_cells);
+        cells.splice(cells.end(), new_outer_cells);
     }
 
     // calculate the value (i.e. area) of each cell
