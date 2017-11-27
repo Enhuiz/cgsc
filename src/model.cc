@@ -189,36 +189,66 @@ Discrete::Discrete(const Entity &roi, const list<Entity> &records, double delta)
 
 struct Cell
 {
-    Polygon poly;
-    list<Range *> owners;
+    Polygon poly;   // geometric shape of the cell
+    list<Range *> owners; // the rectangles that cover the cell
 };
 
 Continuous::Continuous(const Entity &roi, const list<Entity> &records, double delta)
     : Transformer(roi, records, delta)
 {
-    auto cells = list<Cell>();
+    auto cells = list<Cell>(); // cells currently got
 
     for (auto &range : ranges)
     {
-        auto range_polys = intersection(range.entity->poly, roi.poly);
+        // for example, currently we have cell 1 and 2
+        
+        // ------------
+        // | 1     /  |  
+        // |      /   |
+        // |     / 2  |
+        // ------------
+        
+        // and a new product 
+        
+        //      -------------
+        //     /           /
+        //    ------------
+        
+        // the following process does this thing
+        
+        // ------------
+        // | o     / o|  
+        // |      ----|--------
+        // |     /  i |      /
+        // -----------------
+        
+        // i for inner, o for outer. The 2 outer and 1 inner have been updated, and get
+
+        // ------------
+        // | 1'    /2'|  
+        // |      ----|--------
+        // |     / 3' |      /
+        // -----------------
+
+        auto range_polys = intersection(range.entity->poly, roi.poly); // fetch the products region that is inside ROI
         auto new_inner_cells = list<Cell>();
         auto new_outer_cells = list<Cell>();
-        for (const auto &range_poly : range_polys)
+        for (const auto &range_poly : range_polys) // for each inside region, in most case there is only 1 region
         {
-            for (auto it = cells.begin(); it != cells.end();)
+            for (auto it = cells.begin(); it != cells.end();) 
             {
                 auto inners = list<Polygon>();
                 auto outers = list<Polygon>();
                 tie(inners, outers) = clip(it->poly, range_poly);
-                if (inners.size() > 0)
+                if (inners.size() > 0) // the product intersects with the cell
                 {
-                    auto prev_owners = move(it->owners);
-                    it = cells.erase(it);
-                    for (auto outer : outers)
+                    auto prev_owners = move(it->owners);    // record the owner of the cell
+                    it = cells.erase(it);                   // discard the cell
+                    for (auto outer : outers)               
                     {
-                        new_outer_cells.push_back(Cell{outer, prev_owners});
+                        new_outer_cells.push_back(Cell{outer, prev_owners}); 
                     }
-                    prev_owners.push_back(&range);
+                    prev_owners.push_back(&range);  // the inners are also covered by the product itself 
                     for (auto inner : inners)
                     {
                         new_inner_cells.push_back(Cell{inner, prev_owners});
@@ -230,23 +260,42 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
                 }
             }
         }
+        cells.splice(cells.end(), new_inner_cells);
+        cells.splice(cells.end(), new_outer_cells);
+
+        // the following difference does this things:
+
+        // from 
+        //      -------------
+        //     /  3'|      /
+        //    ------------
+        
+        // to
+        //      -------------
+        //     /  3'|  4'  /
+        //    ------------
+        
+        // so we get
+        // ------------
+        // | 1'    /2'|  
+        // |      ----|--------
+        // |     / 3' |  4'  /
+        // -----------------
+
         range_polys = difference(range_polys,
-                                 func::map(new_inner_cells,
+                                 func::map(new_inner_cells, // get all polygon of new inner cells
                                            [](const Cell &cell) {
                                                return cell.poly;
                                            }));
 
         for (const auto &range_poly : range_polys)
         {
-            new_outer_cells.push_back(Cell{range_poly, {&range}});
+            cells.push_back(Cell{range_poly, {&range}});
         }
-
-        cells.splice(cells.end(), new_inner_cells);
-        cells.splice(cells.end(), new_outer_cells);
     }
 
+    // calculate the value (i.e. area) of each cell
     auto area_map = map<list<Range *>, double>();
-    // auto notations = list<list<Range *>>();
     for (const auto &cell : cells)
     {
         if (area_map.count(cell.owners) == 0)
@@ -254,21 +303,10 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
             area_map[cell.owners] = 0;
         }
         area_map[cell.owners] += area(cell.poly);
-        // notations.push_back(cell.owners);
     }
 
-    // notations.sort();
-    // notations.unique();
-
-    // report["histogram"] = func::map(notations, [](const list<Range *> &owners) {
-    //     return owners.size();
-    // });
-
-    // this is to verify whether the cell covers the whole area
-    // double debug_area = 0;
-
     {
-        int cell_index = 0; // index for cell
+        int cell_index = 0; // index generator
         for (const auto &kv : area_map)
         {
             // update universe
@@ -281,96 +319,19 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
             }
 
             ++cell_index;
-
-            // debug_area += kv.second;
         }
+        // the following calculation add an imagenary cell that no one covers
+        // to make sure the universe is complete
         double uncovered_area = area(roi.poly) - func::sum(universe.elements,
                                                            [](const Element &e) {
                                                                return e.value;
                                                            });
         universe.elements.insert(Element{cell_index, uncovered_area});
     }
+
     universe.update_value();
     for (auto &range : ranges)
     {
         range.update_value();
     }
-    // cout << debug_area << " " << area(roi.poly) << " " <<  debug_area / area(roi.poly) << endl;
 }
-
-// void remove_scenes_with_no_cells(list<Scene *> &scenes)
-// {
-//     scenes.erase(remove_if(scenes.begin(),
-//                            scenes.end(),
-//                            [](const Scene *scene) {
-//                                return scene->cell_set.size() == 0;
-//                            }),
-//                  scenes.end());
-// }
-
-// void remove_tiny_offcuts(list<Polygon> &offcuts, double delta)
-// {
-//     double area_threshold = delta * delta;
-//     offcuts.erase(remove_if(offcuts.begin(),
-//                             offcuts.end(),
-//                             [area_threshold](const Polygon &offcut) {
-//                                 return area(offcut) < area_threshold;
-//                             }),
-//                   offcuts.end());
-// }
-
-// void remove_scenes_with_no_offcuts(list<Scene *> &scenes)
-// {
-//     scenes.erase(remove_if(scenes.begin(),
-//                            scenes.end(),
-//                            [](const Scene *scene) {
-//                                return scene->offcuts.size() == 0;
-//                            }),
-//                  scenes.end());
-// }
-
-// nlohmann::json to_json(const list<Polygon> &polys)
-// {
-//     auto ret = nlohmann::json();
-//     for (const auto &poly : polys)
-//     {
-//         ret.push_back(to_string(poly));
-//     }
-//     return ret;
-// }
-
-// double area(const list<Polygon> &offcuts)
-// {
-//     double ret = 0;
-//     for (const auto &offcut : offcuts)
-//     {
-//         ret += area(offcut);
-//     }
-//     return ret;
-// };
-
-// double calculate_coverage_ratio(ROI *roi, const list<Scene *> &scenes)
-// {
-//     double covered = 0;
-//     continuous::cut_roi(roi);
-//     for (auto i = scenes.begin(); i != scenes.end(); ++i)
-//     {
-//         continuous::cut_scenes(scenes, roi);
-//     }
-//     for (auto i = scenes.begin(); i != scenes.end(); ++i)
-//     {
-//         covered += area((*i)->offcuts);
-//         for (auto j = next(i); j != scenes.end(); ++j)
-//         {
-//             (*j)->offcuts = difference((*j)->offcuts, (*i)->offcuts);
-//         }
-//     }
-//     return covered / area(roi.poly);
-// }
-
-// double area(const CellRange &cell_set)
-// {
-//     return func::sum(cell_set, [](const int &cid) {
-//         return Scene::area_map[cid];
-//     });
-// }

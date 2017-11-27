@@ -82,9 +82,9 @@ Greedy::Greedy(const Range &const_universe, const list<Range> &const_ranges, dou
 
 struct Node
 {
-    double cost = 0;         // the cost of selected ranges
-    double value = 0;        // only if the covered is satisfied can the node be accepted as an optimal node
-    double cost_lower_bound; // if the lower bound higher than the optimal, kill it
+    double cost = 0;  // the cost of selected ranges
+    double value = 0; // current covered area
+    double cost_lower_bound;
 
     using RangeConstIter = list<Range>::const_iterator;
 
@@ -128,7 +128,7 @@ struct Node
         return ret;
     }
 
-    inline void bound()
+    void bound()
     {
         cost_lower_bound = cost;
         double current_value = value;
@@ -180,7 +180,7 @@ const Range *Node::universe = nullptr;
 
 Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double target_coverage)
 {
-    auto sw = Stopwatch();
+    auto sw = Stopwatch(); // timer
     auto universe = Range(const_universe);
     auto ranges = list<Range>(const_ranges.begin(), const_ranges.end());
     Node::target_value = universe.value * target_coverage;
@@ -188,11 +188,11 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
     auto optimal_node = shared_ptr<Node>(new Node{});
     {
         auto greedy = Greedy(const_universe, const_ranges, target_coverage);
-        // optimal_node->cost = func::sum(greedy.subranges,
-        //                                [](decltype(ranges)::const_iterator rit) {
-        //                                    return rit->cost;
-        //                                });
-        optimal_node->cost = 10000;
+        optimal_node->cost = func::sum(greedy.subranges,
+                                       [](decltype(ranges)::const_iterator rit) {
+                                           return rit->cost;
+                                       });
+        // optimal_node->cost = 10000;
         optimal_node->print("initial optimal");
     }
     auto initial_node = shared_ptr<Node>(new Node{});
@@ -220,8 +220,8 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
         auto node = nodes.top();
         nodes.pop();
 
+        sw.pause(); // pause the timer for debug informaiton
         logger << nodes.size() << endl;
-
         debug_report.push_back({
             {"cost", node->cost},
             {"coverage_ratio", node->value / universe.value},
@@ -232,31 +232,23 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
             {"cost lower bound", node->cost_lower_bound},
             {"cost upper bound", optimal_node->cost},
         });
+        sw.continue_();
 
         if (node->value >= Node::target_value) // finished cover
         {
             if (node->cost < optimal_node->cost) // lower cost, great
             {
                 optimal_node = node;
-                logger << "better solution" << endl;
-                optimal_node->print();
+                optimal_node->print("better solution");
             }
-            // else keeping branching (add more ranges) will be no better, just kill it.
+            // else keeping branching (add more ranges) will be no good, just kill the node.
         }
         else if (node->to_select.size() > 0)
         {
-            // auto new_nodes = timeit("branch", [&node]() { return node->branch(); });
             auto new_nodes = node->branch();
             for (auto new_node : new_nodes)
             {
-                // timeit("bound", [&new_node]() { new_node->bound(); return 0;});
                 new_node->bound();
-                // if (new_node->cost_lower_bound < node->cost_lower_bound - 1)
-                // {
-                //     node->print(roi_area);
-                //     new_node->print(roi_area);
-                //     throw "";
-                // }
                 if (new_node->cost_lower_bound < optimal_node->cost)
                 {
                     nodes.push(new_node);
@@ -283,7 +275,7 @@ void remove_ranges_disjoint_with(list<list<Range>::const_iterator> &ranges, cons
 struct Node
 {
     double cost;             // the cost of selected ranges
-    double value;          
+    double value;            // value currently gained
     double cost_lower_bound; // if the lower bound higher than the optimal, kill it
 
     using RangeConstIter = list<Range>::const_iterator;
@@ -324,9 +316,10 @@ struct Node
         return ret;
     }
 
-    void print()
+    void print(const string &s = "")
     {
         assert(universe != nullptr);
+        logger << s << endl;
         logger << "cost: " << cost << endl;
         logger << "coverage ratio: " << value / universe->value << endl;
         logger << "cost_lower_bound: " << cost_lower_bound << endl;
@@ -345,7 +338,7 @@ struct Node
             for (auto it = left_offcuts.begin(); it != left_offcuts.end();)
             {
                 auto scene_offcuts = intersection(universe->entity->poly, rit->entity->poly);
-                if (scene_offcuts.size() == 0)
+                if (scene_offcuts.size() == 0) // no intersection
                     continue;
                 auto scene_offcut = scene_offcuts.front();
                 const auto &left_offcut = *it;
@@ -362,7 +355,7 @@ struct Node
                         {
                             cost_lower_bound += rit->cost / rit->value * deficit;
                             current_value += deficit;
-                            return;
+                            return; // value is enough, return
                         }
                         else
                         {
@@ -402,7 +395,9 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
 
     auto optimal_node = shared_ptr<Node>(new Node{});
     {
-        optimal_node->cost = 10000;
+        optimal_node->cost = 24000.0;
+        // optimal_node->cost = 10000;
+        optimal_node->print("initial optimal");
     }
 
     auto initial_node = shared_ptr<Node>(new Node{});
@@ -451,8 +446,7 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
             if (node->cost < optimal_node->cost) // lower cost, great
             {
                 optimal_node = node;
-                logger << "better solution" << endl;
-                optimal_node->print();
+                optimal_node->print("better solution");
             }
             // else, no lower cost, keeping branching (add more ranges) will be no better, just kill it.
         }
@@ -477,105 +471,3 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
     }
 }
 }
-
-// inline void bound(double acceptable_uncovered, double delta)
-// {
-//     update_unit_cost(offcuts);
-//     to_select.sort([](Entity *a, Entity *b) { // unit cost from lower to higher
-//         return a->unit_cost < b->unit_cost;
-//     });
-
-//     // initialize the bounds
-//     cost_lower_bound = cost;
-//     double to_cover = deficit - acceptable_uncovered;
-//     // take the lowest unit cost, try to eliminate the roi offcuts, until all the to_select run out or offcuts have been covered
-//     // save the offcuts
-//     auto offcuts_backup = offcuts;
-//     // default_random_engine gen;
-//     // uniform_real_distribution<double> dis(0, 1);
-//     double prev_unit_cost = 0;
-//     double prev_slope = 0;
-//     for (auto possible_scene : to_select)
-//     {
-//         if (to_cover <= 0)
-//             break;
-
-//         if (prev_unit_cost > 0)
-//         {
-//             double slope = (possible_scene->cost - prev_unit_cost) / offcuts.size();
-//             if (slope <= prev_slope)
-//             {
-//                 cost_lower_bound += to_cover * possible_scene->unit_cost;
-//                 to_cover = 0;
-//                 break;
-//             }
-//             prev_slope = slope;
-//         }
-//         prev_unit_cost = possible_scene->cost;
-
-//         // // write something like this
-//         // {
-//         //     break;
-
-//         //     // loop
-//         //     // pick first one
-//         //     // cut first one against the rest
-//         //     // re-cost and re-sort the rest
-
-//         //     // however, by doing so, this will become pure greedy ?
-//         //     // what's the different between it and pure greedy ?
-//         //     // or this question can be solved by greedy method ?
-//         //     // ????
-//         // } while (false);
-
-//         for (const auto &scene_offcut : possible_scene->offcuts) // modify this loop, the outer loop should be the sorted list
-//         {
-//             if (to_cover <= 0)
-//                 break;
-//             for (auto it = offcuts.begin(); it != offcuts.end();)
-//             {
-//                 const auto &offcut = *it;
-//                 auto inners = list<Polygon>();
-//                 auto outers = list<Polygon>();
-//                 tie(inners, outers) = clip(offcut, scene_offcut);
-//                 // after each choosing of ..., should we calculate the cost again ? and re-sort the rest.
-//                 if (inners.size() > 0) // intersects (? is there any possibility that all offcuts of the ranges is inner and no need to do intersection at all)
-//                 {
-//                     for (const auto &inner : inners)
-//                     {
-//                         double inner_area = area(inner);
-//                         if (to_cover < inner_area)
-//                         {
-//                             cost_lower_bound += possible_scene->unit_cost * to_cover;
-//                             to_cover = 0;
-//                         }
-//                         else
-//                         {
-//                             cost_lower_bound += possible_scene->unit_cost * inner_area;
-//                             to_cover -= inner_area;
-//                         }
-//                     }
-//                     for (const auto &outer : outers)
-//                     {
-//                         if (area(outer) >= delta * delta)
-//                         {
-//                             offcuts.push_back(outer);
-//                         }
-//                     }
-//                     it = offcuts.erase(it);
-//                 }
-//                 else
-//                 {
-//                     ++it;
-//                 }
-//             }
-//         }
-//     }
-
-//     if (to_cover > 0) // the optimistic value is not able to covered the whole scene
-//     {
-//         cost_lower_bound = numeric_limits<double>::max();
-//     }
-//     // restore the offcuts
-//     offcuts = offcuts_backup;
-// }

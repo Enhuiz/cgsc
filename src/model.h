@@ -9,18 +9,20 @@
 #include "geometry.h"
 #include "global.h"
 
-struct Entity
+
+struct Entity // meta data for ROI and image products 
 {
-    std::string s;
-    Polygon poly;
-    double price;
+    std::string s;  // polygon string, i.e. [[0, 0], [0, 1], [1, 1], [0, 1]]
+    Polygon poly;   // polygon, a list of points
+    double price;   
 };
 
-struct Element
+struct Element // element of set cover problem
 {
     int index;
     double value;
 };
+
 bool operator==(const Element &a, const Element &b);
 
 namespace std
@@ -37,7 +39,7 @@ struct hash<Element>
 };
 }
 
-struct Range
+struct Range // range (i.e. subset) of set cover problem
 {
     const Entity *entity;
     std::unordered_set<Element> elements;
@@ -58,7 +60,7 @@ struct Transformer
                 double delta);
 };
 
-struct Geometric : Transformer
+struct Geometric : Transformer // almost does nothing
 {
     Geometric(const Entity &roi,
              const std::list<Entity> &records,
@@ -67,7 +69,7 @@ struct Geometric : Transformer
     static std::string tag() { return "geometric"; }
 };
 
-struct Discrete : Transformer
+struct Discrete : Transformer // use grid cell as elements
 {
     Discrete(const Entity &roi,
              const std::list<Entity> &records,
@@ -76,7 +78,7 @@ struct Discrete : Transformer
     static std::string tag() { return "discrete"; }
 };
 
-struct Continuous : Transformer
+struct Continuous : Transformer // use cut cells as elements
 {
     Continuous(const Entity &roi,
                const std::list<Entity> &records,
