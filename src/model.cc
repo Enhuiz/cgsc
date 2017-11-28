@@ -14,7 +14,13 @@ bool operator==(const Element &a, const Element &b)
 void Range::update_cost()
 {
     if (entity != nullptr)
+    {
         cost = entity->price;
+    }
+    else
+    {
+        logger.error("Error: update cost failed!");
+    }
 }
 
 void Range::update_value()
@@ -129,8 +135,8 @@ struct Discretizer
 };
 
 Transformer::Transformer(const Entity &roi,
-            const list<Entity> &records,
-            double delta)
+                         const list<Entity> &records,
+                         double delta)
 {
     universe.entity = &roi;
     ranges = func::map(records, [](const Entity &record) {
@@ -189,7 +195,7 @@ Discrete::Discrete(const Entity &roi, const list<Entity> &records, double delta)
 
 struct Cell
 {
-    Polygon poly;   // geometric shape of the cell
+    Polygon poly;         // geometric shape of the cell
     list<Range *> owners; // the rectangles that cover the cell
 };
 
@@ -201,31 +207,31 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
     for (auto &range : ranges)
     {
         // for example, currently we have cell 1 and 2
-        
+
         // ------------
-        // | 1     /  |  
+        // | 1     /  |
         // |      /   |
         // |     / 2  |
         // ------------
-        
-        // and a new product 
-        
+
+        // and a new product
+
         //      -------------
         //     /           /
         //    ------------
-        
+
         // the following process does this thing
-        
+
         // ------------
-        // | o     / o|  
+        // | o     / o|
         // |      ----|--------
         // |     /  i |      /
         // -----------------
-        
+
         // i for inner, o for outer. The 2 outer and 1 inner have been updated, and get
 
         // ------------
-        // | 1'    /2'|  
+        // | 1'    /2'|
         // |      ----|--------
         // |     / 3' |      /
         // -----------------
@@ -235,20 +241,20 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
         auto new_outer_cells = list<Cell>();
         for (const auto &range_poly : range_polys) // for each inside region, in most case there is only 1 region
         {
-            for (auto it = cells.begin(); it != cells.end();) 
+            for (auto it = cells.begin(); it != cells.end();)
             {
                 auto inners = list<Polygon>();
                 auto outers = list<Polygon>();
                 tie(inners, outers) = clip(it->poly, range_poly);
                 if (inners.size() > 0) // the product intersects with the cell
                 {
-                    auto prev_owners = move(it->owners);    // record the owner of the cell
-                    it = cells.erase(it);                   // discard the cell
-                    for (auto outer : outers)               
+                    auto prev_owners = move(it->owners); // record the owner of the cell
+                    it = cells.erase(it);                // discard the cell
+                    for (auto outer : outers)
                     {
-                        new_outer_cells.push_back(Cell{outer, prev_owners}); 
+                        new_outer_cells.push_back(Cell{outer, prev_owners});
                     }
-                    prev_owners.push_back(&range);  // the inners are also covered by the product itself 
+                    prev_owners.push_back(&range); // the inners are also covered by the product itself
                     for (auto inner : inners)
                     {
                         new_inner_cells.push_back(Cell{inner, prev_owners});
@@ -263,19 +269,19 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
 
         // the following difference does this things:
 
-        // from 
+        // from
         //      -------------
         //     /  3'|      /
         //    ------------
-        
+
         // to
         //      -------------
         //     /  3'|  4'  /
         //    ------------
-        
+
         // so we get
         // ------------
-        // | 1'    /2'|  
+        // | 1'    /2'|
         // |      ----|--------
         // |     / 3' |  4'  /
         // -----------------
@@ -335,4 +341,16 @@ Continuous::Continuous(const Entity &roi, const list<Entity> &records, double de
     {
         range.update_value();
     }
+
+    // rectangles per cell
+    // report["histogram"] = {};
+    // for (const auto& kv: area_map)
+    // {
+    //     report["histogram"].push_back(kv.first.size());
+    // }
+
+    // cells per rectangle
+    // report["histogram"] = func::map(area_map, [](const Range &range) {
+    //     return range.elements.size();
+    // });
 }

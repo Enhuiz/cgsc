@@ -132,7 +132,7 @@ auto sum(const T &iterable, Func &&func = identity) -> double
 }
 
 template <typename T, typename Func>
-auto min_element(const T &iterable, Func &&func = identity) -> typename T::const_iterator
+auto min_element(const T &iterable, Func &&func = identity) -> decltype(iterable.begin())
 {
   using value_type = typename T::value_type;
   return std::min_element(iterable.begin(),
@@ -143,7 +143,7 @@ auto min_element(const T &iterable, Func &&func = identity) -> typename T::const
 }
 
 template <typename T, typename Func>
-auto max_element(const T &iterable, Func &&func = identity) -> typename T::const_iterator
+auto max_element(const T &iterable, Func &&func = identity) -> decltype(iterable.begin())
 {
   using value_type = typename T::value_type;
   return std::max_element(iterable.begin(),
@@ -208,7 +208,7 @@ auto mean(const T &iterable, Func &&func = identity) -> double
 }
 
 template <typename T>
-std::string to_string(const T a_value, const int n = 6)
+std::string to_string(const T &a_value, int n)
 {
   std::ostringstream oss;
   oss << std::setprecision(n) << a_value;
