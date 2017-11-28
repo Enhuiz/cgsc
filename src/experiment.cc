@@ -14,8 +14,9 @@ struct Loader
     std::list<Entity> rois;
     std::list<Entity> scenes;
 
-    Loader(const string &rois_path, const string &scenes_path)
+    Loader(const string &rois_path, const string &archive_path)
     {
+        try
         { // load roi
             io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(rois_path);
             in.read_header(io::ignore_extra_column, "Polygon");
@@ -32,8 +33,14 @@ struct Loader
                 rois.push_back(move(roi));
             }
         }
+        catch (...)
+        {
+            logger.error("Error: please check your path: " + rois_path);
+            abort();
+        }
+        try
         { // load scenes
-            io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(scenes_path);
+            io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(archive_path);
             in.read_header(io::ignore_extra_column, "Polygon", "Price");
             string poly_s;
             double price;
@@ -49,6 +56,11 @@ struct Loader
                 scene.price = price;
                 scenes.push_back(move(scene));
             }
+        }
+        catch (...)
+        {
+            logger.error("Error: please check your path: " + archive_path);
+            abort();
         }
     }
 
@@ -130,13 +142,28 @@ struct Executor
     }
 };
 
-json experiment(const string &rois_path, const string &scenes_path, double target_coverage, double delta)
+string rois_path(const string &dir, const nlohmann::json &s)
 {
-    const auto loader = Loader(rois_path, scenes_path);
+    ostringstream oss;
+    string roi_type = s["roi_type"];
+    oss << dir << "/" << s["num_rois"] << "-" << s["roi_ratio"] << "-" << roi_type << ".csv";
+    return oss.str();
+}
+
+string archive_path(const string &dir, const nlohmann::json &s)
+{
+    ostringstream oss;
+    oss << dir << "/" << s["archive_size"] << ".csv";
+    return oss.str();
+}
+
+json experiment(const string &rois_dir, const string &archive_dir, const nlohmann::json &setting)
+{
+    const auto loader = Loader(rois_path(rois_dir, setting), archive_path(archive_dir, setting));
     const auto &rois = loader.get_rois();
     const auto &scenes = loader.get_scenes();
 
-    auto executor = Executor(scenes, target_coverage, delta);
+    auto executor = Executor(scenes, setting["target_coverage"], setting["delta"]);
     {
         int i = 0;
         for (auto roi : rois)
@@ -144,8 +171,7 @@ json experiment(const string &rois_path, const string &scenes_path, double targe
             logger.push_namespace(to_string(i));
             executor.query<
                 // Solver<Geometric, old::Bnb>
-                Solver<Continuous, Bnb>
-                >(roi);
+                Solver<Continuous, Bnb>>(roi);
             logger.pop_namespace();
             ++i;
         }

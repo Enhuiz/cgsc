@@ -1,42 +1,42 @@
 from utils.path import data_dir
 from utils.expt_tools import run_expt
 import json
-import numpy as np 
+import numpy as np
+
 
 def main():
     results = []
 
     default_delta = 0.01
-    default_aoi_ratio = 0.05
-    default_archive = 15000
-    default_n_aois = 25
+    default_roi_ratio = 0.0005
+    default_archive_size = 15000
+    default_num_rois = 1
+    default_roi_type = 'rect'
 
     # var delta
-    results.append(run_expt({
-        'delta': [0.005, 0.01, 0.015, 0.02, 0.025],
-        'n_aois': [default_n_aois],
-        'aoi_ratio': [default_aoi_ratio],
-        'archive': [default_archive],
-    }))
+    # run_expt({'delta': [0.005, 0.01, 0.015, 0.02, 0.025],
+    #           'num_rois': [default_num_rois],
+    #           'roi_type': [default_roi_type],
+    #           'roi_ratio': [default_roi_ratio],
+    #           'archive_size': [default_archive_size]})
 
-    # var aoi size
-    results.append(run_expt({
-        'delta': [default_delta],
-        'n_aois': [default_n_aois],
-        'aoi_ratio': [0.01, 0.02, 0.05, 0.1, 0.2],
-        'archive': [default_archive],
-    }))
+    # var roi size
+    run_expt({'delta': [default_delta],
+              'num_rois': [default_num_rois],
+              'roi_type': [default_roi_type],
+              # 'roi_ratio': [0.01, 0.02, 0.05, 0.1, 0.2, 0.5],
+              'roi_ratio': [0.01],
+              # 'roi_ratio': [0.02],# [x for x in np.linspace(0.002, 0.1, 20)],
+              'archive_size': [default_archive_size],
+              'target_coverage': [0.9]})
 
-    # var archive
-    results.append(run_expt({
-        'delta': [default_delta],
-        'n_aois': [default_n_aois],
-        'aoi_ratio':  [default_aoi_ratio],
-        'archive': [10000, 15000, 20000, 50000, 75000, 100000]
-    }))
-
-    results_path = data_dir(['experiment', 'results', 'summary.json'])
-    json.dump(results, open(results_path, 'w'))
+    # var archive_size
+    # run_expt({'delta': [default_delta],
+    #           'num_rois': [default_num_rois],
+    #           'roi_type': [default_roi_type],
+    #           'roi_ratio':  [default_roi_ratio],
+    #           'archive_size': [15000, 20000, 50000, 75000, 100000],
+    #           'target_coverage': [0.9, 0.95]})
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     using namespace boost::program_options;
 
     auto desc = options_description("Options");
-    desc.add_options()("roi-path,r", value<string>(), "source file of roi")("scenes-path,s", value<string>(), "source file of scenes")("output-path,o", value<string>(), "output path")("delta,d", value<double>(), "grid length")("target-coverage,t", value<double>(), "target coverage");
+    desc.add_options()("rois-dir,r", value<string>(), "roi folder")("archive-dir,a", value<string>(), "archive folder")("setting,s", value<string>(), "setting")("output-path,o", value<string>(), "output path");
 
     variables_map vm;
     try
@@ -28,16 +28,19 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (vm.count("delta") && vm.count("roi-path") && vm.count("scenes-path") && vm.count("output-path") && vm.count("target-coverage"))
+    if (vm.count("rois-dir") && vm.count("archive-dir") && vm.count("output-path") && vm.count("setting"))
     {
-        auto report = experiment(vm["roi-path"].as<string>(), vm["scenes-path"].as<string>(), vm["target-coverage"].as<double>(), vm["delta"].as<double>());
+        auto setting = vm["setting"].as<string>();
+        auto report = experiment(vm["rois-dir"].as<string>(), vm["archive-dir"].as<string>(), nlohmann::json::parse(setting));
         {
             ofstream ofs(vm["output-path"].as<string>());
             ofs << report << endl;
         }
         {
-            ofstream ofs("../data/visualize/bnb/vinfo.json");
-            ofs << debug_report << endl;
+            // if (debug_report.size() > 0) {
+            //     ofstream ofs("../data/visualize/bnb/[with_preproc_v2] " + split(vm["output-path"].as<string>(), "/").back());
+            //     ofs << debug_report << endl;
+            // }
         }
     }
     else
