@@ -5,6 +5,7 @@
 #include <iostream>
 #include <functional>
 #include <queue>
+#include <tuple>
 
 #include "global.h"
 
@@ -23,32 +24,42 @@ double calculate_density(const Entity &roi, const list<Entity> &entities)
 
 Greedy::Greedy(const Range &const_universe, const list<Range> &const_ranges, double target_coverage)
 {
-    auto universe = const_universe;
-    auto ranges = list<Range>(const_ranges.begin(), const_ranges.end());
+    struct IndexedRange
+    {
+        Range range;
+        list<Range>::const_iterator range_it;
+    };
+
     double value = 0;
-    double target_value = universe.value * target_coverage;
+    double target_value = const_universe.value * target_coverage;
+
+    auto indexed_ranges = list<IndexedRange>();
+    for (auto it = const_ranges.begin(); it != const_ranges.end(); ++it)
+    {
+        indexed_ranges.emplace_back(IndexedRange{*it, it});
+    }
 
     subranges.clear();
-    while (value < target_value && ranges.size() > 0) // n
+    while (value < target_value && indexed_ranges.size() > 0) // n
     {
-        auto cur_it = func::min_element(ranges, [](const Range &range) { // n
-            return range.cost / range.value;
+        auto min_it = func::min_element(indexed_ranges, [](const IndexedRange &indexed_range) { // n
+            return indexed_range.range.cost / indexed_range.range.value;
         });
 
         // claim the selected
         // sw.restart();
-        auto current_range = *cur_it;
-        ranges.erase(cur_it);
-        subranges.push_back(cur_it);
+        auto current_range = min_it->range;
+        subranges.push_back(min_it->range_it);
         value += current_range.value;
+        indexed_ranges.erase(min_it);
         // g_report["t2.2"] = sw.lap();
 
         // update rest
-        // remove cells from the left to_select ranges
+        // remove cells from the left to_select indexed_ranges
         // sw.restart();
-        for (auto it = ranges.begin(); it != ranges.end();)
+        for (auto it = indexed_ranges.begin(); it != indexed_ranges.end();)
         {
-            auto &range = *it;
+            auto &range = it->range;
             if (intersects(range.entity->poly, current_range.entity->poly))
             {
                 for (const auto &element : current_range.elements) // m
@@ -58,7 +69,7 @@ Greedy::Greedy(const Range &const_universe, const list<Range> &const_ranges, dou
 
                 if (range.elements.size() == 0)
                 {
-                    it = ranges.erase(it);
+                    it = indexed_ranges.erase(it);
                 }
                 else
                 {
@@ -71,7 +82,7 @@ Greedy::Greedy(const Range &const_universe, const list<Range> &const_ranges, dou
                 ++it;
             }
         }
-        cerr << value * 100.0 / universe.value << "%: " << ranges.size() << endl;
+        cerr << value * 100.0 / const_universe.value << "%: " << indexed_ranges.size() << endl;
     }
 
     if (value < target_value)
@@ -206,11 +217,26 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
     Node::universe = &universe;
     auto optimal_node = shared_ptr<Node>(new Node{});
     {
+        for (const auto &range : const_ranges)
+        {
+            if (range.cost == 0)
+            {
+                cout << "fuck" << endl;
+                cout << range.cost << endl;
+            }
+        }
         auto greedy = Greedy(const_universe, const_ranges, target_coverage);
         optimal_node->cost = func::sum(greedy.subranges,
-                                       [](list<Range>::const_iterator rit) {
-                                           return rit->cost;
+                                       [](list<Range>::const_iterator range_it) {
+                                           return range_it->cost;
                                        });
+        double sum = 0;
+        for (auto range_it : greedy.subranges)
+        {
+            logger << "price: " << range_it->cost << endl;
+        }
+        logger << sum << endl;
+        logger << greedy.subranges.size() << endl;
         optimal_node->print("initial optimal");
     }
     auto initial_node = shared_ptr<Node>(new Node{});
@@ -239,7 +265,7 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
         desc["t"] = t; // to avoid lag
         desc["number of nodes"] = nodes.size();
         desc["cost upper bound"] = optimal_node->cost;
-        debug_report.push_back(desc);
+        report.push_back(desc);
         sw.continue_();
 
         if (node->value >= Node::target_value) // finished cover
@@ -440,7 +466,7 @@ Bnb::Bnb(const Range &const_universe, const list<Range> &const_ranges, double ta
         desc["t"] = t; // to avoid lag
         desc["number of nodes"] = nodes.size();
         desc["cost upper bound"] = optimal_node->cost;
-        debug_report.push_back(desc);
+        report.push_back(desc);
         sw.continue_();
 
         if (node->value >= Node::target_value)
