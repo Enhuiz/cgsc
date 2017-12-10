@@ -13,7 +13,7 @@ GreedyOptimizer::GreedyOptimizer(double target_coverage) : Optimizer(target_cove
 {
 }
 
-json GreedyOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges)
+json GreedyOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
     auto report = json();
     struct Pair
@@ -216,7 +216,7 @@ BnbOptimizer::BnbOptimizer(double target_coverage) : Optimizer(target_coverage)
 {
 }
 
-json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges)
+json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
     struct Node : public BaseNode
     {
@@ -292,7 +292,7 @@ OnlineBnbOptimizer::OnlineBnbOptimizer(double target_coverage) : Optimizer(targe
 {
 }
 
-json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges)
+json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
     struct Node : BaseNode
     {

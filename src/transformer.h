@@ -6,47 +6,48 @@
 class Transformer
 {
 public:
-  virtual std::string tag() = 0;
+  virtual std::string tag() const = 0;
   nlohmann::json transform(const Roi &roi,
                            const Products &products,
                            Range &universe,
-                           Ranges &ranges);
+                           Ranges &ranges) const;
 
 private:
   virtual void transform_impl(const Roi &roi,
                               const Products &products,
                               Range &universe,
                               Ranges &ranges,
-                              nlohmann::json &report) = 0;
+                              nlohmann::json &report) const = 0;
 };
 
 class OnlineTranformer : public Transformer
 {
 public:
-  std::string tag() { return "geometric"; }
+  std::string tag() const { return "geometric"; }
 
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
                       Range &universe,
                       Ranges &ranges,
-                      nlohmann::json &report);
+                      nlohmann::json &report) const;
 };
 
 class DiscreteTransformer : public Transformer
 {
 public:
   DiscreteTransformer(double delta);
-  std::string tag() { return "discrete"; }
+  std::string tag() const { return "discrete"; }
 
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
                       Range &universe,
                       Ranges &ranges,
-                      nlohmann::json &report);
-  std::unordered_set<int> discretize(const Polygon &polygon, std::function<bool(const Polygon &)>);
-  int hash(const Polygon &grid_cell);
+                      nlohmann::json &report) const;
+  std::unordered_set<int> discretize(const Polygon &polygon,
+                                     std::function<bool(const Polygon &)>) const;
+  int hash(const Polygon &grid_cell) const;
 
 private:
   double delta;
@@ -55,14 +56,14 @@ private:
 class ContinuousTransformer : public Transformer
 {
 public:
-  std::string tag() { return "continuous"; }
+  std::string tag() const { return "continuous"; }
 
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
                       Range &universe,
                       Ranges &ranges,
-                      nlohmann::json &report);
+                      nlohmann::json &report) const;
 };
 
 #endif

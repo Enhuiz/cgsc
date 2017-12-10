@@ -12,8 +12,8 @@ class Solver
 {
 public:
   Solver(std::shared_ptr<Transformer> transformer, std::shared_ptr<Optimizer> optimizer);
-  nlohmann::json solve(const Roi &roi, const Products &products, Products &&result_products);
-  std::string tag();
+  nlohmann::json solve(const Roi &roi, const Products &products, Products &&result_products) const;
+  std::string tag() const;
 
 private:
   std::shared_ptr<Transformer> transformer;

@@ -6,7 +6,7 @@ using nlohmann::json;
 json Transformer::transform(const Roi &roi,
                             const Products &products,
                             Range &universe,
-                            Ranges &ranges)
+                            Ranges &ranges) const
 {
     auto report = json();
     // initialize
@@ -40,7 +40,8 @@ DiscreteTransformer::DiscreteTransformer(double delta) : delta(delta)
 {
 }
 
-unordered_set<int> DiscreteTransformer::discretize(const Polygon &polygon, function<bool(const Polygon &)> condition)
+unordered_set<int> DiscreteTransformer::discretize(const Polygon &polygon,
+                                                   function<bool(const Polygon &)> condition) const
 {
     double minx, miny, maxx, maxy;
     minx = maxx = polygon.begin()->x;
@@ -71,7 +72,7 @@ unordered_set<int> DiscreteTransformer::discretize(const Polygon &polygon, funct
     return ret;
 }
 
-int DiscreteTransformer::hash(const Polygon &grid_cell)
+int DiscreteTransformer::hash(const Polygon &grid_cell) const
 {
     auto lower_left = grid_cell.front();
     uint i = lower_left.x / delta;
@@ -84,7 +85,7 @@ void DiscreteTransformer::transform_impl(const Roi &roi,
                                          const Products &products,
                                          Range &universe,
                                          Ranges &ranges,
-                                         json &report)
+                                         json &report) const
 {
     auto element_value = delta * delta;
     for (auto &range : ranges)
@@ -105,7 +106,7 @@ void ContinuousTransformer::transform_impl(const Roi &roi,
                                            const Products &products,
                                            Range &universe,
                                            Ranges &ranges,
-                                           json &report)
+                                           json &report) const
 {
 
     struct Cell
@@ -254,7 +255,7 @@ void OnlineTranformer::transform_impl(const Roi &roi,
                                       const Products &products,
                                       Range &universe,
                                       Ranges &ranges,
-                                      json &report)
+                                      json &report) const
 
 {
 }

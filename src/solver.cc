@@ -10,12 +10,12 @@ Solver::Solver(shared_ptr<Transformer> transformer, shared_ptr<Optimizer> optimi
 {
 }
 
-json Solver::solve(const Roi &roi, const Products &products, Products &&result_products)
+json Solver::solve(const Roi &roi, const Products &products, Products &&result_products) const
 {
     auto report = json();
     if (transformer == nullptr)
     {
-        cerr << "transformer not found" << endl;
+        // cerr << "transformer not found" << endl;
         return report;
     }
 
@@ -36,7 +36,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
 
     if (optimizer == nullptr)
     {
-        cerr << "optimizer not found" << endl;
+        // cerr << "optimizer not found" << endl;
         return report;
     }
 
@@ -54,7 +54,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
     return report;
 }
 
-string Solver::tag()
+string Solver::tag() const
 {
     auto transformer_tag = transformer == nullptr ? "None" : transformer->tag();
     auto optimizer_tag = optimizer == nullptr ? "None" : optimizer->tag();
