@@ -89,18 +89,26 @@ void experiment(const string &rois_dir, const string &products_dir, const std::s
     auto discrete_transformer = make_shared<DiscreteTransformer>(settings["delta"].get<double>());
     auto continuous_transformer = make_shared<ContinuousTransformer>();
     auto greedy_optimizer = make_shared<GreedyOptimizer>(settings["target_coverage"].get<double>());
+    auto bnb_optimizer = make_shared<BnbOptimizer>(settings["target_coverage"].get<double>());
 
     auto dg_solver = Solver(discrete_transformer, greedy_optimizer);
     auto cg_solver = Solver(continuous_transformer, greedy_optimizer);
+    auto db_solver = Solver(discrete_transformer, bnb_optimizer);
+    auto cb_solver = Solver(continuous_transformer, bnb_optimizer);
+
+    auto call = [&products, &reports](const auto &solver, const auto &roi) {
+        reports.push_back(solver.solve(roi, products, Products()));
+        cout << reports.back().dump(4) << endl;
+    };
 
     int cnt = 0;
     for (const auto &roi : rois)
     {
-        cout << "round " << cnt++ << endl;
-        reports.push_back(dg_solver.solve(roi, products, Products()));
-        cout << reports.back().dump(4) << endl;
-        reports.push_back(cg_solver.solve(roi, products, Products()));
-        cout << reports.back().dump(4) << endl;
+        cout << "Round " << cnt++ << endl;
+        call(dg_solver, roi);
+        call(cg_solver, roi);
+        call(db_solver, roi);
+        call(cb_solver, roi);
     }
     // ofstream ofs(output_dir + "/" + now_str() + ".json");
 }
