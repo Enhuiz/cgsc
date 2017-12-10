@@ -145,13 +145,17 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
     Node::target_value = universe.value * target_coverage;
     Node::universe = &universe;
 
-    auto optimal_node = shared_ptr<Node>(new Node{});
+    auto optimal_node = shared_ptr<BaseNode>(new Node{});
     {
-        optimal_node->cost = 10000;
+        auto greedy_optimizer = GreedyOptimizer(target_coverage);
+        greedy_optimizer.optimize(universe, ranges, result_ranges);
+        optimal_node->cost = func::sum(result_ranges, [](const Range &result_range) {
+            return result_range.cost;
+        });
         optimal_node->print("initial optimal");
     }
 
-    auto initial_node = shared_ptr<Node>(new Node{});
+    auto initial_node = shared_ptr<BaseNode>(new Node{});
     {
         initial_node->cost = 0;
         initial_node->value = 0;
@@ -160,11 +164,11 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         initial_node->print("initial node");
     }
 
-    auto comp = [](const shared_ptr<Node> &a, const shared_ptr<Node> &b) {
+    auto comp = [](const shared_ptr<BaseNode> &a, const shared_ptr<BaseNode> &b) {
         return a->cost_lower_bound > b->cost_lower_bound; // to make it a min heap
     };
 
-    auto nodes = priority_queue<shared_ptr<Node>, vector<shared_ptr<Node>>, decltype(comp)>(comp);
+    auto nodes = priority_queue<shared_ptr<BaseNode>, vector<shared_ptr<BaseNode>>, decltype(comp)>(comp);
     nodes.push(initial_node);
 
     while (nodes.size() > 0 && sw.lap() <= 200)
@@ -286,6 +290,8 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
             return ret;
         }
     };
+
+    return branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage);
 }
 
 OnlineBnbOptimizer::OnlineBnbOptimizer(double target_coverage) : Optimizer(target_coverage)
@@ -294,6 +300,7 @@ OnlineBnbOptimizer::OnlineBnbOptimizer(double target_coverage) : Optimizer(targe
 
 json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
+    auto report = json();
     struct Node : BaseNode
     {
         list<Polygon> offcuts;
@@ -373,4 +380,5 @@ json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges
             return ret;
         }
     };
+    return branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage);
 }
