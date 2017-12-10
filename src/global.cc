@@ -4,12 +4,9 @@
 #include <map>
 #include <ctime>
 #include <iostream>
+#include <chrono>
 
 using namespace std;
-
-Logger logger(cout);
-nlohmann::json g_report;
-nlohmann::json debug_report;
 
 Stopwatch::Stopwatch()
 {
@@ -39,69 +36,6 @@ double Stopwatch::lap() const
     return accumulation + (clock() - begin_time) * 1.0 / CLOCKS_PER_SEC;
 }
 
-Logger::Buffer::Buffer(ostream &os, const Logger &logger) : output(os), logger(logger)
-{
-}
-
-int Logger::Buffer::sync()
-{
-    output << logger.wrap(str());
-    str("");
-    output.flush();
-    return 0;
-}
-
-Logger::Logger(ostream &os) : ostream(&buffer), buffer(os, *this)
-{
-}
-
-void Logger::info(const string &s) const
-{
-    cout << wrap(s) << endl;
-}
-
-void Logger::debug(const string &s) const
-{
-    cout << "\033[33m" << wrap(s) << "\033[0m" << endl;
-}
-
-void Logger::error(const string &s) const
-{
-    cout << "\033[31m" << wrap(s) << "\033[0m" << endl;
-}
-
-string Logger::wrap(const string &s) const
-{
-    return "[" + get_namespaces() + "] " + s;
-}
-
-void Logger::push_namespace(const string &ns)
-{
-    nss.push_back(ns);
-}
-
-void Logger::pop_namespace()
-{
-    nss.pop_back();
-}
-
-string Logger::get_namespaces() const
-{
-    string ret;
-    for (auto it = nss.begin(); it != nss.end(); ++it)
-    {
-        if (it == nss.begin())
-        {
-            ret += *it;
-        }
-        else
-        {
-            ret += "::" + *it;
-        }
-    }
-    return ret;
-}
-
 list<string> split(string s, const string &delimiter)
 {
     auto ret = list<string>();
@@ -113,4 +47,20 @@ list<string> split(string s, const string &delimiter)
     }
     ret.push_back(s);
     return ret;
+}
+
+string now_str()
+{
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+    auto timer = system_clock::to_time_t(now);
+    std::tm bt = *std::localtime(&timer);
+
+    std::ostringstream oss;
+
+    oss << std::put_time(&bt, "%F %T"); // HH:MM:SS
+    oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
+
+    return oss.str();
 }

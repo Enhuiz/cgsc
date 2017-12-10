@@ -13,7 +13,8 @@ struct Vector2
   Vector2 operator-(const Vector2 &other) const;
   bool operator==(const Vector2 &other) const;
   bool operator!=(const Vector2 &other) const;
-  bool almost_equal(const Vector2 &other, int ulp) const;
+  Vector2 operator*(double a) const;
+  Vector2 operator/(double a) const;
 };
 
 double cross(const Vector2 &a, const Vector2 &b);
@@ -37,9 +38,12 @@ bool crosses(const Polygon &a, const Polygon &b);
 bool disjoint(const Polygon &a, const Polygon &b);
 bool intersects(const Polygon &a, const Polygon &b);
 bool convex(const Polygon &poly);
-// Following functions only support non-closed polygon representation (i.e. first point != last point)
-std::list<Triangle> triangulate(const Polygon &poly); // to support concave
-// Following functions only support convex clipper
+
+Polygon box(const Point &lower_left, const Point &upper_right);
+Polygon axis_aligned_bounding_box(const Polygon &polygon);
+
+// Following clip related functions only support non-closed polygon representation (i.e. first point != last point)
+// and convex clippers
 std::tuple<std::list<Polygon>, std::list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper);
 std::list<Polygon> intersection(std::list<Polygon> clippees, const std::list<Polygon> &clipper);

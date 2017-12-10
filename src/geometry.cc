@@ -5,8 +5,6 @@
 #include <sstream>
 #include <iostream>
 
-#include "global.h"
-
 using namespace std;
 
 Vector2 Vector2::operator+(const Vector2 &other) const
@@ -29,9 +27,14 @@ bool Vector2::operator!=(const Vector2 &other) const
     return x != other.x || y != other.y;
 }
 
-bool Vector2::almost_equal(const Vector2 &other, int ulp) const
+Vector2 Vector2::operator*(double a) const
 {
-    return ::almost_equal(x, other.x, ulp) && ::almost_equal(y, other.y, ulp);
+    return Vector2{x * a, y * a};
+}
+
+Vector2 Vector2::operator/(double a) const
+{
+    return Vector2{x / a, y / a};
 }
 
 double cross(const Vector2 &a, const Vector2 &b)
@@ -70,15 +73,15 @@ double angle(const Point &a, const Point &b, const Point &c)
 
 string to_string(const Vector2 &v)
 {
-    return "[" + to_string(v.x, 20) + ", " + to_string(v.y, 20) + "]";
+    return "[" + to_string(v.x) + ", " + to_string(v.y) + "]";
 }
 
-string to_string(const Polygon &poly)
+string to_string(const Polygon &polygon)
 {
-    if (poly.size() == 0)
+    if (polygon.size() == 0)
         return "[]";
     string ret = "[";
-    for (const auto &p : poly)
+    for (const auto &p : polygon)
     {
         ret += to_string(p) + ", ";
     }
@@ -94,9 +97,9 @@ ostream &operator<<(ostream &os, const Vector2 &v)
     return os;
 }
 
-ostream &operator<<(ostream &os, const Polygon &poly)
+ostream &operator<<(ostream &os, const Polygon &polygon)
 {
-    os << to_string(poly);
+    os << to_string(polygon);
     return os;
 }
 
@@ -115,6 +118,10 @@ Polygon parse_polygon(const string &s)
         if (comma == ']')
             break;
     }
+    if (ret.back() == ret.front())
+    { // remove duplicated
+        ret.pop_back();
+    }
     return ret;
 }
 
@@ -122,8 +129,7 @@ bool onside(const Point &p, const Point &a, const Point &b)
 {
     auto u = b - a;
     auto v = p - a;
-    return abs(cross(u, v)) < 1e-9;
-    // return almost_equal(u.x * v.y, u.y * v.x, 1e3);
+    return abs(cross(u, v) / magnitude(u)) < 1e-5; // i.e. the distance from p to ab / |ab| < threshold
 }
 
 bool inside(const Point &p, const Point &a, const Point &b) // inside a line means on the left side of on it
@@ -136,10 +142,10 @@ bool outside(const Point &p, const Point &a, const Point &b)
     return cross(b - a, p - a) < 0 && !onside(p, a, b);
 }
 
-bool inside(const Point &p, const Polygon &poly)
+bool inside(const Point &p, const Polygon &polygon)
 {
-    auto s = poly.back();
-    for (const auto &e : poly)
+    auto s = polygon.back();
+    for (const auto &e : polygon)
     {
         if (!inside(p, s, e))
         {
@@ -150,10 +156,10 @@ bool inside(const Point &p, const Polygon &poly)
     return true;
 }
 
-bool outside(const Point &p, const Polygon &poly)
+bool outside(const Point &p, const Polygon &polygon)
 {
-    auto s = poly.back();
-    for (const auto &e : poly)
+    auto s = polygon.back();
+    for (const auto &e : polygon)
     {
         if (outside(p, s, e))
         {
@@ -179,265 +185,174 @@ bool intersects(const Point &a, const Point &b, const Point &c, const Point &d)
     return inside(a, c, d) == outside(b, c, d) && inside(c, a, b) == outside(d, a, b);
 }
 
-bool simple(const Polygon &poly)
+bool convex(const Polygon &polygon)
 {
-    using Iter = decltype(poly.begin());
-
-    auto post = [&poly](const Iter &it) {
-        return next(it) == poly.end() ? poly.begin() : next(it);
-    };
-
-    for (auto i = poly.begin(); next(next(i)) != poly.end(); ++i)
+    auto a = *prev(prev(polygon.end()));
+    auto b = *prev(polygon.end());
+    for (const auto &c : polygon)
     {
-        auto ip = post(i);
-        for (auto j = post(ip); j != poly.end(); ++j)
+        if (area(Polygon{a, b, c}) < 0)
         {
-            auto jp = post(j);
-            if (jp != i && intersects(*i, *ip, *j, *jp))
-            {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool convex(const Polygon &poly)
-{
-    auto prev = poly.begin();
-    auto cur = next(prev);
-    auto post = next(cur);
-    while (post != poly.end())
-    {
-        if (!inside(*post, *prev, *cur))
-        {
-            // not convex
-            // logger.debug(to_string(angle(*prev, *cur, *post)));
             return false;
         }
-        prev = cur;
-        cur = post;
-        post++;
+        a = b;
+        b = c;
     }
     return true;
 }
 
-double area(const Polygon &poly)
+double area(const Polygon &polygon)
 {
     double ret = 0;
-    auto s = poly.back();
-    for (const auto &e : poly)
+    auto s = polygon.back();
+    for (const auto &e : polygon)
     {
-        ret += cross(s, e);
+        ret += cross(s, e); // os x oe, o is the origin point (0, 0).
         s = e;
     }
     return 0.5 * ret;
 }
 
-list<Triangle> triangulate(const Polygon &poly)
-{
-    list<Triangle> ret;
-
-    enum Type
-    {
-        CONVEX,
-        EARTIP,
-        REFLEX,
-    };
-
-    struct Vertex
-    {
-        Point p;
-        Type t;
-    };
-
-    list<Vertex> vs;
-
-    using Iter = decltype(vs.begin());
-
-    auto get_prev = [&vs](const Iter &it) {
-        return it == vs.begin() ? prev(vs.end()) : prev(it);
-    };
-
-    auto get_post = [&vs](const Iter &it) {
-        return next(it) == vs.end() ? vs.begin() : next(it);
-    };
-
-    auto is_reflex = [](const Iter &cur, const Iter &pre, const Iter &pst) {
-        return cross(cur->p - pre->p, pst->p - pre->p) < 0;
-    };
-
-    auto no_rv_inside = [&vs](const Iter &cur, const Iter &pre, const Iter &pst) {
-        return all_of(vs.begin(), vs.end(), [pre, cur, pst](const Vertex &v) {
-            return v.t != REFLEX || !inside(v.p, Polygon{pre->p, cur->p, pst->p});
-        });
-    };
-
-    auto update_reflex = [get_prev, get_post, is_reflex](const Iter &cur) {
-        auto pre = get_prev(cur);
-        auto pst = get_post(cur);
-        if (is_reflex(cur, pre, pst))
-        {
-            cur->t = REFLEX;
-        }
-        else if (cur->t == REFLEX)
-        {
-            cur->t = CONVEX;
-        }
-    };
-
-    auto update_eartip = [get_prev, get_post, no_rv_inside](const Iter &cur) {
-        if (cur->t != REFLEX)
-        {
-            auto pre = get_prev(cur);
-            auto pst = get_post(cur);
-            if (no_rv_inside(cur, pre, pst))
-            {
-                cur->t = EARTIP;
-            }
-            else // disqualify the eartip
-            {
-                cur->t = CONVEX;
-            }
-        }
-    };
-
-    auto find_eartip = [&vs]() {
-        for (auto it = vs.begin(); it != vs.end(); ++it)
-        {
-            if (it->t == EARTIP)
-            {
-                return it;
-            }
-        }
-        return vs.end();
-    };
-
-    { // initialize vs
-        for (const auto &p : poly)
-        {
-            vs.push_back(Vertex{p, CONVEX});
-        }
-        for (auto it = vs.begin(); it != vs.end(); ++it)
-        {
-            update_reflex(it);
-        }
-        for (auto it = vs.begin(); it != vs.end(); ++it)
-        {
-            update_eartip(it);
-        }
-    }
-
-    while (vs.size() > 2)
-    {
-        auto eartip = find_eartip();
-        if (eartip == vs.end())
-        {
-            list<Point> ps;
-            transform(vs.begin(), vs.end(), back_inserter(ps), [](const Vertex &v) {
-                return v.p;
-            });
-            ret.push_back(ps);
-            throw runtime_error("Error: eartip is not enough!\n" + to_string(poly) + '\n' + to_string(ps));
-        }
-        auto pre = get_prev(eartip);
-        auto pst = get_post(eartip);
-        ret.push_back(Triangle{pre->p, eartip->p, pst->p});
-        vs.erase(eartip);
-        update_reflex(pre);
-        update_reflex(pst);
-        update_eartip(pre);
-        update_eartip(pst);
-    }
-
-    return ret;
-}
-
-Point line_line_intersection(const Point &a, const Point &b, const Point &c, const Point &d)
+Point line_intersection(const Point &a, const Point &b, const Point &c, const Point &d)
 {
     auto x_diff = Vector2{a.x - b.x, c.x - d.x};
     auto y_diff = Vector2{a.y - b.y, c.y - d.y};
     double det = cross(x_diff, y_diff);
-    if (almost_equal(det, 0.0, 1e3))
+    if (det == 0)
     {
-        throw runtime_error("Error: divisor = 0 in line_line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
+        throw runtime_error("Error: divisor = 0 in line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
     }
     auto cr = Point{cross(a, b), cross(c, d)};
     auto e = Point{cross(cr, x_diff) / det, cross(cr, y_diff) / det};
     return e;
 }
 
-list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
+tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
 {
+    double clippee_area = area(clippee);
+    double clipper_area = area(clipper);
+    double threshold_area = max(clippee_area, clipper_area) * 1e-6; // if a piece is smaller than this, discard it.
     if (!convex(clipper))
     {
-        double clipper_area = area(clipper);
-        if (clipper_area > 1e-5) // a huge loss
-        {
-            logger.error("Intersection Error: clipper is non-convex!\n" +
-                         to_string(clipper) +
-                         "\narea: " + to_string(clipper_area));
-        }
-        return {};
+        cerr << "Clip Error: clipper is non-convex!" << endl
+             << "polygon: " << to_string(clipper) << endl
+             << "clippee area: " << clippee_area << endl
+             << "clipper area: " << clipper_area << endl;
+        return make_tuple(list<Polygon>{}, list<Polygon>{clippee});
     }
 
-    auto output_list = clippee;
-    auto s2 = clipper.back();
-    for (const auto &e2 : clipper)
+    auto inners = list<Polygon>();
+    auto outers = list<Polygon>();
+
+    auto inner = clippee;
+    auto s1 = clipper.back();
+    for (const auto &e1 : clipper)
     {
-        auto input_list = output_list;
-        output_list.clear();
-        auto s1 = input_list.back();
-        for (const auto &e1 : input_list)
+        auto prev_inner = move(inner);
+        inner.clear();
+        auto outer = list<Point>();
+        auto s2 = prev_inner.back();
+        for (const auto &e2 : prev_inner)
         {
-            if (inside(s1, s2, e2))
+            if (inside(s2, s1, e1))
             {
-                if (inside(e1, s2, e2))
+                if (inside(e2, s1, e1))
                 {
-                    output_list.push_back(e1);
+                    inner.push_back(e2);
                 }
-                else if (onside(e1, s2, e2))
+                else if (onside(e2, s1, e1))
                 {
-                    output_list.push_back(e1);
+                    inner.push_back(e2);
                 }
-                else // outside(e1)
+                else // outside(e2)
                 {
-                    auto p = line_line_intersection(s1, e1, s2, e2);
-                    output_list.push_back(p);
+                    auto p = line_intersection(s2, e2, s1, e1);
+                    inner.push_back(p);
+                    outer.push_back(p);
+                    outer.push_back(e2);
                 }
             }
-            else if (onside(s1, s2, e2))
+            else if (onside(s2, s1, e1))
             {
-                if (inside(e1, s2, e2))
+                if (inside(e2, s1, e1))
                 {
-                    if (output_list.back() != s1) // check bouncing
+                    if (inner.back() != s2) // check bouncing
                     {
-                        output_list.push_back(s1);
+                        inner.push_back(s2);
                     }
-                    output_list.push_back(e1);
+                    inner.push_back(e2);
                 }
-            }
-            else // outside(s1)
-            {
-                if (inside(e1, s2, e2))
+                else if (onside(e2, s1, e1))
                 {
-                    auto p = line_line_intersection(s1, e1, s2, e2);
-                    output_list.push_back(p);
-                    output_list.push_back(e1);
+                    // do nothing
+                }
+                else // outside(e2)
+                {
+                    if (outer.back() != s2) // check bouncing
+                    {
+                        outer.push_back(s2);
+                    }
+                    outer.push_back(e2);
                 }
             }
-            s1 = e1;
+            else // outside(s2)
+            {
+                if (inside(e2, s1, e1))
+                {
+                    auto p = line_intersection(s2, e2, s1, e1);
+                    inner.push_back(p);
+                    inner.push_back(e2);
+                    outer.push_back(p);
+                }
+                else if (onside(e2, s1, e1))
+                {
+                    outer.push_back(e2);
+                }
+                else // outside(e2)
+                {
+                    outer.push_back(e2);
+                }
+            }
+            s2 = e2;
         }
-        s2 = e2;
+        if (area(outer) > threshold_area)
+        {
+            outers.push_back(outer);
+        }
+        s1 = e1;
     }
-    if (output_list.size() > 0)
+
+    if (area(inner) > threshold_area)
     {
-        return {output_list};
+        inners.push_back(inner);
     }
-    else
+    else // no intersection, restore the cut clippee
     {
-        return {};
+        outers.clear();
+        outers.push_back(clippee);
     }
+
+    for (const auto &outer : outers)
+    {
+        if (!convex(outer))
+        {
+            cerr << "nonconvex found!" << endl;
+            cerr << "a = " << to_string(clippee) << endl;
+            cerr << "b = " << to_string(clipper) << endl;
+            cerr << "c = " << to_string(outer) << endl;
+            abort();
+        }
+    }
+
+    return make_tuple(inners, outers);
+}
+
+list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
+{
+    auto inners = list<Polygon>();
+    auto outers = list<Polygon>();
+    tie(inners, outers) = clip(clippee, clipper);
+    return inners;
 }
 
 list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers)
@@ -451,116 +366,6 @@ list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers
         }
     }
     return result;
-}
-
-tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
-{
-    if (!convex(clipper))
-    {
-        double clipper_area = area(clipper);
-        if (clipper_area > 1e-5) // a huge loss
-        {
-            logger.error("Clip Error: clipper is non-convex!\n" +
-                         to_string(clipper) +
-                         "\narea: " + to_string(clipper_area));
-        }
-        return make_tuple(list<Polygon>{}, list<Polygon>{clippee});
-    }
-
-    auto inners = list<Polygon>();
-    auto outers = list<Polygon>();
-    
-    {
-        auto inner = clippee;
-        auto s2 = clipper.back();
-        for (const auto &e2 : clipper)
-        {
-            auto prev_inner = inner;
-            inner.clear();
-            auto outer = list<Point>();
-            auto s1 = prev_inner.back();
-            for (const auto &e1 : prev_inner)
-            {
-                if (inside(s1, s2, e2))
-                {
-                    if (inside(e1, s2, e2))
-                    {
-                        inner.push_back(e1);
-                    }
-                    else if (onside(e1, s2, e2))
-                    {
-                        inner.push_back(e1);
-                    }
-                    else // outside(e1)
-                    {
-                        auto p = line_line_intersection(s1, e1, s2, e2);
-                        inner.push_back(p);
-                        outer.push_back(p);
-                        outer.push_back(e1);
-                    }
-                }
-                else if (onside(s1, s2, e2))
-                {
-                    if (inside(e1, s2, e2))
-                    {
-                        if (inner.back() != s1) // check bouncing
-                        {
-                            inner.push_back(s1);
-                        }
-                        inner.push_back(e1);
-                    }
-                    else if (onside(e1, s2, e2))
-                    {
-                        // do nothing
-                    }
-                    else // outside(e1)
-                    {
-                        if (outer.back() != s1) // check bouncing
-                        {
-                            outer.push_back(s1);
-                        }
-                        outer.push_back(e1);
-                    }
-                }
-                else // outside(s1)
-                {
-                    if (inside(e1, s2, e2))
-                    {
-                        auto p = line_line_intersection(s1, e1, s2, e2);
-                        inner.push_back(p);
-                        inner.push_back(e1);
-                        outer.push_back(p);
-                    }
-                    else if (onside(e1, s2, e2))
-                    {
-                        outer.push_back(e1);
-                    }
-                    else // outside(e1)
-                    {
-                        outer.push_back(e1);
-                    }
-                }
-                s1 = e1;
-            }
-            if (outer.size() > 0)
-            {
-                outers.push_back(outer);
-            }
-            s2 = e2;
-        }
-
-        if (inner.size() > 0)
-        {
-            inners.push_back(inner);
-        }
-        else // no intersection, restore the cut clippee
-        {
-            outers.clear();
-            outers.push_back(clippee);
-        }
-    }
-
-    return make_tuple(inners, outers);
 }
 
 list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
@@ -583,4 +388,24 @@ list<Polygon> difference(list<Polygon> clippees, const list<Polygon> &clippers)
         clippees = move(result);
     }
     return clippees;
+}
+
+Polygon box(const Point &lower_left, const Point &upper_right)
+{
+    return Polygon{lower_left, {upper_right.x, lower_left.y}, upper_right, {lower_left.x, upper_right.y}};
+}
+
+Polygon axis_aligned_bounding_box(const Polygon &polygon)
+{
+    double minx, miny, maxx, maxy;
+    minx = maxx = polygon.begin()->x;
+    miny = maxy = polygon.begin()->y;
+    for (const auto &point : polygon)
+    {
+        minx = std::min(minx, point.x);
+        miny = std::min(miny, point.y);
+        maxx = std::max(maxx, point.x);
+        maxy = std::max(maxy, point.y);
+    }
+    return box({minx, miny}, {maxx, maxy});
 }

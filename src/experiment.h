@@ -5,6 +5,9 @@
 
 #include "json.hpp"
 
-nlohmann::json experiment(const std::string &rois_dir, const std::string &archive_dir, const nlohmann::json &setting);
+void experiment(const std::string &rois_dir,
+                const std::string &products_dir,
+                const std::string &output_dir,
+                const nlohmann::json &settings);
 
 #endif

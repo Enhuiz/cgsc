@@ -31,17 +31,10 @@ int main(int argc, char *argv[])
     if (vm.count("rois-dir") && vm.count("archive-dir") && vm.count("output-path") && vm.count("setting"))
     {
         auto setting = vm["setting"].as<string>();
-        auto report = experiment(vm["rois-dir"].as<string>(), vm["archive-dir"].as<string>(), nlohmann::json::parse(setting));
-        {
-            ofstream ofs(vm["output-path"].as<string>());
-            ofs << report << endl;
-        }
-        {
-            // if (debug_report.size() > 0) {
-            //     ofstream ofs("../data/visualize/bnb/[with_preproc_v2] " + split(vm["output-path"].as<string>(), "/").back());
-            //     ofs << debug_report << endl;
-            // }
-        }
+        experiment(vm["rois-dir"].as<string>(),
+                   vm["archive-dir"].as<string>(),
+                   vm["output-path"].as<string>(),
+                   nlohmann::json::parse(setting));
     }
     else
     {
