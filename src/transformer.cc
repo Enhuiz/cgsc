@@ -1,5 +1,7 @@
 #include "transformer.h"
 
+#include <unordered_map>
+
 using namespace std;
 using nlohmann::json;
 
@@ -88,6 +90,7 @@ void DiscreteTransformer::transform_impl(const Roi &roi,
                                          json &report) const
 {
     auto element_value = delta * delta;
+    auto id_map = unordered_map<int, int>();
     for (auto &range : ranges)
     {
         auto indexes = discretize(range.entity->polygon, [&universe, &range](const Polygon &grid_cell) {
@@ -96,8 +99,11 @@ void DiscreteTransformer::transform_impl(const Roi &roi,
         });
         for (auto index : indexes)
         {
-            range.elements.insert(Element{index, element_value});
-            universe.elements.insert(Element{index, element_value});
+            if (id_map.count(index) == 0)
+                id_map[index] = id_map.size();
+            auto id = id_map[index];
+            range.elements.insert(Element{id, element_value});
+            universe.elements.insert(Element{id, element_value});
         }
     }
 }
