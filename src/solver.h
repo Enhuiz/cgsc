@@ -1,5 +1,5 @@
-#ifndef CGSC_SOLUTION_H
-#define CGSC_SOLUTION_H
+#ifndef CGSC_SOLVER_H
+#define CGSC_SOLVER_H
 
 #include <vector>
 #include <iostream>
@@ -10,14 +10,14 @@
 
 class Solver
 {
-  public:
-    Solver(std::shared_ptr<Transformer> transformer, std::shared_ptr<Optimizer> optimizer);
-    nlohmann::json solve(const Roi &roi, const Products &products, Products &&result_products);
-    std::string tag();
+public:
+  Solver(std::shared_ptr<Transformer> transformer, std::shared_ptr<Optimizer> optimizer);
+  nlohmann::json solve(const Roi &roi, const Products &products, Products &&result_products);
+  std::string tag();
 
-  private:
-    std::shared_ptr<Transformer> transformer;
-    std::shared_ptr<Optimizer> optimizer;
+private:
+  std::shared_ptr<Transformer> transformer;
+  std::shared_ptr<Optimizer> optimizer;
 };
 
 #endif
