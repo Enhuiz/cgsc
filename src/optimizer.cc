@@ -74,6 +74,22 @@ struct BaseNode
     static const Universe *universe;
     static vector<Range> ranges;
 
+    virtual shared_ptr<BaseNode> clone() = 0;
+    virtual void update_value() = 0;
+
+    void drop_next()
+    {
+        ++cursor;
+    }
+
+    void select_next()
+    {
+        selected.push_back(cursor);
+        cost += ranges[cursor].cost;
+        update_value();
+        ++cursor;
+    }
+
     vector<shared_ptr<BaseNode>> branch()
     {
         vector<shared_ptr<BaseNode>> ret;
@@ -92,21 +108,6 @@ struct BaseNode
         return ret;
     }
 
-    void drop_next()
-    {
-        ++cursor;
-    }
-
-    void select_next()
-    {
-        selected.push_back(cursor);
-        cost += ranges[cursor].cost;
-        update_value();
-        ++cursor;
-    }
-
-    virtual shared_ptr<BaseNode> clone() = 0;
-    virtual void update_value() = 0;
     virtual void bound() = 0;
 
     virtual nlohmann::json describe()
@@ -145,7 +146,7 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
     Node::target_value = universe.value * target_coverage;
     Node::universe = &universe;
 
-    auto optimal_node = shared_ptr<BaseNode>(new Node{});
+    shared_ptr<BaseNode> optimal_node = make_shared<Node>();
     {
         auto greedy_optimizer = GreedyOptimizer(target_coverage);
         greedy_optimizer.optimize(universe, ranges, result_ranges);
@@ -155,7 +156,7 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         optimal_node->print("initial optimal");
     }
 
-    auto initial_node = shared_ptr<BaseNode>(new Node{});
+    shared_ptr<BaseNode> initial_node = make_shared<Node>();
     {
         initial_node->cost = 0;
         initial_node->value = 0;
@@ -175,10 +176,15 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
     {
         auto node = nodes.top();
         nodes.pop();
+        if (node == nullptr)
+        {
+            cerr << "weird nullptr of node" << endl;
+            abort();
+        }
 
         sw.pause(); // pause the timer for debug informaiton
         double t = sw.lap();
-        cout << "number of nodes: " << nodes.size() << endl;
+        cout << "number of nodes: " << nodes.size() << ", current/optimal: " << node->cost_lower_bound << "/" << optimal_node->cost << endl;
         auto desc = node->describe();
         desc["t"] = t; // to avoid lag
         desc["number of nodes"] = nodes.size();
@@ -213,6 +219,8 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
             }
         }
     }
+
+    result_ranges = move(optimal_node->ranges);
     return report;
 }
 
@@ -226,13 +234,19 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
     {
         vector<bool> visited;
 
+        Node() : BaseNode()
+        {
+            visited.resize(universe->elements.size(), false);
+        }
+
         shared_ptr<BaseNode> clone()
         {
-            return make_shared<Node>();
+            return make_shared<Node>(*this);
         }
 
         void update_value()
         {
+            assert(universe->elements.size() == visited.size() && "visited should be initialized");
             for (const auto &element : ranges[cursor].elements)
             {
                 if (visited[element.index] == 0)
@@ -245,6 +259,7 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
 
         void bound()
         {
+            assert(universe->elements.size() == visited.size() && "visited should be initialized");
             cost_lower_bound = cost;
             double current_value = value;
             auto visited_copy = visited;
@@ -273,7 +288,6 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
             }
             if (current_value < target_value)
             {
-                cout << current_value << " " << target_value << endl;
                 cost_lower_bound = numeric_limits<double>::max();
             }
         }
@@ -307,7 +321,7 @@ json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges
 
         shared_ptr<BaseNode> clone()
         {
-            return make_shared<Node>();
+            return make_shared<Node>(*this);
         }
 
         void update_value()
