@@ -63,18 +63,32 @@ struct Loader
 string rois_path(const string &dir, const json &s)
 {
     ostringstream oss;
-    oss << dir << "/" << s["roi_type"].get<string>() << "_" << s["roi_ratio"].get<double>() << ".csv";
+    if (s["debug"])
+    {
+        oss << dir << "/debug.csv";
+    }
+    else
+    {
+        oss << dir << "/" << s["roi_type"].get<string>() << "_" << s["roi_ratio"].get<double>() << ".csv";
+    }
     return oss.str();
 }
 
 string products_path(const string &dir, const json &s)
 {
     ostringstream oss;
-    oss << dir << "/archive.csv";
+    if (s["debug"])
+    {
+        oss << dir << "/debug.csv";
+    }
+    else
+    {
+        oss << dir << "/archive.csv";
+    }
     return oss.str();
 }
 
-void experiment(const string &rois_dir, const string &products_dir, const std::string &output_dir, const json &settings)
+void experiment(const string &rois_dir, const string &products_dir, const std::string &output_path, const json &settings)
 {
     auto reports = json();
 
@@ -88,15 +102,12 @@ void experiment(const string &rois_dir, const string &products_dir, const std::s
 
     auto discrete_transformer = make_shared<DiscreteTransformer>(settings["delta"].get<double>());
     auto continuous_transformer = make_shared<ContinuousTransformer>();
+    auto fast_continuous_transformer = make_shared<FastContinuousTransformer>();
     auto greedy_optimizer = make_shared<GreedyOptimizer>(settings["target_coverage"].get<double>());
     auto bnb_optimizer = make_shared<BnbOptimizer>(settings["target_coverage"].get<double>());
 
-    auto dg_solver = Solver(discrete_transformer, greedy_optimizer);
-    auto cg_solver = Solver(continuous_transformer, greedy_optimizer);
-    auto db_solver = Solver(discrete_transformer, bnb_optimizer);
-    auto cb_solver = Solver(continuous_transformer, bnb_optimizer);
-
-    auto call = [&products, &reports](const auto &solver, const auto &roi) {
+    auto perform = [&products, &reports](const Roi &roi, shared_ptr<Transformer> transformer, shared_ptr<Optimizer> optimizer) {
+        auto solver = Solver(transformer, optimizer);
         reports.push_back(solver.solve(roi, products, Products()));
         cout << reports.back().dump(4) << endl;
     };
@@ -105,10 +116,12 @@ void experiment(const string &rois_dir, const string &products_dir, const std::s
     for (const auto &roi : rois)
     {
         cout << "Round " << cnt++ << endl;
-        call(dg_solver, roi);
-        call(cg_solver, roi);
-        call(db_solver, roi);
-        call(cb_solver, roi);
+        perform(roi, continuous_transformer, nullptr);
+        perform(roi, fast_continuous_transformer, greedy_optimizer);
+        perform(roi, fast_continuous_transformer, bnb_optimizer);
     }
-    // ofstream ofs(output_dir + "/" + now_str() + ".json");
+    {
+        ofstream ofs(output_path);
+        ofs << reports << endl;
+    }
 }

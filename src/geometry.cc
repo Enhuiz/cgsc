@@ -4,6 +4,7 @@
 #include <functional>
 #include <sstream>
 #include <iostream>
+#include <cassert>
 
 using namespace std;
 
@@ -352,6 +353,7 @@ list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
     auto inners = list<Polygon>();
     auto outers = list<Polygon>();
     tie(inners, outers) = clip(clippee, clipper);
+    assert(inners.size() < 2); // important
     return inners;
 }
 

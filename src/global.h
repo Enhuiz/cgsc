@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <list>
 
@@ -178,5 +179,8 @@ auto timeit(const std::string &tag, const Func &func) -> decltype(func())
 
 std::list<std::string> split(std::string s, const std::string &delimiter);
 std::string now_str();
-
+std::string exec(const std::string &cmd);
+void append_polygon_to_online_plotter(const std::string &s);
+void clear_online_plotter();
+void sleep(int ms);
 #endif

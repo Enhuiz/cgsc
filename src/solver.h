@@ -16,6 +16,9 @@ public:
   std::string tag() const;
 
 private:
+  Products preprocess(const Roi& roi, const Products& products) const; 
+
+private:
   std::shared_ptr<Transformer> transformer;
   std::shared_ptr<Optimizer> optimizer;
 };

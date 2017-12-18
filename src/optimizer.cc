@@ -15,7 +15,7 @@ GreedyOptimizer::GreedyOptimizer(double target_coverage) : Optimizer(target_cove
 
 json GreedyOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
-    auto report = json();
+    report.clear();
     struct Pair
     {
         Range range;
@@ -49,16 +49,15 @@ json GreedyOptimizer::optimize(const Universe &universe, const Ranges &ranges, R
             }
         }
         pairs = func::filter(pairs, [](const Pair &pair) {
-            return pair.range.elements.size() > 0;
+            return pair.range.value > 0;
         });
-        // cout << current_value * 100.0 / const_universe.current_value << "%: " << pairs.size() << endl;
+        // cout << current_value * 100.0 / universe.value << "%: " << pairs.size() << endl;
     }
-
     if (current_value < target_value)
     {
         result_ranges.clear();
     }
-
+    report["actual_coverage"] = current_value / universe.value;
     return report;
 }
 
@@ -135,9 +134,8 @@ const Universe *BaseNode::universe = nullptr;
 vector<Range> BaseNode::ranges;
 
 template <class Node>
-json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &result_ranges, double target_coverage)
+void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &result_ranges, double target_coverage, json& report)
 {
-    auto report = json();
     auto sw = Stopwatch(); // timer
     Node::ranges = vector<Range>(ranges.begin(), ranges.end());
     sort(Node::ranges.begin(), Node::ranges.end(), [](const Range &a, const Range &b) { // unit cost from lower to higher
@@ -150,9 +148,12 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
     {
         auto greedy_optimizer = GreedyOptimizer(target_coverage);
         greedy_optimizer.optimize(universe, ranges, result_ranges);
-        optimal_node->cost = func::sum(result_ranges, [](const Range &result_range) {
-            return result_range.cost;
-        });
+        if (result_ranges.size() > 0)
+        {
+            optimal_node->cost = func::sum(result_ranges, [](const Range &result_range) {
+                return result_range.cost;
+            });
+        }
         optimal_node->print("initial optimal");
     }
 
@@ -165,14 +166,17 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         initial_node->print("initial node");
     }
 
+
     auto comp = [](const shared_ptr<BaseNode> &a, const shared_ptr<BaseNode> &b) {
         return a->cost_lower_bound > b->cost_lower_bound; // to make it a min heap
     };
 
-    auto nodes = priority_queue<shared_ptr<BaseNode>, vector<shared_ptr<BaseNode>>, decltype(comp)>(comp);
+    using NodeQueue = priority_queue<shared_ptr<BaseNode>, vector<shared_ptr<BaseNode>>, reference_wrapper<decltype(comp)>>;
+
+    auto nodes = NodeQueue(std::ref(comp));
     nodes.push(initial_node);
 
-    while (nodes.size() > 0 && sw.lap() <= 200)
+    while (nodes.size() > 0)
     {
         auto node = nodes.top();
         nodes.pop();
@@ -183,13 +187,20 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         }
 
         sw.pause(); // pause the timer for debug informaiton
-        double t = sw.lap();
-        cout << "number of nodes: " << nodes.size() << ", current/optimal: " << node->cost_lower_bound << "/" << optimal_node->cost << endl;
-        auto desc = node->describe();
-        desc["t"] = t; // to avoid lag
-        desc["number of nodes"] = nodes.size();
-        desc["cost upper bound"] = optimal_node->cost;
-        report.push_back(desc);
+        if (nodes.size() % 10000 == 0)
+        {
+            cout << "number of nodes: " << nodes.size() << ", current/optimal: " << node->cost_lower_bound << "/" << optimal_node->cost << endl;
+        }
+        if (sw.lap() > 200)
+        {
+            result_ranges.clear(); // cannot ensure the optimal
+            return;
+        }
+        // auto desc = node->describe();
+        // desc["t"] = t; // to avoid lag
+        // desc["number of nodes"] = nodes.size();
+        // desc["cost upper bound"] = optimal_node->cost;
+        // report.push_back(desc);
         sw.continue_();
 
         if (node->value >= Node::target_value)
@@ -218,10 +229,23 @@ json branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
                 }
             }
         }
+
+        // after a better solution is found, the previous added node may have lower bound larger than optimal
+        // so clear it immediately
+        if (node->cost_lower_bound > optimal_node->cost)
+        {
+            nodes = decltype(nodes)(std::ref(comp)); // empty the nodes, it's bit of tricky because of the queue struct
+        }
     }
 
-    result_ranges = move(optimal_node->ranges);
-    return report;
+    if (optimal_node->selected.size() > 0) // a solution better than greedy found
+    {
+        result_ranges.clear();
+        for (auto selected : optimal_node->selected)
+        {
+            result_ranges.push_back(BaseNode::ranges[selected]);
+        }
+    }
 }
 
 BnbOptimizer::BnbOptimizer(double target_coverage) : Optimizer(target_coverage)
@@ -230,6 +254,7 @@ BnbOptimizer::BnbOptimizer(double target_coverage) : Optimizer(target_coverage)
 
 json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
+    report.clear();
     struct Node : public BaseNode
     {
         vector<bool> visited;
@@ -305,7 +330,8 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
         }
     };
 
-    return branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage);
+    branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage, report);
+    return report;
 }
 
 OnlineBnbOptimizer::OnlineBnbOptimizer(double target_coverage) : Optimizer(target_coverage)
@@ -314,7 +340,7 @@ OnlineBnbOptimizer::OnlineBnbOptimizer(double target_coverage) : Optimizer(targe
 
 json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const
 {
-    auto report = json();
+    report.clear();
     struct Node : BaseNode
     {
         list<Polygon> offcuts;
@@ -394,5 +420,6 @@ json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges
             return ret;
         }
     };
-    return branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage);
+    branch_and_bound<Node>(universe, ranges, result_ranges, target_coverage, report);
+    return report;
 }

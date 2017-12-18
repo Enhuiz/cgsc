@@ -5,6 +5,7 @@
 #include <ctime>
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 using namespace std;
 
@@ -63,4 +64,37 @@ string now_str()
     oss << '.' << std::setfill('0') << std::setw(3) << ms.count();
 
     return oss.str();
+}
+
+std::string exec(const string &cmd)
+{
+    std::array<char, 128> buffer;
+    std::string result;
+    std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe)
+        throw std::runtime_error("popen() failed!");
+    while (!feof(pipe.get()))
+    {
+        if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+            result += buffer.data();
+    }
+    return result;
+}
+
+void append_polygon_to_online_plotter(const string &s)
+{
+    ofstream out("./online_plotter/polygons.txt", std::ios::app);
+    out << s << endl;
+}
+
+void clear_online_plotter()
+{
+    ofstream out("./online_plotter/polygons.txt");
+    out << endl;
+}
+
+void sleep(int ms)
+{
+    cout << "sleeping" << endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }

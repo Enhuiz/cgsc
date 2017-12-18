@@ -11,6 +11,11 @@ bool operator==(const Element &a, const Element &b)
     return a.index == b.index;
 }
 
+bool operator<(const Element &a, const Element &b)
+{
+    return a.index < b.index;
+}
+
 Range::Range(Range &&range)
     : entity(range.entity), elements(move(range.elements)), value(range.value), cost(range.cost)
 {
@@ -27,4 +32,3 @@ void Range::update_value()
         return element.value;
     });
 }
-

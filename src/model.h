@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <unordered_set>
+#include <set>
 
 #include "json.hpp"
 
@@ -27,6 +28,7 @@ struct Element // element of set cover problem
 };
 
 bool operator==(const Element &a, const Element &b);
+bool operator<(const Element &a, const Element &b);
 
 namespace std
 {

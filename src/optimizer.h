@@ -12,6 +12,7 @@ public:
 
 protected:
   double target_coverage; // 0 ~ 1, acceptable value / Universe value
+  mutable nlohmann::json report;
 };
 
 class GreedyOptimizer : public Optimizer
