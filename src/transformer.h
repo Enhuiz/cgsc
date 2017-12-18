@@ -9,15 +9,20 @@ public:
   virtual std::string tag() const = 0;
   nlohmann::json transform(const Roi &roi,
                            const Products &products,
-                           Range &universe,
+                           Universe &universe,
                            Ranges &ranges) const;
+
+protected:
+  void add_imagery_cell(Universe &universe) const;
 
 private:
   virtual void transform_impl(const Roi &roi,
                               const Products &products,
-                              Range &universe,
-                              Ranges &ranges,
-                              nlohmann::json &report) const = 0;
+                              Universe &universe,
+                              Ranges &ranges) const = 0;
+
+protected:
+  mutable nlohmann::json report;
 };
 
 class OnlineTranformer : public Transformer
@@ -28,9 +33,8 @@ public:
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
-                      Range &universe,
-                      Ranges &ranges,
-                      nlohmann::json &report) const;
+                      Universe &universe,
+                      Ranges &ranges) const;
 };
 
 class DiscreteTransformer : public Transformer
@@ -42,12 +46,11 @@ public:
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
-                      Range &universe,
-                      Ranges &ranges,
-                      nlohmann::json &report) const;
+                      Universe &universe,
+                      Ranges &ranges) const;
   std::unordered_set<int> discretize(const Polygon &polygon,
                                      std::function<bool(const Polygon &)>) const;
-  int hash(const Polygon &grid_cell) const;
+  int unique_index(const Polygon &grid_cell) const;
 
 private:
   double delta;
@@ -61,9 +64,20 @@ public:
 private:
   void transform_impl(const Roi &roi,
                       const Products &products,
-                      Range &universe,
-                      Ranges &ranges,
-                      nlohmann::json &report) const;
+                      Universe &universe,
+                      Ranges &ranges) const;
+};
+
+class FastContinuousTransformer : public Transformer
+{
+public:
+  std::string tag() const { return "fast_continuous"; }
+
+private:
+  void transform_impl(const Roi &roi,
+                      const Products &products,
+                      Universe &universe,
+                      Ranges &ranges) const;
 };
 
 #endif
