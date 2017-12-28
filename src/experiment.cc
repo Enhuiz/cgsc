@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <typeinfo>
 
 #include "csv.hpp"
 #include "global.h"
@@ -10,95 +11,101 @@
 using namespace std;
 using nlohmann::json;
 
-struct Loader
+class Loader
 {
-    Rois rois;
-    Products products;
-
-    Loader(const string &rois_path, int num_rois, const string &products_path, int num_scenes)
+  public:
+    Loader(const string &rois_dir, const string &products_dir)
+        : rois_dir(rois_dir), products_dir(products_dir)
     {
-        try
-        { // load roi
-            rois.reserve(num_rois);
-            io::CSVReader<1, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(rois_path);
-            in.read_header(io::ignore_extra_column, "Polygon");
-            string poly_s;
-            while (in.read_row(poly_s) && rois.size() < num_rois)
-            {
-                auto roi = Entity();
-                roi.polygon = parse_polygon(poly_s);
-                rois.push_back(move(roi));
-            }
-            cout << rois.size() << " rois loaded" << endl;
-        }
-        catch (...)
+    }
+
+    Rois load_rois(string roi_type, double roi_ratio, int num)
+    {
+        ostringstream oss;
+        oss << rois_dir << "/" << roi_type << "_" << roi_ratio << ".csv";
+        string path = oss.str();
+
+        if (cached_rois.count(path) > 0)
         {
-            cerr << "Error: please check your path: " << rois_path << endl;
-            abort();
+            return cached_rois[path];
         }
+
+        auto callback = [](const string &polygon) {
+            auto roi = Roi{};
+            roi.polygon = parse_polygon(polygon);
+            return roi;
+        };
+
+        return cached_products[path] = parse_csv<Product>(path, num, callback, "Polygon");
+    }
+
+    Products load_products(int num)
+    {
+        string path = products_dir + "/archive.csv";
+
+        if (cached_rois.count(path) > 0)
+        {
+            return cached_products[path];
+        }
+
+        auto callback = [](const string &polygon, const string &price) {
+            auto product = Product{};
+            product.polygon = parse_polygon(polygon);
+            product.price = stod(price);
+            return product;
+        };
+
+        return cached_products[path] = parse_csv<Product>(path, num, callback, "Polygon", "Price");
+    }
+
+    template <class T,
+              class Collection = vector<T, allocator<T>>,
+              class Callback,
+              class... Columns>
+    Collection parse_csv(string path, int num, Callback callback, Columns... columns)
+    {
+        Collection objs;
         try
         { // load products
-            products.reserve(num_scenes);
-            io::CSVReader<2, io::trim_chars<' '>, io::double_quote_escape<',', '\"'>> in(products_path);
-            in.read_header(io::ignore_extra_column, "Polygon", "Price");
-            string poly_s;
-            double price;
-            while (in.read_row(poly_s, price) && products.size() < num_scenes)
+            io::CSVReader<sizeof...(Columns),
+                          io::trim_chars<' '>,
+                          io::double_quote_escape<',', '\"'>>
+                in(path);
+            in.read_header(io::ignore_extra_column, columns...);
+            // here is very intersting, the same const char* is used
+            while (in.read_row(columns...) && objs.size() < num)
             {
-                auto scene = Entity();
-                scene.polygon = parse_polygon(poly_s);
-                scene.price = price;
-                products.push_back(move(scene));
+                T obj = callback(columns...);
+                objs.push_back(move(obj));
             }
-            cout << products.size() << " products loaded" << endl;
+            cout << objs.size() << " loaded from path: " << path << endl;
         }
         catch (...)
         {
-            cerr << "Error: please check your path: " << products_path << endl;
+            cerr << "Error: please check your path: " << path << endl;
             abort();
         }
+        return objs;
     }
+
+  private:
+    string rois_dir;
+    string products_dir;
+    map<string, Rois> cached_rois;
+    map<string, Products> cached_products;
 };
 
-string rois_path(const string &dir, const json &s)
-{
-    ostringstream oss;
-    if (s["debug"])
-    {
-        oss << dir << "/debug.csv";
-    }
-    else
-    {
-        oss << dir << "/" << s["roi_type"].get<string>() << "_" << s["roi_ratio"].get<double>() << ".csv";
-    }
-    return oss.str();
-}
-
-string products_path(const string &dir, const json &s)
-{
-    ostringstream oss;
-    if (s["debug"])
-    {
-        oss << dir << "/debug.csv";
-    }
-    else
-    {
-        oss << dir << "/archive.csv";
-    }
-    return oss.str();
-}
-
-void experiment(const string &rois_dir, const string &products_dir, const std::string &output_path, const json &settings)
+void experiment(const json &settings)
 {
     auto reports = json();
 
-    auto loader = Loader(rois_path(rois_dir, settings),
-                         settings["num_rois"].get<int>(),
-                         products_path(products_dir, settings),
-                         settings["archive_size"].get<int>());
+    auto loader = Loader(settings["rois_dir"].get<string>(), settings["products_dir"].get<string>());
 
-    const auto &rois = loader.rois;
-    const auto &products = loader.products;
+    auto rois = loader.load_rois(settings["roi_type"].get<string>(),
+                                 settings["roi_ratio"].get<double>(),
+                                 settings["num_rois"].get<int>());
+
+    auto products = loader.load_products(settings["archive_size"].get<int>());
 
     auto discrete_transformer = make_shared<DiscreteTransformer>(settings["delta"].get<double>());
     auto continuous_transformer = make_shared<ContinuousTransformer>();
@@ -120,8 +127,9 @@ void experiment(const string &rois_dir, const string &products_dir, const std::s
         perform(roi, fast_continuous_transformer, greedy_optimizer);
         perform(roi, fast_continuous_transformer, bnb_optimizer);
     }
+
     {
-        ofstream ofs(output_path);
+        ofstream ofs(settings["output_path"].get<string>());
         ofs << reports << endl;
     }
 }
