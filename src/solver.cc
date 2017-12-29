@@ -52,6 +52,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
         // cerr << "optimizer not found" << endl;
         return report;
     }
+
     report["optimizer"] = optimizer->tag();
     sw.restart();
     report["optimization"] = optimizer->optimize(universe, ranges, result_ranges);
@@ -66,6 +67,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
     {
         report["optimization"]["cost"] = numeric_limits<double>::quiet_NaN();
     }
+
     result_products = func::map(result_ranges, [](const auto &result_range) {
         return *result_range.entity;
     });

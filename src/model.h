@@ -10,20 +10,21 @@
 #include "geometry.h"
 #include "global.h"
 
-struct Entity // meta data for Roi and image products
+struct Entity
 {
-    Polygon polygon; // polygon, a vector of points
+    Polygon polygon;
     double price;
+    Entity(Polygon polygon, double price) : polygon(std::move(polygon)), price(price) {}
 };
 
 using Roi = Entity;
-using Rois = std::vector<Roi>;
 using Product = Entity;
+using Rois = std::vector<Roi>;
 using Products = std::vector<Product>;
 
 struct Element // element of set cover problem
 {
-    int index;
+    int id;
     double value;
 };
 
@@ -39,7 +40,7 @@ struct hash<Element>
     using result_type = std::size_t;
     result_type operator()(argument_type const &element) const noexcept
     {
-        return element.index;
+        return element.id;
     }
 };
 }

@@ -134,7 +134,7 @@ const Universe *BaseNode::universe = nullptr;
 vector<Range> BaseNode::ranges;
 
 template <class Node>
-void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &result_ranges, double target_coverage, json& report)
+void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &result_ranges, double target_coverage, json &report)
 {
     auto sw = Stopwatch(); // timer
     Node::ranges = vector<Range>(ranges.begin(), ranges.end());
@@ -165,7 +165,6 @@ void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         initial_node->bound();
         initial_node->print("initial node");
     }
-
 
     auto comp = [](const shared_ptr<BaseNode> &a, const shared_ptr<BaseNode> &b) {
         return a->cost_lower_bound > b->cost_lower_bound; // to make it a min heap
@@ -274,9 +273,9 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
             assert(universe->elements.size() == visited.size() && "visited should be initialized");
             for (const auto &element : ranges[cursor].elements)
             {
-                if (visited[element.index] == 0)
+                if (visited[element.id] == 0)
                 {
-                    visited[element.index] = 1;
+                    visited[element.id] = 1;
                     value += element.value;
                 }
             }
@@ -293,7 +292,7 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
                 const auto &range = ranges[i];
                 for (const auto &element : range.elements) // k
                 {
-                    if (visited_copy[element.index] == 0)
+                    if (visited_copy[element.id] == 0)
                     {
                         double deficit = target_value - current_value;
                         if (element.value > deficit)
@@ -307,7 +306,7 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
                             cost_lower_bound += range.cost / range.value * element.value;
                             current_value += element.value;
                         }
-                        visited_copy[element.index] = 1;
+                        visited_copy[element.id] = 1;
                     }
                 }
             }

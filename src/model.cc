@@ -8,12 +8,12 @@ using namespace std;
 
 bool operator==(const Element &a, const Element &b)
 {
-    return a.index == b.index;
+    return a.id == b.id;
 }
 
 bool operator<(const Element &a, const Element &b)
 {
-    return a.index < b.index;
+    return a.id < b.id;
 }
 
 Range::Range(Range &&range)
