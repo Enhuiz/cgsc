@@ -8,75 +8,6 @@
 
 using namespace std;
 
-Vector2 Vector2::operator+(const Vector2 &other) const
-{
-    return Vector2{x + other.x, y + other.y};
-}
-
-Vector2 Vector2::operator-(const Vector2 &other) const
-{
-    return Vector2{x - other.x, y - other.y};
-}
-
-bool Vector2::operator==(const Vector2 &other) const
-{
-    return x == other.x && y == other.y;
-}
-
-bool Vector2::operator!=(const Vector2 &other) const
-{
-    return x != other.x || y != other.y;
-}
-
-Vector2 Vector2::operator*(double a) const
-{
-    return Vector2{x * a, y * a};
-}
-
-Vector2 Vector2::operator/(double a) const
-{
-    return Vector2{x / a, y / a};
-}
-
-double cross(const Vector2 &a, const Vector2 &b)
-{
-    return a.x * b.y - a.y * b.x;
-}
-
-double dot(const Vector2 &a, const Vector2 &b)
-{
-    return a.x * b.x + a.y * b.y;
-}
-
-double sqr_magnitude(const Vector2 &a)
-{
-    return dot(a, a);
-}
-
-double magnitude(const Vector2 &a)
-{
-    return sqrt(sqr_magnitude(a));
-}
-
-double distance(const Point &a, const Point &b)
-{
-    return magnitude(a - b);
-}
-
-double angle(const Point &a, const Point &b, const Point &c)
-{
-    auto u = a - b;
-    auto v = c - b;
-    auto x = dot(u, v) / magnitude(u) / magnitude(v);
-    x = max(min(x, 1.0), -1.0); // for precision's sake
-    return acos(x) / acos(-1) * 180;
-}
-
-string to_string(const Vector2 &v)
-{
-    return "[" + to_string(v.x) + ", " + to_string(v.y) + "]";
-}
-
 string to_string(const Polygon &polygon)
 {
     if (polygon.size() == 0)
@@ -90,12 +21,6 @@ string to_string(const Polygon &polygon)
     ret.pop_back();
     ret[ret.size() - 1] = ']';
     return ret;
-}
-
-ostream &operator<<(ostream &os, const Vector2 &v)
-{
-    os << to_string(v);
-    return os;
 }
 
 ostream &operator<<(ostream &os, const Polygon &polygon)
@@ -216,19 +141,19 @@ double area(const Polygon &polygon)
 
 Point line_intersection(const Point &a, const Point &b, const Point &c, const Point &d)
 {
-    auto x_diff = Vector2{a.x - b.x, c.x - d.x};
-    auto y_diff = Vector2{a.y - b.y, c.y - d.y};
+    auto x_diff = vector2<double>(a.x - b.x, c.x - d.x);
+    auto y_diff = vector2<double>(a.y - b.y, c.y - d.y);
     double det = cross(x_diff, y_diff);
     if (det == 0)
     {
         throw runtime_error("Error: divisor = 0 in line_intersection\n" + to_string(Polygon{a, b}) + "," + to_string(Polygon{c, d}));
     }
-    auto cr = Point{cross(a, b), cross(c, d)};
-    auto e = Point{cross(cr, x_diff) / det, cross(cr, y_diff) / det};
+    auto cr = Point(cross(a, b), cross(c, d));
+    auto e = Point(cross(cr, x_diff) / det, cross(cr, y_diff) / det);
     return e;
 }
 
-tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
+tuple<Polygons, Polygons> clip(const Polygon &clippee, const Polygon &clipper) // inner, outer
 {
     double clippee_area = area(clippee);
     double clipper_area = area(clipper);
@@ -239,11 +164,11 @@ tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &
              << "polygon: " << to_string(clipper) << endl
              << "clippee area: " << clippee_area << endl
              << "clipper area: " << clipper_area << endl;
-        return make_tuple(list<Polygon>{}, list<Polygon>{clippee});
+        return make_tuple(Polygons{}, Polygons{clippee});
     }
 
-    auto inners = list<Polygon>();
-    auto outers = list<Polygon>();
+    auto inners = Polygons();
+    auto outers = Polygons();
 
     auto inner = clippee;
     auto s1 = clipper.back();
@@ -348,18 +273,18 @@ tuple<list<Polygon>, list<Polygon>> clip(const Polygon &clippee, const Polygon &
     return make_tuple(inners, outers);
 }
 
-list<Polygon> intersection(const Polygon &clippee, const Polygon &clipper)
+Polygons intersection(const Polygon &clippee, const Polygon &clipper)
 {
-    auto inners = list<Polygon>();
-    auto outers = list<Polygon>();
+    auto inners = Polygons();
+    auto outers = Polygons();
     tie(inners, outers) = clip(clippee, clipper);
     assert(inners.size() < 2); // important
     return inners;
 }
 
-list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers)
+Polygons intersection(Polygons clippees, const Polygons &clippers)
 {
-    list<Polygon> result;
+    Polygons result;
     for (const auto &clipper : clippers)
     {
         for (auto &clippee : clippees)
@@ -370,19 +295,19 @@ list<Polygon> intersection(list<Polygon> clippees, const list<Polygon> &clippers
     return result;
 }
 
-list<Polygon> difference(const Polygon &clippee, const Polygon &clipper)
+Polygons difference(const Polygon &clippee, const Polygon &clipper)
 {
-    auto inners = list<Polygon>();
-    auto outers = list<Polygon>();
+    auto inners = Polygons();
+    auto outers = Polygons();
     tie(inners, outers) = clip(clippee, clipper);
     return outers;
 }
 
-list<Polygon> difference(list<Polygon> clippees, const list<Polygon> &clippers)
+Polygons difference(Polygons clippees, const Polygons &clippers)
 {
     for (const auto &clipper : clippers)
     {
-        list<Polygon> result;
+        Polygons result;
         for (auto &clippee : clippees)
         {
             result.splice(result.end(), difference(clippee, clipper));
@@ -404,10 +329,111 @@ Polygon axis_aligned_bounding_box(const Polygon &polygon)
     miny = maxy = polygon.begin()->y;
     for (const auto &point : polygon)
     {
-        minx = std::min(minx, point.x);
+        minx = min(minx, point.x);
         miny = std::min(miny, point.y);
         maxx = std::max(maxx, point.x);
         maxy = std::max(maxy, point.y);
     }
     return box({minx, miny}, {maxx, maxy});
 }
+
+#if 0
+namespace sweep_line
+{
+Polygons intersection(const Polygons &polygons)
+{
+    struct Event
+    {
+    };
+
+    struct EndPoint : Event, Point
+    {
+        EndPoint *bottom;
+        Polygon *polygon;
+    };
+
+    struct IntersectionPoint : Event, Point
+    {
+    };
+
+    struct Segment
+    {
+        union {
+            EndPoint a, b;
+            array<EndPoint, 2> components;
+        };
+        EndPoint &operator[](int index) { return components[index]; }
+        const EndPoint &operator[](int index) const { return components[index]; }
+    };
+
+    for (const auto &polygon : polygons)
+    {
+        const auto &a = polygon.back();
+        for (const auto &b : polygon)
+        {
+            if (a.y > b.y)
+            {
+            }
+            else
+            {
+            }
+            a = b;
+        }
+    }
+}
+}
+
+
+namespace dcel
+{
+struct Vertex;
+struct HalfEdge;
+struct Face;
+
+struct Vertex : public Point
+{
+    HalfEdge *leaving; // the half edge whose origin is this vertex
+};
+
+struct HalfEdge
+{
+    Vertex *origin;
+    HalfEdge *twin;
+    HalfEdge *next;
+    Face *face;
+};
+
+struct Face
+{
+    vector<int> covers;
+};
+
+struct Mesh
+{
+    Mesh(const Polygon &polygon, int id)
+    {
+        faces.emplace_back();
+        auto face = make_unique<Face>();
+        face.covers.push_back(id);
+
+        auto u = cref(polygon.back());
+        for (const auto &v : polygon)
+        {
+            vertices.emplace_back(u);
+            auto &vertex = vertices.back();
+            halfedges.emplace_back();
+            auto &halfedge = halfedges.back();
+            vertex.leaving = &halfedge;
+            vertex
+
+                u = cref(v);
+        }
+    }
+
+    // important, because we don't expect the address to change
+    vector<unique_ptr<Vertex>> vertices;
+    vector<unique_ptr<HalfEdge>> halfedges;
+    vector<unique_ptr<Face>> faces;
+};
+}
+#endif
