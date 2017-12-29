@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     using namespace boost::program_options;
 
     auto desc = options_description("Options");
-    desc.add_options()("rois-dir,r", value<string>(), "roi folder")("archive-dir,a", value<string>(), "archive folder")("setting,s", value<string>(), "setting")("output-path,o", value<string>(), "output path");
+    desc.add_options()("settings,s", value<string>(), "settings");
 
     variables_map vm;
     try
@@ -28,13 +28,10 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (vm.count("rois-dir") && vm.count("archive-dir") && vm.count("output-path") && vm.count("setting"))
+    if (vm.count("settings"))
     {
-        auto setting = vm["setting"].as<string>();
-        experiment(vm["rois-dir"].as<string>(),
-                   vm["archive-dir"].as<string>(),
-                   vm["output-path"].as<string>(),
-                   nlohmann::json::parse(setting));
+        auto settings = vm["settings"].as<string>();
+        experiment(nlohmann::json::parse(settings));
     }
     else
     {
