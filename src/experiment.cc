@@ -2,8 +2,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <typeinfo>
-
 #include "csv.hpp"
 #include "global.h"
 #include "solver.h"
@@ -19,51 +17,45 @@ class Loader
     {
     }
 
-    Rois load_rois(string roi_type, double roi_ratio, int num)
+    const auto &load_rois(string roi_type, double roi_ratio, int num)
     {
         ostringstream oss;
         oss << rois_dir << "/" << roi_type << "_" << roi_ratio << ".csv";
         string path = oss.str();
 
-        if (cached_rois.count(path) > 0)
+        if (cached_rois.count(path) == 0)
         {
-            return cached_rois[path];
+            auto callback = [](const string &polygon) {
+                return Roi(parse_polygon(polygon), 0);
+            };
+            cached_rois[path] = parse_csv(path, num, callback, "Polygon");
         }
 
-        auto callback = [](const string &polygon) {
-            auto roi = Roi{};
-            roi.polygon = parse_polygon(polygon);
-            return roi;
-        };
-
-        return cached_products[path] = parse_csv<Product>(path, num, callback, "Polygon");
+        return cached_products[path];
     }
 
-    Products load_products(int num)
+    const auto &load_products(int num)
     {
         string path = products_dir + "/archive.csv";
 
-        if (cached_rois.count(path) > 0)
+        if (cached_rois.count(path) == 0)
         {
-            return cached_products[path];
+            auto callback = [](const string &polygon, const string &price) {
+                return Product(parse_polygon(polygon), stod(price));
+            };
+            cached_products[path] = parse_csv(path, num, callback, "Polygon", "Price");
         }
 
-        auto callback = [](const string &polygon, const string &price) {
-            auto product = Product{};
-            product.polygon = parse_polygon(polygon);
-            product.price = stod(price);
-            return product;
-        };
-
-        return cached_products[path] = parse_csv<Product>(path, num, callback, "Polygon", "Price");
+        return cached_products[path];
     }
 
-    template <class T,
-              class Collection = vector<T, allocator<T>>,
-              class Callback,
-              class... Columns>
-    Collection parse_csv(string path, int num, Callback callback, Columns... columns)
+  private:
+    template <class Callback, class... Columns>
+    auto parse_csv(string path, int num, Callback callback, Columns... columns)
+        -> vector<decltype(callback(columns...)), allocator<decltype(callback(columns...))>>
     {
+        using T = decltype(callback(columns...));
+        using Collection = vector<T, allocator<T>>;
         Collection objs;
         try
         { // load products
@@ -101,11 +93,11 @@ void experiment(const json &settings)
 
     auto loader = Loader(settings["rois_dir"].get<string>(), settings["products_dir"].get<string>());
 
-    auto rois = loader.load_rois(settings["roi_type"].get<string>(),
-                                 settings["roi_ratio"].get<double>(),
-                                 settings["num_rois"].get<int>());
+    const auto &rois = loader.load_rois(settings["roi_type"].get<string>(),
+                                        settings["roi_ratio"].get<double>(),
+                                        settings["num_rois"].get<int>());
 
-    auto products = loader.load_products(settings["archive_size"].get<int>());
+    const auto &products = loader.load_products(settings["archive_size"].get<int>());
 
     auto discrete_transformer = make_shared<DiscreteTransformer>(settings["delta"].get<double>());
     auto continuous_transformer = make_shared<ContinuousTransformer>();
