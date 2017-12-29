@@ -69,7 +69,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
     }
 
     result_products = func::map(result_ranges, [](const auto &result_range) {
-        return *result_range.entity;
+        return *result_range.product;
     });
 
     return report;

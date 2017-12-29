@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iostream>
 #include <cassert>
+#include <memory>
 
 using namespace std;
 
@@ -384,23 +385,25 @@ Polygons intersection(const Polygons &polygons)
 }
 
 
+
 namespace dcel
 {
 struct Vertex;
 struct HalfEdge;
 struct Face;
 
-struct Vertex : public Point
+struct Vertex
 {
-    HalfEdge *leaving; // the half edge whose origin is this vertex
+    Point point;
+    shared_ptr<HalfEdge> edge; // the half edge whose origin is this vertex
 };
 
 struct HalfEdge
 {
-    Vertex *origin;
-    HalfEdge *twin;
-    HalfEdge *next;
-    Face *face;
+    shared_ptr<Vertex> origin;
+    shared_ptr<HalfEdge> twin;
+    shared_ptr<HalfEdge> next;
+    shared_ptr<Face> face;
 };
 
 struct Face
@@ -408,32 +411,84 @@ struct Face
     vector<int> covers;
 };
 
-struct Mesh
+class Mesh
 {
+  public:
     Mesh(const Polygon &polygon, int id)
     {
-        faces.emplace_back();
-        auto face = make_unique<Face>();
-        face.covers.push_back(id);
+        // only 1-face polygon is allowed here
+        auto face = create<Face>();
+        face->covers.push_back(id);
 
-        auto u = cref(polygon.back());
-        for (const auto &v : polygon)
+        shared_ptr<HalfEdge> prev_left = nullptr;
+        shared_ptr<HalfEdge> prev_right = nullptr;
+
+        for (const auto &p : polygon)
         {
-            vertices.emplace_back(u);
-            auto &vertex = vertices.back();
-            halfedges.emplace_back();
-            auto &halfedge = halfedges.back();
-            vertex.leaving = &halfedge;
-            vertex
+            auto vertex = create<Vertex>();
+            auto left = create<HalfEdge>();
+            auto right = create<HalfEdge>();
 
-                u = cref(v);
+            left->origin = vertex;
+            left->next = nullptr;
+            left->twin = right;
+            left->face = face; // counter-clockwise
+
+            right->origin = nullptr;
+            right->next = prev_right;
+            right->twin = left;
+            right->face = nullptr;
+
+            vertex->edge = left;
+            vertex->point = p;
+
+            if (prev_left)
+            {
+                prev_left->next = left;
+            }
+
+            if (prev_right)
+            {
+                prev_right->origin = vertex;
+            }
+
+            prev_left = left;
+            prev_right = right;
+        }
+
+        prev_right->origin = vertices[0];
+
+        auto first_left = halfedges[0];
+        prev_left->next = first_left;
+
+        auto first_right = halfedges[1];
+        first_right->next = prev_right;
+    }
+
+  private:
+    template <class T>
+    shared_ptr<T> create()
+    {
+        if (is_same<T, Vertex>::value)
+        {
+            vertices.emplace_back(shared_ptr<T>());
+            return vertices.back();
+        }
+        if (is_same<T, HalfEdge>::value)
+        {
+            halfedges.emplace_back(shared_ptr<T>());
+            return halfedges.back();
+        }
+        if (is_same<T, Face>::value)
+        {
+            faces.emplace_back(shared_ptr<T>());
+            return faces.back();
         }
     }
 
-    // important, because we don't expect the address to change
-    vector<unique_ptr<Vertex>> vertices;
-    vector<unique_ptr<HalfEdge>> halfedges;
-    vector<unique_ptr<Face>> faces;
+    vector<shared_ptr<Vertex>> vertices;
+    vector<shared_ptr<HalfEdge>> halfedges;
+    vector<shared_ptr<Face>> faces;
 };
 }
 #endif

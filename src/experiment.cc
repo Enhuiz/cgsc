@@ -26,12 +26,12 @@ class Loader
         if (cached_rois.count(path) == 0)
         {
             auto callback = [](const string &polygon) {
-                return Roi(parse_polygon(polygon), 0);
+                return Roi{parse_polygon(polygon)};
             };
             cached_rois[path] = parse_csv(path, num, callback, "Polygon");
         }
 
-        return cached_products[path];
+        return cached_rois[path];
     }
 
     const auto &load_products(int num)
@@ -41,7 +41,7 @@ class Loader
         if (cached_rois.count(path) == 0)
         {
             auto callback = [](const string &polygon, const string &price) {
-                return Product(parse_polygon(polygon), stod(price));
+                return Product{parse_polygon(polygon), stod(price)};
             };
             cached_products[path] = parse_csv(path, num, callback, "Polygon", "Price");
         }

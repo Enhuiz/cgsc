@@ -10,15 +10,23 @@
 #include "geometry.h"
 #include "global.h"
 
-struct Entity
+struct Region
 {
+    Region(Polygon polygon) : polygon(std::move(polygon)) {}
     Polygon polygon;
-    double price;
-    Entity(Polygon polygon, double price) : polygon(std::move(polygon)), price(price) {}
 };
 
-using Roi = Entity;
-using Product = Entity;
+struct Roi : public Region
+{
+    Roi(Polygon polygon) : Region(std::move(polygon)) {}
+};
+
+struct Product : public Region
+{
+    Product(Polygon polygon, double price) : Region(std::move(polygon)), price(price) {}
+    double price;
+};
+
 using Rois = std::vector<Roi>;
 using Products = std::vector<Product>;
 
@@ -45,21 +53,25 @@ struct hash<Element>
 };
 }
 
-struct Range // range (i.e. subset) of set cover problem
+struct Set
 {
-    const Entity *entity;
     std::unordered_set<Element> elements;
     double value;
+    virtual void update_value();
+};
+
+struct Universe : Set
+{
+    const Roi *roi;
+};
+
+struct Range : Set
+{
+    const Product *product;
     double cost;
-    Range() = default;
-    Range(const Range &range) = default;
-    Range(Range &&range);
-    Range &operator=(const Range &range) = default;
-    void update_value();
     void update_cost();
 };
 
-using Universe = Range;
 using Ranges = std::vector<Range>;
 
 #endif

@@ -14,10 +14,10 @@ json Transformer::transform(const Roi &roi,
     report.clear();
 
     // initialize
-    universe.entity = &roi;
+    universe.roi = &roi;
     ranges = func::map(products, [](const Product &product) {
         auto range = Range();
-        range.entity = &product;
+        range.product = &product;
         range.update_cost();
         return range;
     });
@@ -34,12 +34,12 @@ json Transformer::transform(const Roi &roi,
 void Transformer::add_imagery_cell(Universe &universe) const
 {
     // add imagery cell
-    double uncovered_area = area(universe.entity->polygon) - func::sum(universe.elements,
-                                                                       [](const Element &e) {
-                                                                           return e.value;
-                                                                       });
+    double uncovered_area = area(universe.roi->polygon) - func::sum(universe.elements,
+                                                                    [](const Element &e) {
+                                                                        return e.value;
+                                                                    });
 
-    report["uncovered_percentage"] = uncovered_area / area(universe.entity->polygon);
+    report["uncovered_percentage"] = uncovered_area / area(universe.roi->polygon);
     universe.elements.insert(Element{static_cast<int>(universe.elements.size()), uncovered_area});
 }
 
@@ -105,8 +105,8 @@ void DiscreteTransformer::transform_impl(const Roi &roi,
     auto id_map = unordered_map<int, int>();
     for (auto &range : ranges)
     {
-        auto indexes = discretize(range.entity->polygon, [&range](const Polygon &grid_cell) {
-            return all_of(grid_cell.begin(), grid_cell.end(), [&range](const Point &p) { return !outside(p, range.entity->polygon); });
+        auto indexes = discretize(range.product->polygon, [&range](const Polygon &grid_cell) {
+            return all_of(grid_cell.begin(), grid_cell.end(), [&range](const Point &p) { return !outside(p, range.product->polygon); });
         });
         for (auto index : indexes)
         {
@@ -175,7 +175,7 @@ void ContinuousTransformer::transform_impl(const Roi &roi,
         {
             auto inners = list<Polygon>();
             auto outers = list<Polygon>();
-            tie(inners, outers) = clip(it->polygon, range.entity->polygon);
+            tie(inners, outers) = clip(it->polygon, range.product->polygon);
             if (inners.size() > 0) // the product intersects with the cell
             {
                 auto prev_owners = move(it->owners); // record the owner of the cell
@@ -215,11 +215,11 @@ void ContinuousTransformer::transform_impl(const Roi &roi,
         // |     / 3' |  4'  /
         // -----------------
 
-        auto range_polygons = difference({range.entity->polygon},
-                                    func::map(new_inner_cells, // get all polygon of new inner cells
-                                              [](const Cell &cell) {
-                                                  return cell.polygon;
-                                              }));
+        auto range_polygons = difference({range.product->polygon},
+                                         func::map(new_inner_cells, // get all polygon of new inner cells
+                                                   [](const Cell &cell) {
+                                                       return cell.polygon;
+                                                   }));
 
         for (const auto &range_polygon : range_polygons)
         {
@@ -285,16 +285,16 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
     struct Node
     {
         Range &range;
-        const Polygon &polygon; // make reference easier, it is actually range.entity->polygon
+        const Polygon &polygon; // make reference easier, it is actually range.product->polygon
         list<Cell> cells;
         set<int> neighboors;
     };
 
     struct Cell
     {
-        Polygon polygon; // geometric shape of the cell
-        set<Range* > owners; // owned by nodes
-        void clipped_by(const Node& node, list<Cell> &inners, list<Cell> &outers)
+        Polygon polygon;     // geometric shape of the cell
+        set<Range *> owners; // owned by nodes
+        void clipped_by(const Node &node, list<Cell> &inners, list<Cell> &outers)
         {
             auto inner_polygons = list<Polygon>();
             auto outer_polygons = list<Polygon>();
@@ -325,7 +325,7 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
     {
         auto node = Node{
             range,
-            range.entity->polygon,
+            range.product->polygon,
         };
         nodes.push_back(node);
     }
@@ -347,7 +347,7 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
     }
 
     vector<bool> visited(nodes.size(), false);
-    
+
     // auto num_unvisited_neighboor = [&visited](const Node& node) {
     //     return area(node.polygon);
     //     // int cnt = 0;
@@ -369,7 +369,7 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
         {
             if (visited[nid])
             {
-                auto& neighboor_node = nodes[nid];
+                auto &neighboor_node = nodes[nid];
                 auto new_cells_for_neighboor = list<Cell>();
                 for (auto cit = neighboor_node.cells.begin();
                      cit != neighboor_node.cells.end();)
@@ -432,11 +432,10 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
     }
 
     auto cells = list<Cell>();
-    for (const auto& node: nodes)
+    for (const auto &node : nodes)
     {
         cells.insert(cells.end(), node.cells.begin(), node.cells.end());
     }
-
 
     // calculate the value (i.e. area) of each cell
     auto value_map = map<set<Range *>, double>();
@@ -577,7 +576,7 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
 //         {
 //             range_id[&range] = range_id.size();
 //         }
-//         auto inner_polygons = intersection(range.entity->polygon, roi.polygon);
+//         auto inner_polygons = intersection(range.product->polygon, roi.polygon);
 //         for (const auto &inner_polygon : inner_polygons)
 //         {
 //             auto cell = Cell();

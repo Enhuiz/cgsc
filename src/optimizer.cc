@@ -39,7 +39,7 @@ json GreedyOptimizer::optimize(const Universe &universe, const Ranges &ranges, R
         current_value += current_range.value;
         for (auto &pair : pairs)
         {
-            if (intersects(pair.range.entity->polygon, current_range.entity->polygon))
+            if (intersects(pair.range.product->polygon, current_range.product->polygon))
             {
                 for (const auto &element : current_range.elements) // m
                 {
@@ -353,7 +353,7 @@ json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges
         {
             assert(cursor < ranges.size() && "cursor out of ranges!");
             // offcuts & covered
-            offcuts = difference(offcuts, {ranges[cursor].entity->polygon});
+            offcuts = difference(offcuts, {ranges[cursor].product->polygon});
             // deficit area
             value = universe->value - func::sum(offcuts, area);
         }
@@ -368,7 +368,7 @@ json OnlineBnbOptimizer::optimize(const Universe &universe, const Ranges &ranges
                 for (auto it = left_offcuts.begin(); it != left_offcuts.end();)
                 {
                     const auto &range = ranges[i];
-                    auto scene_offcuts = intersection(universe->entity->polygon, range.entity->polygon);
+                    auto scene_offcuts = intersection(universe->roi->polygon, range.product->polygon);
                     if (scene_offcuts.size() == 0) // no intersection
                         continue;
                     auto scene_offcut = scene_offcuts.front();
