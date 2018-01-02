@@ -11,6 +11,7 @@ public:
                            const Products &products,
                            Universe &universe,
                            Ranges &ranges) const;
+  virtual ~Transformer();
 
 protected:
   void add_imagery_cell(Universe &universe) const;

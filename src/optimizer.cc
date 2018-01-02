@@ -9,6 +9,8 @@ Optimizer::Optimizer(double target_coverage) : target_coverage(target_coverage)
 {
 }
 
+Optimizer::~Optimizer() {}
+
 GreedyOptimizer::GreedyOptimizer(double target_coverage) : Optimizer(target_coverage)
 {
 }

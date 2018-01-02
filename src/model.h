@@ -10,20 +10,16 @@
 #include "geometry.h"
 #include "global.h"
 
-struct Region
+struct Roi
 {
-    Region(Polygon polygon) : polygon(std::move(polygon)) {}
+    Roi(Polygon polygon) : polygon(std::move(polygon)) {}
     Polygon polygon;
 };
 
-struct Roi : public Region
+struct Product
 {
-    Roi(Polygon polygon) : Region(std::move(polygon)) {}
-};
-
-struct Product : public Region
-{
-    Product(Polygon polygon, double price) : Region(std::move(polygon)), price(price) {}
+    Product(Polygon polygon, double price) : polygon(std::move(polygon)), price(price) {}
+    Polygon polygon;
     double price;
 };
 
@@ -58,6 +54,7 @@ struct Set
     std::unordered_set<Element> elements;
     double value;
     virtual void update_value();
+    virtual ~Set();
 };
 
 struct Universe : Set

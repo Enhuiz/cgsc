@@ -9,7 +9,7 @@ public:
   Optimizer(double target_coverage);
   virtual nlohmann::json optimize(const Universe &universe, const Ranges &ranges, Ranges &result_ranges) const = 0;
   virtual std::string tag() const = 0;
-
+  virtual ~Optimizer();
 protected:
   double target_coverage; // 0 ~ 1, acceptable value / Universe value
   mutable nlohmann::json report;

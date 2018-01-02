@@ -6,6 +6,8 @@
 using namespace std;
 using nlohmann::json;
 
+Transformer::~Transformer(){}
+
 json Transformer::transform(const Roi &roi,
                             const Products &products,
                             Universe &universe,
