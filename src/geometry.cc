@@ -1,6 +1,7 @@
 #include "geometry.h"
 
 #include <algorithm>
+#include <queue>
 #include <functional>
 #include <sstream>
 #include <iostream>
@@ -52,21 +53,39 @@ Polygon parse_polygon(const string &s)
     return ret;
 }
 
-bool onside(const Point &p, const Point &a, const Point &b)
+enum class Orientation
 {
-    auto u = b - a;
-    auto v = p - a;
+    left = 1,
+    right = -1,
+    collinear = 0,
+};
+
+Orientation calculate_orientation(Point a, Point b, Point c)
+{
+    auto det = cross(b - a, c - a);
+    return static_cast<Orientation>(
+        static_cast<int>(strictly_less(0.f, det)) -
+        static_cast<int>(strictly_less(det, 0.f)));
+}
+
+bool collinear(const Point &p, const Segment &segment)
+{
+    // return calculate_orientation(p, segment.a, segment.b) == Orientation::collinear;
+    auto u = segment.b - segment.a;
+    auto v = p - segment.b;
     return abs(cross(u, v) / magnitude(u)) < 1e-5; // i.e. the distance from p to ab / |ab| < threshold
 }
 
-bool inside(const Point &p, const Point &a, const Point &b) // inside a line means on the left side of on it
+bool left(const Point &p, const Segment &segment)
 {
-    return cross(b - a, p - a) > 0 && !onside(p, a, b);
+    return !collinear(p, segment) &&
+           calculate_orientation(segment.a, segment.b, p) == Orientation::left;
 }
 
-bool outside(const Point &p, const Point &a, const Point &b)
+bool right(const Point &p, const Segment &segment)
 {
-    return cross(b - a, p - a) < 0 && !onside(p, a, b);
+    return !collinear(p, segment) &&
+           calculate_orientation(p, segment.a, segment.b) == Orientation::right;
 }
 
 bool inside(const Point &p, const Polygon &polygon)
@@ -74,7 +93,7 @@ bool inside(const Point &p, const Polygon &polygon)
     auto s = polygon.back();
     for (const auto &e : polygon)
     {
-        if (!inside(p, s, e))
+        if (!left(p, {s, e}))
         {
             return false;
         }
@@ -88,7 +107,7 @@ bool outside(const Point &p, const Polygon &polygon)
     auto s = polygon.back();
     for (const auto &e : polygon)
     {
-        if (outside(p, s, e))
+        if (right(p, {s, e}))
         {
             return true;
         }
@@ -109,7 +128,7 @@ bool intersects(const Polygon &a, const Polygon &b)
 
 bool intersects(const Point &a, const Point &b, const Point &c, const Point &d)
 {
-    return inside(a, c, d) == outside(b, c, d) && inside(c, a, b) == outside(d, a, b);
+    return left(a, {c, d}) == right(b, {c, d}) && left(c, {a, b}) == right(d, {a, b});
 }
 
 bool convex(const Polygon &polygon)
@@ -181,13 +200,13 @@ tuple<Polygons, Polygons> clip(const Polygon &clippee, const Polygon &clipper) /
         auto s2 = prev_inner.back();
         for (const auto &e2 : prev_inner)
         {
-            if (inside(s2, s1, e1))
+            if (left(s2, {s1, e1}))
             {
-                if (inside(e2, s1, e1))
+                if (left(e2, {s1, e1}))
                 {
                     inner.push_back(e2);
                 }
-                else if (onside(e2, s1, e1))
+                else if (collinear(e2, {s1, e1}))
                 {
                     inner.push_back(e2);
                 }
@@ -199,9 +218,9 @@ tuple<Polygons, Polygons> clip(const Polygon &clippee, const Polygon &clipper) /
                     outer.push_back(e2);
                 }
             }
-            else if (onside(s2, s1, e1))
+            else if (collinear(s2, {s1, e1}))
             {
-                if (inside(e2, s1, e1))
+                if (left(e2, {s1, e1}))
                 {
                     if (inner.back() != s2) // check bouncing
                     {
@@ -209,7 +228,7 @@ tuple<Polygons, Polygons> clip(const Polygon &clippee, const Polygon &clipper) /
                     }
                     inner.push_back(e2);
                 }
-                else if (onside(e2, s1, e1))
+                else if (collinear(e2, {s1, e1}))
                 {
                     // do nothing
                 }
@@ -224,14 +243,14 @@ tuple<Polygons, Polygons> clip(const Polygon &clippee, const Polygon &clipper) /
             }
             else // outside(s2)
             {
-                if (inside(e2, s1, e1))
+                if (left(e2, {s1, e1}))
                 {
                     auto p = line_intersection(s2, e2, s1, e1);
                     inner.push_back(p);
                     inner.push_back(e2);
                     outer.push_back(p);
                 }
-                else if (onside(e2, s1, e1))
+                else if (collinear(e2, {s1, e1}))
                 {
                     outer.push_back(e2);
                 }
@@ -384,8 +403,6 @@ Polygons intersection(const Polygons &polygons)
 }
 }
 
-
-
 namespace dcel
 {
 struct Vertex;
@@ -395,15 +412,15 @@ struct Face;
 struct Vertex
 {
     Point point;
-    shared_ptr<HalfEdge> edge; // the half edge whose origin is this vertex
+    HalfEdge *edge; // the half edge whose origin is this vertex
 };
 
 struct HalfEdge
 {
-    shared_ptr<Vertex> origin;
-    shared_ptr<HalfEdge> twin;
-    shared_ptr<HalfEdge> next;
-    shared_ptr<Face> face;
+    Vertex *origin;
+    HalfEdge *twin;
+    HalfEdge *next;
+    Face *face;
 };
 
 struct Face
@@ -411,23 +428,58 @@ struct Face
     vector<int> covers;
 };
 
+template <class T>
+unique_ptr<T> copy_unique(const unique_ptr<T> &source)
+{
+    return source ? make_unique<T>(*source) : nullptr;
+}
+
+template <class T>
+T *get_ptr(const unique_ptr<T> &source)
+{
+    return source.get();
+}
+
+namespace func
+{
+template <class T,
+          template <class = T, class = std::allocator<T>> class Container,
+          class Func>
+auto map(const Container<T> &iterable, Func &&func)
+    -> Container<decltype(func(std::declval<T>())),
+                 std::allocator<decltype(func(std::declval<T>()))>>
+{
+    using value_type = decltype(func(std::declval<T>()));
+    using result_type = Container<value_type, std::allocator<value_type>>;
+
+    result_type res;
+
+    for (const auto &v : iterable)
+    {
+        res.push_back(func(v));
+    }
+    return res;
+}
+}
+
 class Mesh
 {
   public:
+    Mesh() {}
     Mesh(const Polygon &polygon, int id)
     {
         // only 1-face polygon is allowed here
-        auto face = create<Face>();
+        auto face = append_new_to(faces);
         face->covers.push_back(id);
 
-        shared_ptr<HalfEdge> prev_left = nullptr;
-        shared_ptr<HalfEdge> prev_right = nullptr;
+        HalfEdge *prev_left = nullptr;
+        HalfEdge *prev_right = nullptr;
 
         for (const auto &p : polygon)
         {
-            auto vertex = create<Vertex>();
-            auto left = create<HalfEdge>();
-            auto right = create<HalfEdge>();
+            auto vertex = append_new_to(vertices);
+            auto left = append_new_to(halfedges);
+            auto right = append_new_to(halfedges);
 
             left->origin = vertex;
             left->next = nullptr;
@@ -456,39 +508,43 @@ class Mesh
             prev_right = right;
         }
 
-        prev_right->origin = vertices[0];
+        prev_right->origin = vertices[0].get();
 
-        auto first_left = halfedges[0];
+        auto first_left = halfedges[0].get();
         prev_left->next = first_left;
 
-        auto first_right = halfedges[1];
+        auto first_right = halfedges[1].get();
         first_right->next = prev_right;
     }
 
-  private:
-    template <class T>
-    shared_ptr<T> create()
+    vector<Vertex *> get_vertices() const
     {
-        if (is_same<T, Vertex>::value)
-        {
-            vertices.emplace_back(shared_ptr<T>());
-            return vertices.back();
-        }
-        if (is_same<T, HalfEdge>::value)
-        {
-            halfedges.emplace_back(shared_ptr<T>());
-            return halfedges.back();
-        }
-        if (is_same<T, Face>::value)
-        {
-            faces.emplace_back(shared_ptr<T>());
-            return faces.back();
-        }
+        return func::map(vertices, get_ptr<Vertex>);
     }
 
-    vector<shared_ptr<Vertex>> vertices;
-    vector<shared_ptr<HalfEdge>> halfedges;
-    vector<shared_ptr<Face>> faces;
+    vector<HalfEdge *> get_halfedges() const
+    {
+        return func::map(halfedges, get_ptr<HalfEdge>);
+    }
+
+    vector<Face *> get_faces() const
+    {
+        return func::map(faces, get_ptr<Face>);
+    }
+
+  private:
+    template <class Collection>
+    auto append_new_to(Collection &collection) -> typename Collection::value_type::element_type *
+    {
+        using element_type = typename Collection::value_type::element_type;
+        collection.emplace_back(make_unique<element_type>());
+        return collection.back().get();
+    }
+
+    vector<unique_ptr<Vertex>> vertices;
+    vector<unique_ptr<HalfEdge>> halfedges;
+    vector<unique_ptr<Face>> faces;
 };
 }
+
 #endif

@@ -6,20 +6,26 @@
 #include <functional>
 
 #include "vector2.hpp"
+#include "floats.hpp"
 
 using Point = vector2<double>;
 using Polygon = std::list<Point>;
 using Triangle = Polygon;
 using Polygons = std::list<Polygon>;
 
+struct Segment
+{
+    Point a, b;
+};
+
 std::string to_string(const Polygon &poly);
 std::ostream &operator<<(std::ostream &os, const Polygon &poly);
 
 std::list<Point> parse_polygon(const std::string &s);
 double area(const Polygon &poly);
-bool inside(const Point &p, const Point &a, const Point &b);
-bool inside(const Point &p, const Polygon &poly); // only for convex
-bool outside(const Point &p, const Point &a, const Point &b);
+bool left(const Point &p, const Segment &segment);
+bool right(const Point &p, const Segment &segment);
+bool inside(const Point &p, const Polygon &poly);  // only for convex
 bool outside(const Point &p, const Polygon &poly); // only for convex
 bool crosses(const Polygon &a, const Polygon &b);
 bool disjoint(const Polygon &a, const Polygon &b);
