@@ -29,7 +29,7 @@ protected:
 class OnlineTranformer : public Transformer
 {
 public:
-  std::string tag() const { return "geometric"; }
+  std::string tag() const { return "online"; }
 
 private:
   void transform_impl(const Roi &roi,

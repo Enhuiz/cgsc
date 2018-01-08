@@ -10,7 +10,7 @@ Solver::Solver(shared_ptr<Transformer> transformer, shared_ptr<Optimizer> optimi
 {
 }
 
-Products Solver::preprocess(const Roi &roi, const Products &products) const
+Products Solver::pre_process(const Roi &roi, const Products &products) const
 {
     // select possible products and crop them
     auto possible_products = Products();
@@ -37,7 +37,7 @@ json Solver::solve(const Roi &roi, const Products &products, Products &&result_p
     }
     report["transformer"] = transformer->tag();
     report["area_of_roi"] = area(roi.polygon);
-    auto possible_products = preprocess(roi, products);
+    auto possible_products = pre_process(roi, products);
     report["number_of_possible_products"] = possible_products.size();
     auto sw = Stopwatch();
     auto universe = Universe();

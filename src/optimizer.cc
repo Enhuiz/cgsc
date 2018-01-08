@@ -1,6 +1,7 @@
 #include "optimizer.h"
 
 #include <queue>
+#include <limits>
 
 using namespace std;
 using nlohmann::json;
@@ -136,10 +137,14 @@ const Universe *BaseNode::universe = nullptr;
 vector<Range> BaseNode::ranges;
 
 template <class Node>
-void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &result_ranges, double target_coverage, json &report)
+void branch_and_bound(const Universe &universe,
+                      const Ranges &ranges,
+                      Ranges &result_ranges,
+                      double target_coverage,
+                      json &report)
 {
     auto sw = Stopwatch(); // timer
-    Node::ranges = vector<Range>(ranges.begin(), ranges.end());
+    Node::ranges = ranges;
     sort(Node::ranges.begin(), Node::ranges.end(), [](const Range &a, const Range &b) { // unit cost from lower to higher
         return a.cost / a.value < b.cost / b.value;
     });
@@ -148,15 +153,16 @@ void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
 
     shared_ptr<BaseNode> optimal_node = make_shared<Node>();
     {
-        auto greedy_optimizer = GreedyOptimizer(target_coverage);
-        greedy_optimizer.optimize(universe, ranges, result_ranges);
-        if (result_ranges.size() > 0)
-        {
-            optimal_node->cost = func::sum(result_ranges, [](const Range &result_range) {
-                return result_range.cost;
-            });
-        }
-        optimal_node->print("initial optimal");
+        optimal_node->cost = numeric_limits<double>::max();
+        // auto greedy_optimizer = GreedyOptimizer(target_coverage);
+        // greedy_optimizer.optimize(universe, ranges, result_ranges);
+        // if (result_ranges.size() > 0)
+        // {
+        //     optimal_node->cost = func::sum(result_ranges, [](const Range &result_range) {
+        //         return result_range.cost;
+        //     });
+        // }
+        // optimal_node->print("initial optimal");
     }
 
     shared_ptr<BaseNode> initial_node = make_shared<Node>();
@@ -181,11 +187,7 @@ void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
     {
         auto node = nodes.top();
         nodes.pop();
-        if (node == nullptr)
-        {
-            cerr << "weird nullptr of node" << endl;
-            abort();
-        }
+        assert(node != nullptr && "null in the queue");
 
         sw.pause(); // pause the timer for debug informaiton
         if (nodes.size() % 10000 == 0)
@@ -235,7 +237,7 @@ void branch_and_bound(const Universe &universe, const Ranges &ranges, Ranges &re
         // so clear it immediately
         if (node->cost_lower_bound > optimal_node->cost)
         {
-            nodes = decltype(nodes)(std::ref(comp)); // empty the nodes, it's bit of tricky because of the queue struct
+            nodes = decltype(nodes)(std::ref(comp)); // empty the nodes, it's tricky because of the queue struct
         }
     }
 
@@ -292,6 +294,7 @@ json BnbOptimizer::optimize(const Universe &universe, const Ranges &ranges, Rang
             for (int i = cursor; i < ranges.size(); ++i)
             {
                 const auto &range = ranges[i];
+
                 for (const auto &element : range.elements) // k
                 {
                     if (visited_copy[element.id] == 0)

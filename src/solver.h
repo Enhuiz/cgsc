@@ -16,7 +16,7 @@ public:
   std::string tag() const;
 
 private:
-  Products preprocess(const Roi &roi, const Products &products) const;
+  Products pre_process(const Roi &roi, const Products &products) const;
 
 private:
   std::shared_ptr<Transformer> transformer;

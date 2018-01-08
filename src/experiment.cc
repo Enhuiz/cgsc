@@ -17,36 +17,28 @@ class Loader
     {
     }
 
-    const auto &load_rois(string roi_type, double roi_ratio, int num)
+    auto load_rois(string roi_type, double roi_ratio, int num)
     {
         ostringstream oss;
         oss << rois_dir << "/" << roi_type << "_" << roi_ratio << ".csv";
         string path = oss.str();
 
-        if (cached_rois.count(path) == 0)
-        {
-            auto callback = [](const string &polygon) {
-                return Roi{parse_polygon(polygon)};
-            };
-            cached_rois[path] = parse_csv(path, num, callback, "Polygon");
-        }
+        auto callback = [](const string &polygon) {
+            return Roi{parse_polygon(polygon)};
+        };
 
-        return cached_rois[path];
+        return parse_csv(path, num, callback, "Polygon");
     }
 
-    const auto &load_products(int num)
+    auto load_products(int num)
     {
         string path = products_dir + "/archive.csv";
 
-        if (cached_rois.count(path) == 0)
-        {
-            auto callback = [](const string &polygon, const string &price) {
-                return Product{parse_polygon(polygon), stod(price)};
-            };
-            cached_products[path] = parse_csv(path, num, callback, "Polygon", "Price");
-        }
+        auto callback = [](const string &polygon, const string &price) {
+            return Product{parse_polygon(polygon), stod(price)};
+        };
 
-        return cached_products[path];
+        return parse_csv(path, num, callback, "Polygon", "Price");
     }
 
   private:
@@ -83,8 +75,6 @@ class Loader
   private:
     string rois_dir;
     string products_dir;
-    map<string, Rois> cached_rois;
-    map<string, Products> cached_products;
 };
 
 void experiment(const json &settings)
@@ -99,11 +89,12 @@ void experiment(const json &settings)
 
     const auto &products = loader.load_products(settings["archive_size"].get<int>());
 
-    auto discrete_transformer = make_shared<DiscreteTransformer>(settings["delta"].get<double>());
+    auto online_transformation = make_shared<OnlineTranformer>();
     auto continuous_transformer = make_shared<ContinuousTransformer>();
     auto fast_continuous_transformer = make_shared<FastContinuousTransformer>();
     auto greedy_optimizer = make_shared<GreedyOptimizer>(settings["target_coverage"].get<double>());
     auto bnb_optimizer = make_shared<BnbOptimizer>(settings["target_coverage"].get<double>());
+    auto online_bnb_optimizer = make_shared<OnlineBnbOptimizer>(settings["target_coverage"].get<double>());
 
     auto perform = [&products, &reports](const Roi &roi, shared_ptr<Transformer> transformer, shared_ptr<Optimizer> optimizer) {
         auto solver = Solver(transformer, optimizer);
@@ -115,9 +106,8 @@ void experiment(const json &settings)
     for (const auto &roi : rois)
     {
         cout << "Round " << cnt++ << endl;
-        perform(roi, continuous_transformer, nullptr);
-        perform(roi, fast_continuous_transformer, greedy_optimizer);
-        perform(roi, fast_continuous_transformer, bnb_optimizer);
+        perform(roi, online_transformation, online_bnb_optimizer);
+        // perform(roi, fast_continuous_transformer, bnb_optimizer);
     }
 
     {

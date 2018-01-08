@@ -6,7 +6,7 @@
 using namespace std;
 using nlohmann::json;
 
-Transformer::~Transformer(){}
+Transformer::~Transformer() {}
 
 json Transformer::transform(const Roi &roi,
                             const Products &products,
@@ -55,6 +55,7 @@ void OnlineTranformer::transform_impl(const Roi &roi,
 
 DiscreteTransformer::DiscreteTransformer(double delta) : delta(delta)
 {
+
 }
 
 unordered_set<int> DiscreteTransformer::discretize(const Polygon &polygon,
@@ -332,6 +333,7 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
         nodes.push_back(node);
     }
 
+    // calculate neighboors, after this is done, the neighboors will only be checked for only once.
     int cnt_its = 0;
     for (int i = 0; i < nodes.size(); ++i)
     {
@@ -433,6 +435,80 @@ void FastContinuousTransformer::transform_impl(const Roi &roi,
         // sleep(250);
     }
 
+    # if 0
+    {
+        auto subreport = decltype(report)();
+        // an experiment
+        auto elements = set<vector<void*>>(); //  degree
+        auto sets = set<void*>();             //  
+
+        for (const auto &node : nodes)
+        {
+            for (const auto& cell: node.cells)
+            {
+                auto element = vector<void*>();
+                for (const auto& owner: cell.owners)
+                {
+                    element.push_back(owner);
+                    sets.insert(owner);
+                }
+                elements.insert(move(element));
+            }
+        }
+
+        auto filter_elements_with_degree = [&elements](int n) {
+            auto ret = decltype(elements)();
+            for (const auto& element: elements)
+                if (element.size() == n)
+                    ret.insert(element);
+            return ret;
+        };
+
+        for (int d = 1; sets.size() && elements.size(); ++d)
+        {
+            auto filtered_elements = filter_elements_with_degree(d);
+            int cnt = sets.size();
+            for (const auto& e: filtered_elements)
+            {
+                for (auto p: e)
+                {
+                    sets.erase(p);
+                }
+            }
+            cnt -= sets.size();
+            for (auto it = elements.begin(); it != elements.end(); )
+            {
+                const auto& e = *it;
+                bool rm = false;
+                for (auto p: e)
+                {
+                    if (sets.count(p) == 0)
+                    {
+                        rm = true;
+                        break;
+                    }
+                }
+                if (rm)
+                {
+                    it = elements.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+            cout << decltype(report){
+                        {"degree", d},
+                        {"cells", filtered_elements.size()},
+                        {"regions", cnt},
+                        {"left regions", sets.size()},
+                    }
+                        .dump()
+                 << endl;
+        }
+    }
+    #endif 
+    
     auto cells = list<Cell>();
     for (const auto &node : nodes)
     {
